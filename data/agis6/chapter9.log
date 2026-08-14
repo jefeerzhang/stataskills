@@ -1,0 +1,1008 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter9.do 
+
+. * chapter9.do
+. ***************************************
+. * ONEWAY ANOVA
+. ***************************************
+. use partyid, clear
+
+. oneway stemcell partyid, bonferroni tabulate
+
+      party |  Summary of support for stem cell
+identificat |              research
+        ion |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+   democrat |           8   1.2060454          12
+  republica |   4.6666667   2.6053558          12
+  independe |           7   .78446454          14
+  noninvolv |        4.75   .88640526           8
+------------+------------------------------------
+      Total |   6.2608696   2.0916212          46
+
+                        Analysis of variance
+    Source              SS         df      MS            F     Prob > F
+------------------------------------------------------------------------
+Between groups      92.7028986      3   30.9009662     12.46     0.0000
+ Within groups      104.166667     42   2.48015873
+------------------------------------------------------------------------
+    Total           196.869565     45   4.37487923
+
+Bartlett's equal-variances test: chi2(3) =  20.1167    Prob>chi2 = 0.000
+
+     Comparison of support for stem cell research by party identification
+                                (Bonferroni)
+Row Mean-|
+Col Mean |   democrat   republic   independ
+---------+---------------------------------
+republic |   -3.33333
+         |      0.000
+         |
+independ |         -1    2.33333
+         |      0.684      0.003
+         |
+noninvol |      -3.25    .083333      -2.25
+         |      0.000      1.000      0.015
+
+. pwmean stemcell, over(partyid) effects cimeans mcompare(bonferroni)
+
+Pairwise comparisons of means with equal variances
+
+Over: partyid
+
+--------------------------------------------------------------
+             |                                 Unadjusted
+    stemcell |       Mean   Std. err.     [95% conf. interval]
+-------------+------------------------------------------------
+     partyid |
+   democrat  |          8   .4546206      7.082538    8.917462
+ republican  |   4.666667   .4546206      3.749205    5.584128
+independent  |          7   .4208969      6.150596    7.849404
+noninvolved  |       4.75   .5567943      3.626344    5.873656
+--------------------------------------------------------------
+
+---------------------------
+             |    Number of
+             |  comparisons
+-------------+-------------
+     partyid |            6
+---------------------------
+
+------------------------------------------------------------------------------
+             |                            Bonferroni           Bonferroni
+    stemcell |   Contrast   Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     partyid |
+ republican  |
+         vs  |
+   democrat  |  -3.333333   .6429306    -5.18   0.000    -5.113618   -1.553048
+independent  |
+         vs  |
+   democrat  |         -1   .6195435    -1.61   0.684    -2.715526    .7155256
+noninvolved  |
+         vs  |
+   democrat  |      -3.25   .7188183    -4.52   0.000    -5.240419   -1.259581
+independent  |
+         vs  |
+ republican  |   2.333333   .6195435     3.77   0.003     .6178077    4.048859
+noninvolved  |
+         vs  |
+ republican  |   .0833333   .7188183     0.12   1.000    -1.907086    2.073753
+noninvolved  |
+         vs  |
+independent  |      -2.25   .6979785    -3.22   0.015    -4.182714   -.3172864
+------------------------------------------------------------------------------
+
+. 
+. use gss2006_chapter9, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. oneway prestg80 mobile16 if age > 29 & age < 60 & wrkstat==1, bonferroni ///
+>   tabulate
+
+ GEOGRAPHIC |
+   MOBILITY | Summary of RS OCCUPATIONAL PRESTIGE
+  SINCE AGE |            SCORE  (1980)
+         16 |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+  SAME CITY |   44.116162    13.73443         396
+  SAME ST,D |   48.672862   13.002183         269
+  DIFFERENT |   47.185882   13.959368         425
+------------+------------------------------------
+      Total |   46.437615   13.758919       1,090
+
+                        Analysis of variance
+    Source              SS         df      MS            F     Prob > F
+------------------------------------------------------------------------
+Between groups      3716.07404      2   1858.03702      9.98     0.0001
+ Within groups      202440.184   1087    186.23752
+------------------------------------------------------------------------
+    Total           206156.258   1089   189.307858
+
+Bartlett's equal-variances test: chi2(2) =   1.6873    Prob>chi2 = 0.430
+
+             Comparison of RS OCCUPATIONAL PRESTIGE SCORE  (1980)
+                     by GEOGRAPHIC MOBILITY SINCE AGE 16
+                                (Bonferroni)
+Row Mean-|
+Col Mean |   SAME CIT   SAME ST,
+---------+----------------------
+SAME ST, |     4.5567
+         |      0.000
+         |
+DIFFEREN |    3.06972   -1.48698
+         |      0.004      0.487
+
+. 
+. 
+. graph bar (mean) prestg80 if age > 29 & age < 60 & wrkstat==1, over(mobile16)
+>  ///
+>   scheme(s2mono)
+
+. power oneway, ngroups(3) delta(.1(.05).4)
+
+Estimated sample size for one-way ANOVA
+F test for group effect
+H0: delta = 0  versus  Ha: delta != 0
+
+  +---------------------------------------------------------------------+
+  |   alpha   power       N N_per_group   delta     N_g   Var_m   Var_e |
+  |---------------------------------------------------------------------|
+  |     .05      .8     969         323      .1       3     .01       1 |
+  |     .05      .8     432         144     .15       3   .0225       1 |
+  |     .05      .8     246          82      .2       3     .04       1 |
+  |     .05      .8     159          53     .25       3   .0625       1 |
+  |     .05      .8     111          37      .3       3     .09       1 |
+  |     .05      .8      84          28     .35       3   .1225       1 |
+  |     .05      .8      66          22      .4       3     .16       1 |
+  +---------------------------------------------------------------------+
+
+. power oneway, ngroups(3) delta(.1(.05).4) power(.7(.1).9) alpha(.05 .01)
+
+Estimated sample size for one-way ANOVA
+F test for group effect
+H0: delta = 0  versus  Ha: delta != 0
+
+  +---------------------------------------------------------------------+
+  |   alpha   power       N N_per_group   delta     N_g   Var_m   Var_e |
+  |---------------------------------------------------------------------|
+  |     .05      .7     774         258      .1       3     .01       1 |
+  |     .05      .8     969         323      .1       3     .01       1 |
+  |     .05      .9   1,269         423      .1       3     .01       1 |
+  |     .01      .7   1,164         388      .1       3     .01       1 |
+  |     .01      .8   1,395         465      .1       3     .01       1 |
+  |     .01      .9   1,749         583      .1       3     .01       1 |
+  |     .05      .7     348         116     .15       3   .0225       1 |
+  |     .05      .8     432         144     .15       3   .0225       1 |
+  |     .05      .9     567         189     .15       3   .0225       1 |
+  |     .01      .7     519         173     .15       3   .0225       1 |
+  |     .01      .8     624         208     .15       3   .0225       1 |
+  |     .01      .9     780         260     .15       3   .0225       1 |
+  |     .05      .7     198          66      .2       3     .04       1 |
+  |     .05      .8     246          82      .2       3     .04       1 |
+  |     .05      .9     321         107      .2       3     .04       1 |
+  |     .01      .7     294          98      .2       3     .04       1 |
+  |     .01      .8     354         118      .2       3     .04       1 |
+  |     .01      .9     441         147      .2       3     .04       1 |
+  |     .05      .7     129          43     .25       3   .0625       1 |
+  |     .05      .8     159          53     .25       3   .0625       1 |
+  |     .05      .9     207          69     .25       3   .0625       1 |
+  |     .01      .7     192          64     .25       3   .0625       1 |
+  |     .01      .8     228          76     .25       3   .0625       1 |
+  |     .01      .9     285          95     .25       3   .0625       1 |
+  |     .05      .7      90          30      .3       3     .09       1 |
+  |     .05      .8     111          37      .3       3     .09       1 |
+  |     .05      .9     144          48      .3       3     .09       1 |
+  |     .01      .7     135          45      .3       3     .09       1 |
+  |     .01      .8     159          53      .3       3     .09       1 |
+  |     .01      .9     201          67      .3       3     .09       1 |
+  |     .05      .7      66          22     .35       3   .1225       1 |
+  |     .05      .8      84          28     .35       3   .1225       1 |
+  |     .05      .9     108          36     .35       3   .1225       1 |
+  |     .01      .7     102          34     .35       3   .1225       1 |
+  |     .01      .8     120          40     .35       3   .1225       1 |
+  |     .01      .9     147          49     .35       3   .1225       1 |
+  |     .05      .7      54          18      .4       3     .16       1 |
+  |     .05      .8      66          22      .4       3     .16       1 |
+  |     .05      .9      84          28      .4       3     .16       1 |
+  |     .01      .7      78          26      .4       3     .16       1 |
+  |     .01      .8      93          31      .4       3     .16       1 |
+  |     .01      .9     114          38      .4       3     .16       1 |
+  +---------------------------------------------------------------------+
+
+. 
+. **************************************
+. * NONPARAMETRIC ALTERNATIVE
+. **************************************
+. use partyid, clear 
+
+. kwallis stemcell, by(partyid)
+
+Kruskal–Wallis equality-of-populations rank test
+
+  +------------------------------+
+  |     partyid | Obs | Rank sum |
+  |-------------+-----+----------|
+  |    democrat |  12 |   422.00 |
+  |  republican |  12 |   174.00 |
+  | independent |  14 |   391.00 |
+  | noninvolved |   8 |    94.00 |
+  +------------------------------+
+
+  chi2(3) = 22.115
+     Prob = 0.0001
+
+  chi2(3) with ties = 22.696
+               Prob = 0.0001
+
+. tabstat stemcell, statistics(mean median sd) by(partyid)
+
+Summary for variables: stemcell
+Group variable: partyid (party identification)
+
+    partyid |      Mean       p50        SD
+------------+------------------------------
+   democrat |         8       8.5  1.206045
+ republican |  4.666667       4.5  2.605356
+independent |         7         7  .7844645
+noninvolved |      4.75       4.5  .8864053
+------------+------------------------------
+      Total |   6.26087         6  2.091621
+-------------------------------------------
+
+. graph hbar (median) stemcell, over(partyid) ///
+>   title(Median stem cell attitude score by party identification) ///
+>   ytitle(Median score on stem cell attitude) ///
+>   scheme(s2mono)
+
+. graph box stemcell, over(partyid) ///
+>    scheme(s2mono)
+
+. 
+. ********************************************
+. * Analysis of Covariance
+. ********************************************
+. use gss2006_chapter9, replace
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. tabulate mobile16 if age > 29 & age < 60 & wrkstat==1, summarize(prestg80)
+
+ GEOGRAPHIC |
+   MOBILITY | Summary of RS OCCUPATIONAL PRESTIGE
+  SINCE AGE |            SCORE  (1980)
+         16 |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+  SAME CITY |   44.116162    13.73443         396
+  SAME ST,D |   48.672862   13.002183         269
+  DIFFERENT |   47.185882   13.959368         425
+------------+------------------------------------
+      Total |   46.437615   13.758919       1,090
+
+. tabulate age if age > 29 & age < 60 & wrkstat==1, summarize(prestg80)
+
+            | Summary of RS OCCUPATIONAL PRESTIGE
+     AGE OF |            SCORE  (1980)
+ RESPONDENT |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+         30 |   48.766667     15.6133          60
+         31 |   46.860465   13.772957          43
+         32 |    43.71875   13.082727          64
+         33 |   41.807692   12.929732          52
+         34 |   45.761905   13.523831          63
+         35 |   46.627451   13.518818          51
+         36 |   48.869565   14.200158          69
+         37 |   48.759259   14.996773          54
+         38 |   46.211538   14.324443          52
+         39 |   46.081967   14.841715          61
+         40 |   44.075758   13.818951          66
+         41 |   42.666667   12.730456          63
+         42 |        44.8   13.164071          70
+         43 |   47.411765   12.680029          68
+         44 |   45.768116   14.739049          69
+         45 |   48.283019   13.919241          53
+         46 |   43.933333   14.527434          60
+         47 |    45.35443   14.925488          79
+         48 |    46.56338   12.843823          71
+         49 |   42.214286   12.354924          56
+         50 |   48.265625   13.289502          64
+         51 |   48.040816   13.170294          49
+         52 |   45.901961   13.637089          51
+         53 |   45.333333   13.405152          54
+         54 |   48.820896   15.306886          67
+         55 |   46.698113   13.726147          53
+         56 |   47.128205   12.825098          39
+         57 |   42.969697    14.08786          33
+         58 |          47   15.007315          42
+         59 |   45.261905   12.597056          42
+------------+------------------------------------
+      Total |   46.021537   13.863176       1,718
+
+. anova prestg80 mobile16 age if age > 29 & age < 60 & wrkstat==1
+
+                         Number of obs =      1,090    R-squared     =  0.0421
+                         Root MSE      =    13.6621    Adj R-squared =  0.0140
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  8676.6203         31   279.89098      1.50  0.0396
+                         |
+                mobile16 |  3668.5073          2   1834.2537      9.83  0.0001
+                     age |  4960.5462         29   171.05332      0.92  0.5943
+                         |
+                Residual |  197479.64      1,058   186.65372  
+              -----------+----------------------------------------------------
+                   Total |  206156.26      1,089   189.30786  
+
+. anova prestg80 mobile16 c.age if age > 29 & age < 60 & wrkstat==1
+
+                         Number of obs =      1,090    R-squared     =  0.0183
+                         Root MSE      =    13.6511    Adj R-squared =  0.0156
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  3777.3325          3   1259.1108      6.76  0.0002
+                         |
+                mobile16 |  3750.7312          2   1875.3656     10.06  0.0000
+                     age |  61.258461          1   61.258461      0.33  0.5665
+                         |
+                Residual |  202378.93      1,086    186.3526  
+              -----------+----------------------------------------------------
+                   Total |  206156.26      1,089   189.30786  
+
+. margins mobile16, atmeans
+
+Adjusted predictions                                     Number of obs = 1,090
+
+Expression: Linear prediction, predict()
+At: age        = 43.82294 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    mobile16 |
+  SAME CITY  |   44.10402   .6863205    64.26   0.000     42.75736    45.45068
+SAME ST,D..  |   48.68809    .832746    58.47   0.000     47.05412    50.32206
+DIFFERENT..  |   47.18756   .6621822    71.26   0.000     45.88826    48.48686
+------------------------------------------------------------------------------
+
+. tab mobile16 sex if age > 29 & age < 60 & wrkstat==1, col chi2
+
++-------------------+
+| Key               |
+|-------------------|
+|     frequency     |
+| column percentage |
++-------------------+
+
+      GEOGRAPHIC |
+  MOBILITY SINCE |    RESPONDENTS SEX
+          AGE 16 |      MALE     FEMALE |     Total
+-----------------+----------------------+----------
+       SAME CITY |       188        212 |       400 
+                 |     32.36      40.85 |     36.36 
+-----------------+----------------------+----------
+SAME ST,DIF CITY |       142        129 |       271 
+                 |     24.44      24.86 |     24.64 
+-----------------+----------------------+----------
+ DIFFERENT STATE |       251        178 |       429 
+                 |     43.20      34.30 |     39.00 
+-----------------+----------------------+----------
+           Total |       581        519 |     1,100 
+                 |    100.00     100.00 |    100.00 
+
+          Pearson chi2(2) =  11.0260   Pr = 0.004
+
+. anova prestg80 mobile16 sex c.age if age > 29 & age < 60 & wrkstat==1
+
+                         Number of obs =      1,090    R-squared     =  0.0207
+                         Root MSE      =     13.641    Adj R-squared =  0.0171
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  4263.5812          4   1065.8953      5.73  0.0001
+                         |
+                mobile16 |  3917.4313          2   1958.7156     10.53  0.0000
+                     sex |   486.2487          1    486.2487      2.61  0.1063
+                     age |  45.250989          1   45.250989      0.24  0.6220
+                         |
+                Residual |  201892.68      1,085    186.0762  
+              -----------+----------------------------------------------------
+                   Total |  206156.26      1,089   189.30786  
+
+. margins mobile16#sex, atmeans
+
+Adjusted predictions                                     Number of obs = 1,090
+
+Expression: Linear prediction, predict()
+At: age        = 43.82294 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+mobile16#sex |
+  SAME CITY #|
+       MALE  |   43.39188   .8151133    53.23   0.000      41.7925    44.99126
+  SAME CITY #|
+     FEMALE  |   44.73797   .7900194    56.63   0.000     43.18783    46.28811
+SAME ST,D.. #|
+       MALE  |   48.04545   .9222139    52.10   0.000     46.23592    49.85497
+SAME ST,D.. #|
+     FEMALE  |   49.39154   .9390421    52.60   0.000     47.54899    51.23408
+DIFFERENT.. #|
+       MALE  |   46.62672   .7471295    62.41   0.000     45.16074     48.0927
+DIFFERENT.. #|
+     FEMALE  |   47.97281   .8208526    58.44   0.000     46.36217    49.58344
+------------------------------------------------------------------------------
+
+. estat esize
+
+Effect sizes for linear models
+
+-----------------------------------------------------------------
+             Source | Eta-squared     df     [95% conf. interval]
+--------------------+--------------------------------------------
+              Model |   .0206813       4      .005142    .0371681
+                    |
+           mobile16 |   .0190342       2     .0055725    .0369944
+                sex |   .0024027       1            .    .0116359
+                age |   .0002241       1            .     .005375
+-----------------------------------------------------------------
+Note: Eta-squared values for individual model terms are partial.
+
+. estat esize, omega
+
+Effect sizes for linear models
+
+-------------------------------------------
+             Source | Omega-squared      df
+--------------------+----------------------
+              Model |    .0170555         4
+                    |
+           mobile16 |    .0172104         2
+                sex |    .0014819         1
+                age |   -.0006967         1
+-------------------------------------------
+Note: Omega-squared values for individual
+      model terms are partial.
+
+. 
+. estat esize, epsilon
+
+Effect sizes for linear models
+
+---------------------------------------------
+             Source | Epsilon-squared      df
+--------------------+------------------------
+              Model |     .0170709          4
+                    |
+           mobile16 |      .017226          2
+                sex |     .0014832          1
+                age |    -.0006974          1
+---------------------------------------------
+Note: Epsilon-squared values for individual
+      model terms are partial.
+
+. 
+. *****************
+. * TWO-WAY ANOVA 
+. ******************
+. use gss2006_chapter9_2way, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. tabulate married, summarize(tvhours)
+
+    Are you |  Summary of HOURS PER DAY WATCHING
+ married or |                 TV
+       not? |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+  Not Marri |   3.2383268   2.5831093       1,028
+    Married |    2.611691   1.8652487         958
+------------+------------------------------------
+      Total |   2.9360524   2.2864047       1,986
+
+. tabulate workfull, summarize(tvhours)
+
+Does R work |  Summary of HOURS PER DAY WATCHING
+  full time |                 TV
+     or not |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+   Not Full |   3.4610778   2.5842414       1,002
+  Full-time |   2.4010152    1.784816         985
+------------+------------------------------------
+      Total |   2.9355813   2.2859255       1,987
+
+. anova tvhours workfull married
+
+                         Number of obs =      1,986    R-squared     =  0.0701
+                         Root MSE      =     2.2059    Adj R-squared =  0.0692
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  727.59783          2   363.79892     74.76  0.0000
+                         |
+                workfull |  532.87817          1   532.87817    109.51  0.0000
+                 married |  170.13923          1   170.13923     34.96  0.0000
+                         |
+                Residual |  9649.2808      1,983   4.8660014  
+              -----------+----------------------------------------------------
+                   Total |  10376.879      1,985   5.2276467  
+
+. tabulate workfull married, summarize(tvhours)
+
+  Means, Standard Deviations and Frequencies of HOURS PER DAY WATCHING TV
+
+    Does R |
+ work full | Are you married or
+   time or |        not?
+       not | Not Marri    Married |     Total
+-----------+----------------------+----------
+  Not Full | 3.8215613  3.0431034 | 3.4610778
+           | 2.8497018  2.1664723 | 2.5842414
+           |       538        464 |      1002
+-----------+----------------------+----------
+ Full-time | 2.5979592  2.2064777 | 2.4014228
+           | 2.0761564  1.4163199 | 1.7856777
+           |       490        494 |       984
+-----------+----------------------+----------
+     Total | 3.2383268   2.611691 | 2.9360524
+           | 2.5831093  1.8652487 | 2.2864047
+           |      1028        958 |      1986
+
+. anova tvhours workfull married workfull#married
+
+                         Number of obs =      1,986    R-squared     =  0.0719
+                         Root MSE      =    2.20434    Adj R-squared =  0.0705
+
+                  Source | Partial SS         df         MS        F    Prob>F
+        -----------------+----------------------------------------------------
+                   Model |   746.1336          3    248.7112     51.18  0.0000
+                         |
+                workfull |  525.37818          1   525.37818    108.12  0.0000
+                 married |  169.42138          1   169.42138     34.87  0.0000
+        workfull#married |  18.535767          1   18.535767      3.81  0.0509
+                         |
+                Residual |   9630.745      1,982   4.8591045  
+        -----------------+----------------------------------------------------
+                   Total |  10376.879      1,985   5.2276467  
+
+. margins workfull married workfull#married
+
+Predictive margins                                       Number of obs = 1,986
+
+Expression: Linear prediction, predict()
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    workfull |
+   Not Full  |   3.446051   .0696898    49.45   0.000     3.309378    3.582724
+  Full-time  |   2.409118    .070326    34.26   0.000     2.271197    2.547038
+             |
+     married |
+Not Married  |   3.215305   .0688002    46.73   0.000     3.080377    3.350234
+    Married  |   2.628582    .071277    36.88   0.000     2.488796    2.768368
+             |
+    workfull#|
+     married |
+   Not Full #|
+Not Married  |   3.821561   .0950357    40.21   0.000     3.635181    4.007942
+   Not Full #|
+    Married  |   3.043103   .1023338    29.74   0.000      2.84241    3.243797
+  Full-time #|
+Not Married  |   2.597959   .0995818    26.09   0.000     2.402663    2.793255
+  Full-time #|
+    Married  |   2.206478   .0991778    22.25   0.000     2.011974    2.400982
+------------------------------------------------------------------------------
+
+. quietly: margins workfull
+
+. marginsplot
+
+Variables that uniquely identify margins: workfull
+
+. quietly: margins married
+
+. marginsplot, noci
+
+Variables that uniquely identify margins: married
+
+. quietly: margins workfull#married
+
+. marginsplot, noci
+
+Variables that uniquely identify margins: workfull married
+
+. 
+. ******************************************
+. * REPEATED MEASURES 
+. ******************************************
+. use wide9, clear
+
+. list
+
+     +----------------------------+
+     | id   test1   test2   test3 |
+     |----------------------------|
+  1. |  1      55      85      80 |
+  2. |  2      65      90      85 |
+  3. |  3      34      70      71 |
+  4. |  4      55      75      65 |
+  5. |  5      61      59      65 |
+     |----------------------------|
+  6. |  6      79      94      85 |
+  7. |  7      63      59      59 |
+  8. |  8      45      65      50 |
+  9. |  9      54      70      60 |
+ 10. | 10      69      90      82 |
+     +----------------------------+
+
+. reshape long test, i(id) j(time)
+(j = 1 2 3)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations               10   ->   30          
+Number of variables                   4   ->   3           
+j variable (3 values)                     ->   time
+xij variables:
+                      test1 test2 test3   ->   test
+-----------------------------------------------------------------------------
+
+. list
+
+     +------------------+
+     | id   time   test |
+     |------------------|
+  1. |  1      1     55 |
+  2. |  1      2     85 |
+  3. |  1      3     80 |
+  4. |  2      1     65 |
+  5. |  2      2     90 |
+     |------------------|
+  6. |  2      3     85 |
+  7. |  3      1     34 |
+  8. |  3      2     70 |
+  9. |  3      3     71 |
+ 10. |  4      1     55 |
+     |------------------|
+ 11. |  4      2     75 |
+ 12. |  4      3     65 |
+ 13. |  5      1     61 |
+ 14. |  5      2     59 |
+ 15. |  5      3     65 |
+     |------------------|
+ 16. |  6      1     79 |
+ 17. |  6      2     94 |
+ 18. |  6      3     85 |
+ 19. |  7      1     63 |
+ 20. |  7      2     59 |
+     |------------------|
+ 21. |  7      3     59 |
+ 22. |  8      1     45 |
+ 23. |  8      2     65 |
+ 24. |  8      3     50 |
+ 25. |  9      1     54 |
+     |------------------|
+ 26. |  9      2     70 |
+ 27. |  9      3     60 |
+ 28. | 10      1     69 |
+ 29. | 10      2     90 |
+ 30. | 10      3     82 |
+     +------------------+
+
+. xtset id
+
+Panel variable: id (balanced)
+
+. xtreg test
+
+Random-effects GLS regression                   Number of obs     =         30
+Group variable: id                              Number of groups  =         10
+
+R-squared:                                      Obs per group:
+     Within  = 0.0000                                         min =          3
+     Between = 0.0000                                         avg =        3.0
+     Overall = 0.0000                                         max =          3
+
+                                                Wald chi2(0)      =          .
+corr(u_i, X) = 0 (assumed)                      Prob > chi2       =          .
+
+------------------------------------------------------------------------------
+        test | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       _cons |   67.96667   3.510988    19.36   0.000     61.08526    74.84808
+-------------+----------------------------------------------------------------
+     sigma_u |  8.8746414
+     sigma_e |  11.555662
+         rho |  .37099391   (fraction of variance due to u_i)
+------------------------------------------------------------------------------
+
+. anova test id time, repeated(time)
+
+                         Number of obs =         30    R-squared     =  0.8284
+                         Root MSE      =    7.56233    Adj R-squared =  0.7235
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  4969.5667         11   451.77879      7.90  0.0001
+                         |
+                      id |     3328.3          9   369.81111      6.47  0.0004
+                    time |  1641.2667          2   820.63333     14.35  0.0002
+                         |
+                Residual |     1029.4         18   57.188889  
+              -----------+----------------------------------------------------
+                   Total |  5998.9667         29   206.86092  
+
+
+Between-subjects error term:  id
+                     Levels:  10        (9 df)
+     Lowest b.s.e. variable:  id
+
+Repeated variable: time
+                                          Huynh-Feldt epsilon        =  0.7848
+                                          Greenhouse-Geisser epsilon =  0.6969
+                                          Box's conservative epsilon =  0.5000
+
+                                            ------------ Prob > F ------------
+                  Source |     df      F    Regular    H-F      G-G      Box
+              -----------+----------------------------------------------------
+                    time |      2    14.35   0.0002   0.0007   0.0012   0.0043
+                Residual |     18
+              ----------------------------------------------------------------
+
+. margins time
+
+Predictive margins                                          Number of obs = 30
+
+Expression: Linear prediction, predict()
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        time |
+          1  |         58    2.39142    24.25   0.000     52.97581    63.02419
+          2  |       75.7    2.39142    31.65   0.000     70.67581    80.72419
+          3  |       70.2    2.39142    29.35   0.000     65.17581    75.22419
+------------------------------------------------------------------------------
+
+. 
+. *******************************************
+. * INTRACLASS CORRELATION
+. *******************************************
+. use intraclass, clear
+(Intraclass Correlation Data)
+
+. list
+
+     +------------------+
+     | medicare   group |
+     |------------------|
+  1. |       21       1 |
+  2. |       22       1 |
+  3. |       22       1 |
+  4. |       17       2 |
+  5. |       16       2 |
+     |------------------|
+  6. |       15       2 |
+  7. |       15       3 |
+  8. |       16       3 |
+  9. |       18       4 |
+ 10. |       19       4 |
+     |------------------|
+ 11. |       20       4 |
+ 12. |       12       5 |
+ 13. |       12       5 |
+ 14. |       14       5 |
+ 15. |       14       6 |
+     |------------------|
+ 16. |       21       6 |
+ 17. |       24       6 |
+ 18. |       23       7 |
+ 19. |       22       7 |
+ 20. |       26       8 |
+     |------------------|
+ 21. |       24       8 |
+ 22. |       29       8 |
+ 23. |       21       9 |
+ 24. |       23       9 |
+ 25. |       24       9 |
+     |------------------|
+ 26. |       35      10 |
+ 27. |       33      10 |
+ 28. |       45      10 |
+     +------------------+
+
+. xtset group
+
+Panel variable: group (unbalanced)
+
+. xtreg medicare
+
+Random-effects GLS regression                   Number of obs     =         28
+Group variable: group                           Number of groups  =         10
+
+R-squared:                                      Obs per group:
+     Within  = 0.0000                                         min =          2
+     Between = 0.0000                                         avg =        2.8
+     Overall = 0.0000                                         max =          3
+
+                                                Wald chi2(0)      =          .
+corr(u_i, X) = 0 (assumed)                      Prob > chi2       =          .
+
+------------------------------------------------------------------------------
+    medicare | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       _cons |   21.38081   2.214351     9.66   0.000     17.04077    25.72086
+-------------+----------------------------------------------------------------
+     sigma_u |  6.7602232
+     sigma_e |  2.9907264
+         rho |  .83631742   (fraction of variance due to u_i)
+------------------------------------------------------------------------------
+
+. power oneway, n(40(20)500) power(0.80) alpha(0.05) ngroups(3) graph table
+
+Performing iteration ...
+
+Estimated between-group variance for one-way ANOVA
+F test for group effect
+H0: delta = 0  versus  Ha: delta != 0
+
+  +---------------------------------------------------------------------+
+  |   alpha   power       N N_per_group   delta     N_g   Var_m   Var_e |
+  |---------------------------------------------------------------------|
+  |     .05      .8      40          13   .5185       3   .2688       1 |
+  |     .05      .8      60          20   .4115       3   .1693       1 |
+  |     .05      .8      80          26   .3586       3   .1286       1 |
+  |     .05      .8     100          33   .3169       3   .1004       1 |
+  |     .05      .8     120          40    .287       3  .08238       1 |
+  |     .05      .8     140          46   .2672       3  .07139       1 |
+  |     .05      .8     160          53   .2485       3  .06177       1 |
+  |     .05      .8     180          60   .2333       3  .05444       1 |
+  |     .05      .8     200          66   .2223       3  .04942       1 |
+  |     .05      .8     220          73   .2112       3  .04461       1 |
+  |     .05      .8     240          80   .2016       3  .04066       1 |
+  |     .05      .8     260          86   .1944       3  .03779       1 |
+  |     .05      .8     280          93   .1868       3  .03491       1 |
+  |     .05      .8     300         100   .1801       3  .03244       1 |
+  |     .05      .8     320         106   .1749       3  .03059       1 |
+  |     .05      .8     340         113   .1693       3  .02868       1 |
+  |     .05      .8     360         120   .1643       3  .02699       1 |
+  |     .05      .8     380         126   .1603       3  .02569       1 |
+  |     .05      .8     400         133    .156       3  .02433       1 |
+  |     .05      .8     420         140    .152       3  .02311       1 |
+  |     .05      .8     440         146   .1488       3  .02215       1 |
+  |     .05      .8     460         153   .1454       3  .02113       1 |
+  |     .05      .8     480         160   .1421       3   .0202       1 |
+  |     .05      .8     500         166   .1395       3  .01946       1 |
+  +---------------------------------------------------------------------+
+
+. power twoway, nrows(2) ncols(3) power(0.80) n(100(20)300) factor(column) ///
+>   graph table
+
+Performing iteration ...
+
+Estimated column variance for two-way ANOVA
+F test for column effect
+H0: delta = 0  versus  Ha: delta != 0
+
+  +--------------------------------------------------------------------+
+  |   alpha   power       N N_per_cell   delta     N_r     N_c   Var_c |
+  |--------------------------------------------------------------------|
+  |     .05      .8     100         16   .3221       2       3   .1038 |
+  |     .05      .8     120         20   .2871       2       3  .08244 |
+  |     .05      .8     140         23   .2673       2       3  .07143 |
+  |     .05      .8     160         26    .251       2       3  .06301 |
+  |     .05      .8     180         30   .2334       2       3  .05446 |
+  |     .05      .8     200         33   .2223       2       3  .04943 |
+  |     .05      .8     220         36   .2127       2       3  .04525 |
+  |     .05      .8     240         40   .2017       2       3  .04066 |
+  |     .05      .8     260         43   .1944       2       3  .03779 |
+  |     .05      .8     280         46   .1879       2       3   .0353 |
+  |     .05      .8     300         50   .1801       2       3  .03245 |
+  +--------------------------------------------------------------------+
+  +---------+
+  |   Var_e |
+  |---------|
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  |       1 |
+  +---------+
+
+. power repeated, n(100(10)300) power(0.80) alpha(0.05) corr(0.60) nrepeated(4)
+>  ///
+>   ngroups(1) graph table
+
+Performing iteration ...
+
+Estimated within-subject variance for repeated-measures ANOVA
+F test for within subject with Greenhouse–Geisser correction
+H0: delta = 0  versus  Ha: delta != 0
+
+  +---------------------------------------------------------------------+
+  |   alpha   power       N N_per_group   delta     N_g   N_rep   Var_w |
+  |---------------------------------------------------------------------|
+  |     .05      .8     100         100   .3324       1       4  .01105 |
+  |     .05      .8     110         110   .3167       1       4  .01003 |
+  |     .05      .8     120         120   .3031       1       4  .00919 |
+  |     .05      .8     130         130   .2911       1       4  .00847 |
+  |     .05      .8     140         140   .2804       1       4  .00786 |
+  |     .05      .8     150         150   .2708       1       4  .00733 |
+  |     .05      .8     160         160   .2621       1       4  .00687 |
+  |     .05      .8     170         170   .2542       1       4  .00646 |
+  |     .05      .8     180         180    .247       1       4   .0061 |
+  |     .05      .8     190         190   .2404       1       4  .00578 |
+  |     .05      .8     200         200   .2342       1       4  .00549 |
+  |     .05      .8     210         210   .2286       1       4  .00522 |
+  |     .05      .8     220         220   .2233       1       4  .00499 |
+  |     .05      .8     230         230   .2183       1       4  .00477 |
+  |     .05      .8     240         240   .2137       1       4  .00457 |
+  |     .05      .8     250         250   .2094       1       4  .00438 |
+  |     .05      .8     260         260   .2053       1       4  .00421 |
+  |     .05      .8     270         270   .2014       1       4  .00406 |
+  |     .05      .8     280         280   .1978       1       4  .00391 |
+  |     .05      .8     290         290   .1943       1       4  .00378 |
+  |     .05      .8     300         300   .1911       1       4  .00365 |
+  +---------------------------------------------------------------------+
+  +-------------------------+
+  |  Var_we   Var_e    corr |
+  |-------------------------|
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  |      .1       1      .6 |
+  +-------------------------+
+
+. 
+end of do-file

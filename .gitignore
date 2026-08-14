@@ -1,0 +1,7 @@
+# Stata 临时日志
+*.smcl
+# 验证运行产生的本地日志副本（正式验证记录在 verify/ 下）
+data/agis6/verify-*.log
+# Windows 临时文件
+Thumbs.db
+.DS_Store

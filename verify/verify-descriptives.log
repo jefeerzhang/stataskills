@@ -1,0 +1,304 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do verify-descriptives.do 
+
+. * ============================================================
+. * 验证脚本：stata-descriptives（第 5–8 章核心命令）
+. * 数据来源：data/agis6/
+. * ============================================================
+. version 15
+
+. set more off
+
+. 
+. * ---- ch5 描述统计 ----
+. use descriptive_gss, clear
+
+. tab1 sex marital
+
+-> tabulation of sex  
+
+respondents |
+        sex |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       male |      1,228       44.41       44.41
+     female |      1,537       55.59      100.00
+------------+-----------------------------------
+      Total |      2,765      100.00
+
+-> tabulation of marital  
+
+      marital |
+       status |      Freq.     Percent        Cum.
+--------------+-----------------------------------
+      married |      1,269       45.90       45.90
+      widowed |        247        8.93       54.83
+     divorced |        445       16.09       70.92
+    separated |         96        3.47       74.39
+never married |        708       25.61      100.00
+--------------+-----------------------------------
+        Total |      2,765      100.00
+
+. summarize polviews, detail
+
+          think of self as liberal or conservative
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%            1              1
+ 5%            2              1
+10%            2              1       Obs               1,331
+25%            3              1       Sum of wgt.       1,331
+
+50%            4                      Mean           4.124718
+                        Largest       Std. dev.      1.385016
+75%            5              7
+90%            6              7       Variance       1.918268
+95%            6              7       Skewness      -.1509408
+99%            7              7       Kurtosis       2.693351
+
+. tabstat wwwhr, statistics(mean median sd iqr skewness kurtosis) by(sex) colum
+> ns(statistics)
+
+Summary for variables: wwwhr
+Group variable: sex (respondents sex)
+
+   sex |      Mean       p50        SD       IQR  Skewness  Kurtosis
+-------+------------------------------------------------------------
+  male |  7.106892         4   9.98914         9  3.608189   25.2577
+female |  4.920046         2  7.688655         4  4.409274  36.78389
+-------+------------------------------------------------------------
+ Total |  5.907878         3  8.866734         6  3.997908  30.39248
+--------------------------------------------------------------------
+
+. 
+. * ---- ch6 交叉表与卡方 ----
+. use gss2006_chapter6, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. tabulate sex abany, chi2 expected row V
+
++--------------------+
+| Key                |
+|--------------------|
+|     frequency      |
+| expected frequency |
+|   row percentage   |
++--------------------+
+
+           |   ABORTION IF WOMAN
+           | WANTS FOR ANY REASON
+    Gender |       YES         NO |     Total
+-----------+----------------------+----------
+      MALE |       350        478 |       828 
+           |     334.8      493.2 |     828.0 
+           |     42.27      57.73 |    100.00 
+-----------+----------------------+----------
+    FEMALE |       434        677 |     1,111 
+           |     449.2      661.8 |   1,111.0 
+           |     39.06      60.94 |    100.00 
+-----------+----------------------+----------
+     Total |       784      1,155 |     1,939 
+           |     784.0    1,155.0 |   1,939.0 
+           |     40.43      59.57 |    100.00 
+
+          Pearson chi2(1) =   2.0254   Pr = 0.155
+               Cramér's V =   0.0323
+
+. tabulate sex abany, chi2 row V
+
++----------------+
+| Key            |
+|----------------|
+|   frequency    |
+| row percentage |
++----------------+
+
+           |   ABORTION IF WOMAN
+           | WANTS FOR ANY REASON
+    Gender |       YES         NO |     Total
+-----------+----------------------+----------
+      MALE |       350        478 |       828 
+           |     42.27      57.73 |    100.00 
+-----------+----------------------+----------
+    FEMALE |       434        677 |     1,111 
+           |     39.06      60.94 |    100.00 
+-----------+----------------------+----------
+     Total |       784      1,155 |     1,939 
+           |     40.43      59.57 |    100.00 
+
+          Pearson chi2(1) =   2.0254   Pr = 0.155
+               Cramér's V =   0.0323
+
+. use chapter6_aspirin, clear
+
+. tabulate aspirin heartattack, chi2 row V
+
++----------------+
+| Key            |
+|----------------|
+|   frequency    |
+| row percentage |
++----------------+
+
+           |     Heart Attack
+ Condition | No Attack     Attack |     Total
+-----------+----------------------+----------
+   Placebo |    10,845        189 |    11,034 
+           |     98.29       1.71 |    100.00 
+-----------+----------------------+----------
+   Aspirin |    10,933        104 |    11,037 
+           |     99.06       0.94 |    100.00 
+-----------+----------------------+----------
+     Total |    21,778        293 |    22,071 
+           |     98.67       1.33 |    100.00 
+
+          Pearson chi2(1) =  25.0139   Pr = 0.000
+               Cramér's V =  -0.0337
+
+. 
+. * ---- ch7 均值与比例检验 ----
+. use gss2002_chapter7, clear
+
+. recode prayer (1=1) (2=0), gen(schpray)
+(518 differences between prayer and schpray)
+
+. prtest schpray == 0.5
+
+One-sample test of proportion                   Number of obs      =       859
+
+------------------------------------------------------------------------------
+    Variable |       Mean   Std. err.                     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     schpray |   .3969732   .0166937                      .3642542    .4296923
+------------------------------------------------------------------------------
+    p = proportion(schpray)                                       z =  -6.0392
+H0: p = 0.5
+
+     Ha: p < 0.5                 Ha: p != 0.5                   Ha: p > 0.5
+ Pr(Z < z) = 0.0000         Pr(|Z| > |z|) = 0.0000          Pr(Z > z) = 1.0000
+
+. ttest hrs1 == 40 if wrkstat == 1
+
+One-sample t test
+------------------------------------------------------------------------------
+Variable |     Obs        Mean    Std. err.   Std. dev.   [95% conf. interval]
+---------+--------------------------------------------------------------------
+    hrs1 |   1,419    45.97111    .3156328    11.88977    45.35195    46.59026
+------------------------------------------------------------------------------
+    mean = mean(hrs1)                                             t =  18.9179
+H0: mean = 40                                    Degrees of freedom =     1418
+
+    Ha: mean < 40               Ha: mean != 40                 Ha: mean > 40
+ Pr(T < t) = 1.0000         Pr(|T| > |t|) = 0.0000          Pr(T > t) = 0.0000
+
+. ttest paeduc == maeduc
+
+Paired t test
+------------------------------------------------------------------------------
+Variable |     Obs        Mean    Std. err.   Std. dev.   [95% conf. interval]
+---------+--------------------------------------------------------------------
+  paeduc |   1,903    11.42091    .0917118    4.000779    11.24105    11.60078
+  maeduc |   1,903    11.58276    .0781763    3.410314    11.42944    11.73608
+---------+--------------------------------------------------------------------
+    diff |   1,903   -.1618497    .0729315    3.181518   -.3048838   -.0188156
+------------------------------------------------------------------------------
+     mean(diff) = mean(paeduc - maeduc)                           t =  -2.2192
+ H0: mean(diff) = 0                              Degrees of freedom =     1902
+
+ Ha: mean(diff) < 0           Ha: mean(diff) != 0           Ha: mean(diff) > 0
+ Pr(T < t) = 0.0133         Pr(|T| > |t|) = 0.0266          Pr(T > t) = 0.9867
+
+. use wide, clear
+
+. prtest treat == control
+
+Two-sample test of proportions                 treat: Number of obs =       20
+                                             control: Number of obs =       20
+------------------------------------------------------------------------------
+    Variable |       Mean   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       treat |        .75   .0968246                      .5602273    .9397727
+     control |        .35   .1066536                      .1409627    .5590373
+-------------+----------------------------------------------------------------
+        diff |         .4   .1440486                      .1176699    .6823301
+             |  under H0:   .1573213     2.54   0.011
+------------------------------------------------------------------------------
+        diff = prop(treat) - prop(control)                        z =   2.5426
+    H0: diff = 0
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(Z < z) = 0.9945         Pr(|Z| > |z|) = 0.0110          Pr(Z > z) = 0.0055
+
+. 
+. * ---- ch8 相关与回归 ----
+. use gss2006_chapter8_selected, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. pwcorr prestg80 hrs1, obs sig
+
+             | prestg80     hrs1
+-------------+------------------
+    prestg80 |   1.0000 
+             |
+             |     4270
+             |
+        hrs1 |   0.1556   1.0000 
+             |   0.0000
+             |     2715     2739
+             |
+
+. regress prestg80 hrs1, beta
+
+      Source |       SS           df       MS      Number of obs   =     2,715
+-------------+----------------------------------   F(1, 2713)      =     67.32
+       Model |   13125.035         1   13125.035   Prob > F        =    0.0000
+    Residual |  528901.224     2,713  194.950691   R-squared       =    0.0242
+-------------+----------------------------------   Adj R-squared   =    0.0239
+       Total |  542026.259     2,714  199.714908   Root MSE        =    13.962
+
+------------------------------------------------------------------------------
+    prestg80 | Coefficient  Std. err.      t    P>|t|                     Beta
+-------------+----------------------------------------------------------------
+        hrs1 |   .1546416   .0188468     8.21   0.000                 .1556109
+       _cons |   38.14733   .8362129    45.62   0.000                        .
+------------------------------------------------------------------------------
+
+. use spearman, clear
+
+. spearman age liberal
+
+ Number of obs =       5
+Spearman's rho =      -0.8208
+
+Test of H0: age and liberal are independent
+    Prob > |t| =       0.0886
+
+. 
+. display "VERIFY DESCRIPTIVES DONE"
+VERIFY DESCRIPTIVES DONE
+
+. exit, clear
+
+end of do-file

@@ -1,0 +1,160 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do verify-basics.do 
+
+. * ============================================================
+. * 验证脚本：stata-basics（第 1–4 章核心命令）
+. * 数据来源：data/agis6/
+. * ============================================================
+. version 15
+
+. set more off
+
+. 
+. * ---- ch3 缺失值处理 + 反向编码 + 量表构建 ----
+. use relate, clear
+
+. rename R0000100-R3828700, lower
+
+. mvdecode _all, mv(-5=.a\-4=.b\-3=.c\-2=.d\-1=.e)
+    r3483600: 4467 missing values generated
+    r3483700: 4469 missing values generated
+    r3483800: 4468 missing values generated
+    r3483900: 4470 missing values generated
+    r3485200: 5608 missing values generated
+    r3485300: 5611 missing values generated
+    r3485400: 5610 missing values generated
+    r3485500: 5611 missing values generated
+    r3828100: 775 missing values generated
+    r3828700: 775 missing values generated
+
+. recode r3483700 r3483900 r3485300 r3485500 (0=4)(1=3)(2=2)(3=1)(4=0), generat
+> e(momcritr momblamer dadcritr dadblamer)
+(3,230 differences between r3483700 and momcritr)
+(4,037 differences between r3483900 and momblamer)
+(2,562 differences between r3485300 and dadcritr)
+(3,070 differences between r3485500 and dadblamer)
+
+. tabulate momcritr r3483700
+
+ RECODE of |
+  r3483700 |
+     (MOTH |
+ CRITICIZE |
+  RS IDEAS |              MOTH CRITICIZE RS IDEAS 1999
+     1999) |         0          1          2          3          4 |     Total
+-----------+-------------------------------------------------------+----------
+         0 |         0          0          0          0        145 |       145 
+         1 |         0          0          0        324          0 |       324 
+         2 |         0          0      1,285          0          0 |     1,285 
+         3 |         0      1,654          0          0          0 |     1,654 
+         4 |     1,107          0          0          0          0 |     1,107 
+-----------+-------------------------------------------------------+----------
+     Total |     1,107      1,654      1,285        324        145 |     4,515 
+
+. clonevar mompraise = r3483600
+(4,467 missing values generated)
+
+. clonevar momhelp = r3483800
+(4,468 missing values generated)
+
+. clonevar dadpraise = r3485200
+(5,608 missing values generated)
+
+. clonevar dadhelp = r3485400
+(5,610 missing values generated)
+
+. egen float mommissing = rowmiss(mompraise momcritr momhelp momblamer)
+
+. egen float mommean = rowmean(mompraise momcritr momhelp momblamer)
+(4,466 missing values generated)
+
+. tabulate mommissing
+
+ mommissing |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      4,510       50.20       50.20
+          1 |          6        0.07       50.27
+          2 |          2        0.02       50.29
+          4 |      4,466       49.71      100.00
+------------+-----------------------------------
+      Total |      8,984      100.00
+
+. summarize mommean
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     mommean |      4,518     3.01459    .7113604          0          4
+
+. 
+. * ---- ch4 do-file 与 list ----
+. use firstsurvey_chapter4, clear
+
+. summarize
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          id |         20        10.5     5.91608          1         20
+      gender |         20         1.5    .5129892          1          2
+   education |         20       14.45    2.946452          8         20
+      sch_st |         18    3.444444    1.149026          2          5
+     sch_com |         20         3.5    1.395481          1          5
+-------------+---------------------------------------------------------
+      prison |         17    3.176471    1.550617          1          5
+     conserv |         19    2.947368    1.544657          1          5
+
+. list gender education prison in 1/5, nolabel
+
+     +----------------------------+
+     | gender   educat~n   prison |
+     |----------------------------|
+  1. |      2         15        4 |
+  2. |      1         12        1 |
+  3. |      1         16        3 |
+  4. |      1          8        . |
+  5. |      2         12        3 |
+     +----------------------------+
+
+. numlabel _all, add
+
+. list gender education prison in 1/5
+
+     +-------------------------------------------+
+     |   gender   educat~n                prison |
+     |-------------------------------------------|
+  1. | 2. woman         15           4. too long |
+  2. |   1. man         12   1. much too lenient |
+  3. |   1. man         16        3. about right |
+  4. |   1. man          8                     . |
+  5. | 2. woman         12        3. about right |
+     +-------------------------------------------+
+
+. 
+. display "VERIFY BASICS DONE"
+VERIFY BASICS DONE
+
+. exit, clear
+
+end of do-file

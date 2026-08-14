@@ -1,0 +1,92 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter2.do 
+
+. * chapter2.do
+. * This reproduces the results shown in Chapter 2
+. * The programming to label variables, values, etc. is developed in c3.do
+. * and are not shown here.
+. * Once the dataset is created, we run the command 
+. * save firstsurvey
+. * We then can open it and run the set of commands for Chapter 2
+. use firstsurvey, clear
+
+. codebook gender
+
+-------------------------------------------------------------------------------
+gender                                                     Participant's gender
+-------------------------------------------------------------------------------
+
+                  Type: Numeric (float)
+                 Label: sex
+
+                 Range: [1,2]                         Units: 1
+         Unique values: 2                         Missing .: 0/20
+
+            Tabulation: Freq.   Numeric  Label
+                           10         1  Male
+                           10         2  Female
+
+. codebook education
+
+-------------------------------------------------------------------------------
+education                                                    Years of education
+-------------------------------------------------------------------------------
+
+                  Type: Numeric (float)
+
+                 Range: [8,20]                        Units: 1
+         Unique values: 10                        Missing .: 0/20
+
+                  Mean:   14.45
+             Std. dev.: 2.94645
+
+           Percentiles:     10%       25%       50%       75%       90%
+                           11.5        12      14.5      16.5        18
+
+. describe
+
+Contains data from firstsurvey.dta
+ Observations:            20                  
+    Variables:             7                  9 Feb 2016 12:11
+                                              (_dta has notes)
+-------------------------------------------------------------------------------
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+-------------------------------------------------------------------------------
+id              float   %9.0g                 Respondent's identification
+gender          float   %9.0g      sex        Participant's gender
+education       float   %9.0g                 Years of education
+sch_st          float   %9.0g      rating     Ratings of schools in your state
+sch_com         float   %9.0g      rating     Ratings of schools in your
+                                                community of origin
+prison          float   %16.0g     harsh      Ratings of prison sentences
+conserv         float   %17.0g     conserv  * Conservatism/liberalism
+                                            * indicated variables have notes
+-------------------------------------------------------------------------------
+Sorted by: 
+
+. 
+end of do-file

@@ -1,0 +1,557 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter12.do 
+
+. * chapter12.do
+. * How do I create a scale
+. use gss2006_chapter12, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. * ***************************************************
+. * Constructing a Scale & Alpha
+. * ***************************************************
+. recode empathy2 empathy4 empathy5 (1=5 "Does not describe very well") ///
+>   (2=4) (3=3) (4=2) (5=1 "Describes very well"), pre(rev) label(empathy)
+(1,027 differences between empathy2 and revempathy2)
+(1,050 differences between empathy4 and revempathy4)
+(1,152 differences between empathy5 and revempathy5)
+
+. egen empathy = rowmean(empathy1 revempathy2 empathy3 revempathy4 ///
+>   revempathy5 empathy6 empathy7)
+(8,820 missing values generated)
+
+. egen miss = rowmiss(empathy1 revempathy2 empathy3 revempathy4 ///
+>    revempathy5 empathy6 empathy7) 
+
+. egen empathya = rowmean(empathy1 revempathy2 empathy3 revempathy4 ///
+>    revempathy5 empathy6 empathy7) if miss < 3
+(8,828 missing values generated)
+
+. alpha empathy1 revempathy2 empathy3 revempathy4 revempathy5 /// 
+>   empathy6 empathy7, asis item min(5)
+
+Test scale = mean(unstandardized items)
+
+                                                            Average
+                             Item-test     Item-rest       interitem
+Item         |  Obs  Sign   correlation   correlation     covariance      alpha
+-------------+-----------------------------------------------------------------
+empathy1     | 1349    +       0.6701        0.5151        .3722749      0.7034
+revempathy2  | 1346    +       0.5957        0.3933        .3954405      0.7332
+empathy3     | 1348    +       0.5733        0.4027        .4118086      0.7281
+revempathy4  | 1349    +       0.6303        0.4474        .3827332      0.7191
+revempathy5  | 1342    +       0.6088        0.4277        .3932707      0.7233
+empathy6     | 1347    +       0.6762        0.5358        .3764256      0.7004
+empathy7     | 1349    +       0.6701        0.5204        .3748609      0.7026
+-------------+-----------------------------------------------------------------
+Test scale   |                                             .3866902      0.7462
+-------------------------------------------------------------------------------
+
+. 
+. * ***************************************************
+. * Test retest correlation
+. *****************************************************
+. use "retest.dta", clear
+
+. pwcorr score1 score2, obs sig
+
+             |   score1   score2
+-------------+------------------
+      score1 |   1.0000 
+             |
+             |       10
+             |
+      score2 |   0.7702   1.0000 
+             |   0.0091
+             |       10       10
+             |
+
+. 
+. use gss2006_chapter12, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. recode empathy2 empathy4 empathy5 (1=5 "Does not describe very well") ///
+>   (2=4) (3=3) (4=2) (5=1 "Describes very well"), pre(rev) label(empathy)
+(1,027 differences between empathy2 and revempathy2)
+(1,050 differences between empathy4 and revempathy4)
+(1,152 differences between empathy5 and revempathy5)
+
+. alpha empathy1 revempathy2 empathy3 revempathy4 revempathy5 empathy6 empathy7
+> , ///
+>         asis item min(5)
+
+Test scale = mean(unstandardized items)
+
+                                                            Average
+                             Item-test     Item-rest       interitem
+Item         |  Obs  Sign   correlation   correlation     covariance      alpha
+-------------+-----------------------------------------------------------------
+empathy1     | 1349    +       0.6701        0.5151        .3722749      0.7034
+revempathy2  | 1346    +       0.5957        0.3933        .3954405      0.7332
+empathy3     | 1348    +       0.5733        0.4027        .4118086      0.7281
+revempathy4  | 1349    +       0.6303        0.4474        .3827332      0.7191
+revempathy5  | 1342    +       0.6088        0.4277        .3932707      0.7233
+empathy6     | 1347    +       0.6762        0.5358        .3764256      0.7004
+empathy7     | 1349    +       0.6701        0.5204        .3748609      0.7026
+-------------+-----------------------------------------------------------------
+Test scale   |                                             .3866902      0.7462
+-------------------------------------------------------------------------------
+
+. 
+. *****************************************************
+. * KR20
+. *****************************************************
+. clear
+
+. use "kuder-richardson.dta"
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. alpha newartmus1 newartmus2 newartview newartinfo newartmus3, asis item
+
+Test scale = mean(unstandardized items)
+
+                                                            Average
+                             Item-test     Item-rest       interitem
+Item         |  Obs  Sign   correlation   correlation     covariance      alpha
+-------------+-----------------------------------------------------------------
+newartmus1   |   90    +       0.5767        0.3432        .0578652      0.5626
+newartmus2   |   90    +       0.6600        0.3966        .0485019      0.5327
+newartview   |   90    +       0.5948        0.3123        .0563046      0.5784
+newartinfo   |   90    +       0.6420        0.3831        .0506242      0.5404
+newartmus3   |   90    +       0.6423        0.3749        .0506242      0.5448
+-------------+-----------------------------------------------------------------
+Test scale   |                                              .052784      0.6066
+-------------------------------------------------------------------------------
+
+. 
+. *****************************************************
+. * Kappa
+. *****************************************************
+. clear
+
+. use "kappa1.dta"
+
+. tabulate coder1 coder2
+
+              |                   coder2
+       coder1 |      Easy  Hard want   Unwanted  Very unwa |     Total
+--------------+--------------------------------------------+----------
+         Easy |         5          1          0          0 |         6 
+  Hard wanted |         0          3          0          0 |         3 
+     Unwanted |         1          2          2          0 |         5 
+Very unwanted |         0          1          1          4 |         6 
+--------------+--------------------------------------------+----------
+        Total |         6          7          3          4 |        20 
+
+. kap coder1 coder2
+
+             Expected
+Agreement   agreement     Kappa   Std. err.         Z      Prob>Z
+-----------------------------------------------------------------
+  70.00%      24.00%     0.6053     0.1221       4.96      0.0000
+
+. 
+. use gss_2016ch12, clear
+
+. alpha hope1-hope6, asis item label generate(hope)
+
+Test scale = mean(unstandardized items)
+
+Items        | S  it-cor  ir-cor   ii-cov   alpha   Label
+-------------+-----------------------------------------------------------------
+hope1        | +   0.611   0.466   1.4439   0.843   i could get out of a jam
+hope2        | +   0.766   0.626    1.189   0.816   i am energetically pursuing
+             |                                        my goals
+hope3        | +   0.719   0.587   1.3138   0.822   there are many ways around
+             |                                        problems i face
+hope4        | +   0.799   0.677    1.155   0.802   i see myself as successful
+hope5        | +   0.805   0.711   1.2194   0.800   i can think of many ways to
+             |                                        reach my current goals
+hope6        | +   0.782   0.656   1.1828   0.808   i am meeting my current
+             |                                        goals
+-------------+-----------------------------------------------------------------
+Test scale   |                     1.2507   0.842   mean(unstandardized items)
+-------------------------------------------------------------------------------
+
+. 
+. generate work = 1 if wrkstat <= 2
+(1,201 missing values generated)
+
+. replace work = 0 if wrkstat > 2 & wrkstat < .
+(1,198 real changes made)
+
+. 
+. ttest hope, by(work)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. err.   Std. dev.   [95% conf. interval]
+---------+--------------------------------------------------------------------
+       0 |     607    5.885146    .0541057    1.333022    5.778888    5.991403
+       1 |     838    6.249841    .0383753    1.110897    6.174518    6.325164
+---------+--------------------------------------------------------------------
+Combined |   1,445    6.096644    .0321489     1.22208     6.03358    6.159707
+---------+--------------------------------------------------------------------
+    diff |           -.3646954    .0644468               -.4911148   -.2382759
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -5.6589
+H0: diff = 0                                     Degrees of freedom =     1443
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0000         Pr(|T| > |t|) = 0.0000          Pr(T > t) = 1.0000
+
+. esize twosample hope, by(work)
+
+Effect size based on mean comparison
+
+                               Obs per group:
+                                     work==0 =        607
+                                     work==1 =        838
+---------------------------------------------------------
+        Effect size |   Estimate     [95% conf. interval]
+--------------------+------------------------------------
+          Cohen's d |  -.3016105    -.4066004   -.1965172
+         Hedges's g |  -.3014537     -.406389    -.196415
+---------------------------------------------------------
+
+. 
+. recode hapmar (3 = 1 "Not too happy") (1 = 3 "Very happy"), pre(new) label(ne
+> w)
+(774 differences between hapmar and newhapmar)
+
+. recode health (4 = 1 "Poor") (3 = 2 "Fair") (2 = 3 "Good") (1 = 4 "Excellent"
+> ), ///
+> pre(new) label(new)
+(1,885 differences between health and newhealth)
+
+. recode coneduc (3 = 1 "Harly any") (1 = 3 "A great deal"), ///
+>       pre(new) label(new)
+(850 differences between coneduc and newconeduc)
+
+. 
+. 
+. pwcorr hope cesd1 newhapmar newhealth newconeduc, obs sig
+
+             |     hope    cesd1 newhap~r newhea~h newcon~c
+-------------+---------------------------------------------
+        hope |   1.0000 
+             |
+             |     1447
+             |
+       cesd1 |  -0.3571   1.0000 
+             |   0.0000
+             |      962      963
+             |
+   newhapmar |   0.2003  -0.3396   1.0000 
+             |   0.0000   0.0000
+             |      603      415     1204
+             |
+   newhealth |   0.4028  -0.3109   0.2117   1.0000 
+             |   0.0000   0.0000   0.0000
+             |      972      962      819     1885
+             |
+  newconeduc |   0.0745  -0.0193   0.0169   0.0993   1.0000 
+             |   0.0046   0.5503   0.6318   0.0019
+             |     1443      960      809      973     1948
+             |
+
+. 
+. *******************************************************
+. * PCF analysis using 2006 GSS national priorities data
+. *******************************************************
+. use gss2006_chapter12_selected, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. codebook natspac natenvir natheal natcity natcrime natdrug nateduc natrace //
+> /
+>         natarms natfare natroad natsoc natchld natsci, compact
+
+Variable    Obs Unique      Mean  Min  Max  Label
+-------------------------------------------------------------------------------
+natspac    1407      3  2.237385    1    3  SPACE EXPLORATION PROGRAM
+natenvir   1446      3  1.375519    1    3  IMPROVING  PROTECTING ENVIRONMENT
+natheal    1451      3  1.297726    1    3  IMPROVING  PROTECTING NATIONS HE...
+natcity    1349      3  1.634544    1    3  SOLVING PROBLEMS OF BIG CITIES
+natcrime   1448      3  1.446133    1    3  HALTING RISING CRIME RATE
+natdrug    1428      3   1.45028    1    3  DEALING WITH DRUG ADDICTION
+nateduc    1462      3  1.317373    1    3  IMPROVING NATIONS EDUCATION SYSTEM
+natrace    1348      3  1.780415    1    3  IMPROVING THE CONDITIONS OF BLACKS
+natarms    1442      3  2.144938    1    3  MILITARY, ARMAMENTS, AND DEFENSE
+natfare    1434      3  2.110879    1    3  WELFARE
+natroad    2899      3  1.756468    1    3  HIGHWAYS AND BRIDGES
+natsoc     2864      3  1.407472    1    3  SOCIAL SECURITY
+natchld    2758      3  1.517041    1    3  ASSISTANCE FOR CHILDCARE
+natsci     2786      3  1.688442    1    3  SUPPORTING SCIENTIFIC RESEARCH
+-------------------------------------------------------------------------------
+
+. recode natspac natenvir natheal natcity natcrime natdrug nateduc natrace ///
+>         natarms natfare natroad natsoc natchld natsci ///
+>         (1=3 "Too little")(2=2 "About right") (3=1 "Too much"), pre(r) label(
+> revnat)
+(756 differences between natspac and rnatspac)
+(1,081 differences between natenvir and rnatenvir)
+(1,169 differences between natheal and rnatheal)
+(839 differences between natcity and rnatcity)
+(992 differences between natcrime and rnatcrime)
+(1,027 differences between natdrug and rnatdrug)
+(1,152 differences between nateduc and rnateduc)
+(746 differences between natrace and rnatrace)
+(967 differences between natarms and rnatarms)
+(919 differences between natfare and rnatfare)
+(1,392 differences between natroad and rnatroad)
+(1,973 differences between natsoc and rnatsoc)
+(1,756 differences between natchld and rnatchld)
+(1,570 differences between natsci and rnatsci)
+
+. factor rnatspac rnatenvir rnatheal rnatcity rnatcrime rnatdrug ///
+>         rnateduc rnatrace rnatarms rnatfare rnatroad rnatsoc rnatchld rnatsci
+> , pcf
+(obs=1,082)
+
+Factor analysis/correlation                      Number of obs    =      1,082
+    Method: principal-component factors          Retained factors =          4
+    Rotation: (unrotated)                        Number of params =         50
+
+    --------------------------------------------------------------------------
+         Factor  |   Eigenvalue   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      3.00301      1.62066            0.2145       0.2145
+        Factor2  |      1.38235      0.12372            0.0987       0.3132
+        Factor3  |      1.25863      0.22702            0.0899       0.4031
+        Factor4  |      1.03161      0.06974            0.0737       0.4768
+        Factor5  |      0.96187      0.05047            0.0687       0.5455
+        Factor6  |      0.91140      0.09801            0.0651       0.6106
+        Factor7  |      0.81339      0.02930            0.0581       0.6687
+        Factor8  |      0.78409      0.05945            0.0560       0.7247
+        Factor9  |      0.72464      0.01659            0.0518       0.7765
+       Factor10  |      0.70804      0.04088            0.0506       0.8271
+       Factor11  |      0.66717      0.06485            0.0477       0.8747
+       Factor12  |      0.60231      0.01414            0.0430       0.9178
+       Factor13  |      0.58817      0.02484            0.0420       0.9598
+       Factor14  |      0.56333            .            0.0402       1.0000
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(91) = 1701.47 Prob>chi2 = 0.0000
+
+Factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------------------------------------
+        Variable |  Factor1   Factor2   Factor3   Factor4 |   Uniqueness 
+    -------------+----------------------------------------+--------------
+        rnatspac |  -0.0405    0.6150   -0.4468   -0.0108 |      0.4204  
+       rnatenvir |   0.5562    0.0698   -0.1925    0.1629 |      0.6221  
+        rnatheal |   0.6298    0.0420    0.0923    0.2638 |      0.5235  
+        rnatcity |   0.5264   -0.0580   -0.0677   -0.4598 |      0.5036  
+       rnatcrime |   0.4533    0.1160    0.5154   -0.4234 |      0.3361  
+        rnatdrug |   0.5381    0.1048    0.3346   -0.2872 |      0.5051  
+        rnateduc |   0.5997    0.0035    0.0425    0.3838 |      0.4912  
+        rnatrace |   0.5921   -0.2286   -0.2660   -0.1885 |      0.4909  
+        rnatarms |  -0.1087    0.4926    0.4682    0.1719 |      0.4968  
+        rnatfare |   0.4725   -0.1726   -0.3547   -0.0629 |      0.6172  
+        rnatroad |   0.1421    0.5022    0.0704   -0.1269 |      0.7065  
+         rnatsoc |   0.4196   -0.1209    0.3374    0.4575 |      0.4862  
+        rnatchld |   0.5369   -0.1049   -0.1130    0.1343 |      0.6699  
+         rnatsci |   0.3057    0.6059   -0.2865    0.0493 |      0.4549  
+    ---------------------------------------------------------------------
+
+. screeplot
+
+. rotate
+
+Factor analysis/correlation                      Number of obs    =      1,082
+    Method: principal-component factors          Retained factors =          4
+    Rotation: orthogonal varimax (Kaiser off)    Number of params =         50
+
+    --------------------------------------------------------------------------
+         Factor  |     Variance   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      1.96564      0.29211            0.1404       0.1404
+        Factor2  |      1.67353      0.04093            0.1195       0.2599
+        Factor3  |      1.63260      0.22876            0.1166       0.3766
+        Factor4  |      1.40384            .            0.1003       0.4768
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(91) = 1701.47 Prob>chi2 = 0.0000
+
+Rotated factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------------------------------------
+        Variable |  Factor1   Factor2   Factor3   Factor4 |   Uniqueness 
+    -------------+----------------------------------------+--------------
+        rnatspac |  -0.1295   -0.0143   -0.1449    0.7360 |      0.4204  
+       rnatenvir |   0.4623    0.3085    0.0890    0.2471 |      0.6221  
+        rnatheal |   0.6328    0.1374    0.2186    0.0975 |      0.5235  
+        rnatcity |   0.0262    0.4831    0.5052    0.0839 |      0.5036  
+       rnatcrime |   0.0941   -0.0276    0.8066   -0.0599 |      0.3361  
+        rnatdrug |   0.2187    0.0910    0.6618    0.0296 |      0.5051  
+        rnateduc |   0.6899    0.1329    0.0932    0.0808 |      0.4912  
+        rnatrace |   0.2352    0.6335    0.2259    0.0389 |      0.4909  
+        rnatarms |   0.1103   -0.6491    0.1967    0.1763 |      0.4968  
+        rnatfare |   0.2255    0.5642    0.0480    0.1061 |      0.6172  
+        rnatroad |   0.0039   -0.1708    0.2889    0.4252 |      0.7065  
+         rnatsoc |   0.6718   -0.1136    0.0967   -0.2007 |      0.4862  
+        rnatchld |   0.4475    0.3393    0.1075    0.0559 |      0.6699  
+         rnatsci |   0.1777    0.0334    0.0832    0.7110 |      0.4549  
+    ---------------------------------------------------------------------
+
+Factor rotation matrix
+
+    --------------------------------------------------
+                 | Factor1  Factor2  Factor3  Factor4 
+    -------------+------------------------------------
+         Factor1 |  0.6858   0.4868   0.5116   0.1758 
+         Factor2 | -0.0311  -0.4717   0.1951   0.8594 
+         Factor3 |  0.1676  -0.6530   0.5615  -0.4798 
+         Factor4 |  0.7075  -0.3379  -0.6204  -0.0190 
+    --------------------------------------------------
+
+. rotate, promax
+
+Factor analysis/correlation                      Number of obs    =      1,082
+    Method: principal-component factors          Retained factors =          4
+    Rotation: oblique promax (Kaiser off)        Number of params =         50
+
+    --------------------------------------------------------------------------
+         Factor  |     Variance   Proportion    Rotated factors are correlated
+    -------------+------------------------------------------------------------
+        Factor1  |      2.46691       0.1762
+        Factor2  |      1.99629       0.1426
+        Factor3  |      1.97508       0.1411
+        Factor4  |      1.53936       0.1100
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(91) = 1701.47 Prob>chi2 = 0.0000
+
+Rotated factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------------------------------------
+        Variable |  Factor1   Factor2   Factor3   Factor4 |   Uniqueness 
+    -------------+----------------------------------------+--------------
+        rnatspac |  -0.1749   -0.0294   -0.2002    0.7787 |      0.4204  
+       rnatenvir |   0.4216    0.2378   -0.0437    0.2156 |      0.6221  
+        rnatheal |   0.6293    0.0361    0.0830    0.0460 |      0.5235  
+        rnatcity |  -0.1558    0.4893    0.5021    0.0281 |      0.5036  
+       rnatcrime |  -0.0338   -0.0575    0.8526   -0.1366 |      0.3361  
+        rnatdrug |   0.1026    0.0462    0.6555   -0.0410 |      0.5051  
+        rnateduc |   0.7179    0.0258   -0.0616    0.0370 |      0.4912  
+        rnatrace |   0.1043    0.6229    0.1546   -0.0083 |      0.4909  
+        rnatarms |   0.1864   -0.7131    0.2047    0.1762 |      0.4968  
+        rnatfare |   0.1329    0.5519   -0.0371    0.0790 |      0.6172  
+        rnatroad |  -0.0535   -0.2080    0.2760    0.4176 |      0.7065  
+         rnatsoc |   0.7637   -0.2163   -0.0129   -0.2463 |      0.4862  
+        rnatchld |   0.4121    0.2818   -0.0035    0.0167 |      0.6699  
+         rnatsci |   0.1175   -0.0307   -0.0209    0.7162 |      0.4549  
+    ---------------------------------------------------------------------
+
+Factor rotation matrix
+
+    --------------------------------------------------
+                 | Factor1  Factor2  Factor3  Factor4 
+    -------------+------------------------------------
+         Factor1 |  0.8518   0.6478   0.6627   0.3341 
+         Factor2 | -0.0024  -0.4155   0.2418   0.8357 
+         Factor3 |  0.1455  -0.5818   0.5015  -0.4341 
+         Factor4 |  0.5032  -0.2632  -0.5008  -0.0396 
+    --------------------------------------------------
+
+. estat common
+
+Correlation matrix of the promax(3) rotated common factors
+
+    ------------------------------------------------------
+         Factors |  Factor1   Factor2   Factor3   Factor4 
+    -------------+----------------------------------------
+         Factor1 |        1                               
+         Factor2 |    .3358         1                     
+         Factor3 |    .3849     .1688         1           
+         Factor4 |    .1995     .1322     .2256         1 
+    ------------------------------------------------------
+
+. factor rnatenvir rnatheal rnatcity rnatcrime rnatdrug rnateduc rnatrace ///
+>         rnatfare rnatsoc rnatchld, pcf
+(obs=1,135)
+
+Factor analysis/correlation                      Number of obs    =      1,135
+    Method: principal-component factors          Retained factors =          3
+    Rotation: (unrotated)                        Number of params =         27
+
+    --------------------------------------------------------------------------
+         Factor  |   Eigenvalue   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      2.94126      1.83310            0.2941       0.2941
+        Factor2  |      1.10816      0.09362            0.1108       0.4049
+        Factor3  |      1.01454      0.08420            0.1015       0.5064
+        Factor4  |      0.93033      0.13208            0.0930       0.5994
+        Factor5  |      0.79825      0.04634            0.0798       0.6793
+        Factor6  |      0.75191      0.07668            0.0752       0.7544
+        Factor7  |      0.67522      0.06269            0.0675       0.8220
+        Factor8  |      0.61254      0.01632            0.0613       0.8832
+        Factor9  |      0.59622      0.02465            0.0596       0.9428
+       Factor10  |      0.57157            .            0.0572       1.0000
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(45) = 1522.19 Prob>chi2 = 0.0000
+
+Factor loadings (pattern matrix) and unique variances
+
+    -----------------------------------------------------------
+        Variable |  Factor1   Factor2   Factor3 |   Uniqueness 
+    -------------+------------------------------+--------------
+       rnatenvir |   0.5440   -0.1390    0.1408 |      0.6649  
+        rnatheal |   0.6293    0.0257    0.2689 |      0.5310  
+        rnatcity |   0.5374   -0.0293   -0.4412 |      0.5157  
+       rnatcrime |   0.4631    0.6570   -0.2687 |      0.2818  
+        rnatdrug |   0.5489    0.4936   -0.1987 |      0.4156  
+        rnateduc |   0.6030   -0.0226    0.3777 |      0.4933  
+        rnatrace |   0.6049   -0.3745   -0.3074 |      0.3993  
+        rnatfare |   0.4883   -0.4851   -0.2283 |      0.4741  
+         rnatsoc |   0.4265    0.1263    0.5628 |      0.4854  
+        rnatchld |   0.5431   -0.1414    0.1001 |      0.6750  
+    -----------------------------------------------------------
+
+. predict libfscore, norotate
+(option regression assumed; regression scoring)
+
+Scoring coefficients (method = regression)
+
+    --------------------------------------------
+        Variable |  Factor1   Factor2   Factor3 
+    -------------+------------------------------
+       rnatenvir |  0.18495  -0.12544   0.13878 
+        rnatheal |  0.21396   0.02323   0.26509 
+        rnatcity |  0.18271  -0.02643  -0.43487 
+       rnatcrime |  0.15744   0.59285  -0.26484 
+        rnatdrug |  0.18662   0.44539  -0.19584 
+        rnateduc |  0.20501  -0.02039   0.37227 
+        rnatrace |  0.20566  -0.33798  -0.30301 
+        rnatfare |  0.16601  -0.43778  -0.22506 
+         rnatsoc |  0.14501   0.11401   0.55475 
+        rnatchld |  0.18465  -0.12764   0.09870 
+    --------------------------------------------
+
+
+. egen libmean = rowmean(rnatenvir rnatheal rnatcity rnatcrime rnatdrug ///
+>         rnateduc rnatrace rnatfare rnatsoc rnatchld)
+(1,549 missing values generated)
+
+. 
+. 
+end of do-file

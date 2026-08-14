@@ -1,0 +1,433 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter13.do 
+
+. * Chaper 13 missing.do
+. clear
+
+. use chapter13_missing 
+(NLS Women 14-26 in 1968)
+
+. misstable summarize ln_wagem gradem agem ttl_expm tenurem not_smsa south blac
+> km
+                                                               Obs<.
+                                                +------------------------------
+               |                                | Unique
+      Variable |     Obs=.     Obs>.     Obs<.  | values        Min         Max
+  -------------+--------------------------------+------------------------------
+      ln_wagem |       300               1,393  |    393   .0682788    4.242752
+        gradem |       148               1,545  |     13          0          18
+          agem |       165               1,528  |     12         18          30
+      ttl_expm |       206               1,487  |   >500   .0833333    15.53846
+       tenurem |       200               1,493  |     74          0        15.5
+        blackm |        99               1,594  |      2          0           1
+  -----------------------------------------------------------------------------
+
+. misstable patterns ln_wagem gradem agem ttl_expm tenurem not_smsa south black
+> m
+
+       Missing-value patterns
+         (1 means complete)
+
+              |   Pattern
+    Percent   |  1  2  3  4    5  6
+  ------------+---------------------
+       51%    |  1  1  1  1    1  1
+              |
+        8     |  1  1  1  1    1  0
+        7     |  1  1  0  1    1  1
+        6     |  1  1  1  0    1  1
+        5     |  1  1  1  1    0  1
+        4     |  1  0  1  1    1  1
+        4     |  0  1  1  1    1  1
+        3     |  1  1  1  1    0  0
+        2     |  1  0  1  1    1  0
+        1     |  1  1  0  1    1  0
+        1     |  1  1  1  0    0  0
+        1     |  1  1  1  0    0  1
+        1     |  1  1  1  0    1  0
+       <1     |  1  1  0  0    1  1
+       <1     |  1  0  1  0    1  1
+       <1     |  1  0  1  1    0  1
+       <1     |  0  1  1  1    1  0
+       <1     |  0  0  1  1    1  1
+       <1     |  0  1  1  0    1  1
+       <1     |  1  0  1  1    0  0
+       <1     |  1  0  0  1    1  1
+       <1     |  0  1  0  1    1  1
+       <1     |  0  1  1  1    0  0
+       <1     |  0  1  1  1    0  1
+       <1     |  1  0  1  0    0  0
+       <1     |  1  0  1  0    1  0
+       <1     |  1  1  0  1    0  1
+       <1     |  0  0  1  1    1  0
+       <1     |  0  1  0  1    1  0
+       <1     |  0  1  1  0    0  1
+       <1     |  0  1  1  0    1  0
+       <1     |  1  0  0  1    0  0
+       <1     |  1  0  0  1    0  1
+       <1     |  1  0  1  0    0  1
+       <1     |  1  1  0  0    1  0
+       <1     |  1  1  0  1    0  0
+  ------------+---------------------
+      100%    |
+
+  Variables are  (1) blackm  (2) gradem  (3) agem  (4) tenurem  (5) ttl_expm
+                 (6) ln_wagem
+
+. quietly misstable summarize ln_wagem gradem agem ttl_expm tenurem not_smsa so
+> uth blackm, gen(miss_)
+
+. describe miss_*
+
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+-------------------------------------------------------------------------------
+miss_ln_wagem   byte    %8.0g                 (ln_wagem>=.)
+miss_gradem     byte    %8.0g                 (gradem>=.)
+miss_agem       byte    %8.0g                 (agem>=.)
+miss_ttl_expm   byte    %8.0g                 (ttl_expm>=.)
+miss_tenurem    byte    %8.0g                 (tenurem>=.)
+miss_blackm     byte    %8.0g                 (blackm>=.)
+
+. logit miss_ln_wagem gradem agem ttl_expm tenurem not_smsa south blackm if ln_
+> wagem <= .
+
+Iteration 0:  Log likelihood = -403.74139  
+Iteration 1:  Log likelihood = -360.58198  
+Iteration 2:  Log likelihood = -355.74223  
+Iteration 3:  Log likelihood = -355.71763  
+Iteration 4:  Log likelihood = -355.71763  
+
+Logistic regression                                     Number of obs =  1,004
+                                                        LR chi2(7)    =  96.05
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -355.71763                             Pseudo R2     = 0.1189
+
+------------------------------------------------------------------------------
+miss_ln_wa~m | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      gradem |  -.2169795   .0567263    -3.83   0.000    -.3281611   -.1057979
+        agem |  -.0432874   .0353402    -1.22   0.221     -.112553    .0259782
+    ttl_expm |  -.1016218    .089468    -1.14   0.256    -.2769758    .0737323
+     tenurem |  -.3059213   .0951379    -3.22   0.001    -.4923881   -.1194544
+    not_smsa |   .6863585   .2077421     3.30   0.001     .2791915    1.093526
+       south |   .5413507   .2111148     2.56   0.010     .1275734     .955128
+      blackm |   .4290138   .2228665     1.92   0.054    -.0077965    .8658241
+       _cons |   1.955771   .9863615     1.98   0.047     .0225379    3.889004
+------------------------------------------------------------------------------
+
+. logit miss_gradem ln_wagem agem ttl_expm tenurem not_smsa south blackm if gra
+> dem <= .
+
+Iteration 0:  Log likelihood = -246.15662  
+Iteration 1:  Log likelihood = -238.28205  
+Iteration 2:  Log likelihood = -237.73057  
+Iteration 3:  Log likelihood = -237.72894  
+Iteration 4:  Log likelihood = -237.72894  
+
+Logistic regression                                     Number of obs =    934
+                                                        LR chi2(7)    =  16.86
+                                                        Prob > chi2   = 0.0184
+Log likelihood = -237.72894                             Pseudo R2     = 0.0342
+
+------------------------------------------------------------------------------
+ miss_gradem | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    ln_wagem |   .2695893   .3489102     0.77   0.440    -.4142622    .9534408
+        agem |   .0542961   .0478084     1.14   0.256    -.0394065    .1479988
+    ttl_expm |  -.1385977   .1265322    -1.10   0.273    -.3865961    .1094008
+     tenurem |  -.1062088    .115685    -0.92   0.359    -.3329472    .1205296
+    not_smsa |   .6572388    .290396     2.26   0.024     .0880731    1.226404
+       south |  -.0156357   .2814542    -0.06   0.956    -.5672758    .5360044
+      blackm |    .761226   .2851649     2.67   0.008     .2023131    1.320139
+       _cons |  -3.976687    1.10386    -3.60   0.000    -6.140213   -1.813161
+------------------------------------------------------------------------------
+
+. logit miss_agem ln_wagem gradem ttl_expm tenurem not_smsa south blackm if age
+> m <= .
+
+Iteration 0:  Log likelihood =  -354.3733  
+Iteration 1:  Log likelihood = -342.72395  
+Iteration 2:  Log likelihood = -342.22225  
+Iteration 3:  Log likelihood = -342.22122  
+Iteration 4:  Log likelihood = -342.22122  
+
+Logistic regression                                     Number of obs =    980
+                                                        LR chi2(7)    =  24.30
+                                                        Prob > chi2   = 0.0010
+Log likelihood = -342.22122                             Pseudo R2     = 0.0343
+
+------------------------------------------------------------------------------
+   miss_agem | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    ln_wagem |   .9181833   .3209006     2.86   0.004     .2892297    1.547137
+      gradem |   .1228256   .0612649     2.00   0.045     .0027485    .2429026
+    ttl_expm |   .0978063   .0845415     1.16   0.247    -.0678919    .2635046
+     tenurem |  -.0805206   .0788989    -1.02   0.307    -.2351595    .0741184
+    not_smsa |   .1182329   .2540479     0.47   0.642    -.3796919    .6161577
+       south |   .3818776   .2201956     1.73   0.083    -.0496978    .8134531
+      blackm |  -.0298654   .2590504    -0.12   0.908    -.5375948     .477864
+       _cons |  -5.509405   .8345973    -6.60   0.000    -7.145186   -3.873625
+------------------------------------------------------------------------------
+
+. logit miss_ttl_expm ln_wagem gradem agem tenurem not_smsa south blackm if ttl
+> _expm <= .
+
+Iteration 0:  Log likelihood = -302.89427  
+Iteration 1:  Log likelihood = -265.40398  
+Iteration 2:  Log likelihood = -255.64998  
+Iteration 3:  Log likelihood = -255.35843  
+Iteration 4:  Log likelihood = -255.35787  
+Iteration 5:  Log likelihood = -255.35787  
+
+Logistic regression                                     Number of obs =    957
+                                                        LR chi2(7)    =  95.07
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -255.35787                             Pseudo R2     = 0.1569
+
+------------------------------------------------------------------------------
+miss_ttl_e~m | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    ln_wagem |  -.8973566   .2732438    -3.28   0.001    -1.432905   -.3618086
+      gradem |  -.1303834   .0718836    -1.81   0.070    -.2712727    .0105058
+        agem |  -.0077369   .0408591    -0.19   0.850    -.0878194    .0723455
+     tenurem |  -.7490211   .1435105    -5.22   0.000    -1.030297   -.4677457
+    not_smsa |   .0258449   .2645944     0.10   0.922    -.4927507    .5444404
+       south |   .3117676   .2506075     1.24   0.213    -.1794142    .8029494
+      blackm |   .2259341   .2710595     0.83   0.405    -.3053327     .757201
+       _cons |   1.594433   1.160028     1.37   0.169    -.6791804    3.868046
+------------------------------------------------------------------------------
+
+. logit miss_tenurem ln_wagem gradem agem ttl_expm not_smsa south blackm if ten
+> urem <= .
+
+Iteration 0:  Log likelihood = -323.58807  
+Iteration 1:  Log likelihood =  -314.4155  
+Iteration 2:  Log likelihood = -314.03488  
+Iteration 3:  Log likelihood = -314.03339  
+Iteration 4:  Log likelihood = -314.03339  
+
+Logistic regression                                     Number of obs =    966
+                                                        LR chi2(7)    =  19.11
+                                                        Prob > chi2   = 0.0079
+Log likelihood = -314.03339                             Pseudo R2     = 0.0295
+
+------------------------------------------------------------------------------
+miss_tenurem | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    ln_wagem |   .0937059   .2853392     0.33   0.743    -.4655487    .6529604
+      gradem |   .1336834   .0676526     1.98   0.048     .0010867    .2662802
+        agem |  -.0896294   .0447838    -2.00   0.045     -.177404   -.0018549
+    ttl_expm |  -.0762402   .0848592    -0.90   0.369    -.2425613    .0900809
+    not_smsa |   .0591225   .2540699     0.23   0.816    -.4388454    .5570904
+       south |   .2992152   .2318788     1.29   0.197    -.1552589    .7536893
+      blackm |  -.8002675   .3302917    -2.42   0.015    -1.447627   -.1529076
+       _cons |  -1.655138   1.071291    -1.54   0.122     -3.75483    .4445535
+------------------------------------------------------------------------------
+
+. logit miss_blackm ln_wagem gradem agem ttl_expm tenurem not_smsa south if bla
+> ckm <= .
+
+Iteration 0:  Log likelihood = -235.62547  
+Iteration 1:  Log likelihood = -213.55159  
+Iteration 2:  Log likelihood = -207.93607  
+Iteration 3:  Log likelihood = -207.64862  
+Iteration 4:  Log likelihood =  -207.6458  
+Iteration 5:  Log likelihood =  -207.6458  
+
+Logistic regression                                     Number of obs =    930
+                                                        LR chi2(7)    =  55.96
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -207.6458                              Pseudo R2     = 0.1187
+
+------------------------------------------------------------------------------
+ miss_blackm | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    ln_wagem |    .549458   .4212926     1.30   0.192    -.2762602    1.375176
+      gradem |  -.2323647   .0995154    -2.33   0.020    -.4274114    -.037318
+        agem |  -.0018709   .0500902    -0.04   0.970    -.1000459     .096304
+    ttl_expm |  -.0826227   .1197676    -0.69   0.490    -.3173629    .1521175
+     tenurem |  -.0137933   .1131328    -0.12   0.903    -.2355295     .207943
+    not_smsa |  -1.548726   .6060187    -2.56   0.011    -2.736501   -.3609512
+       south |  -2.748559   .7284243    -3.77   0.000    -4.176244   -1.320873
+       _cons |   .2375686   1.504657     0.16   0.875    -2.711504    3.186641
+------------------------------------------------------------------------------
+
+. 
+. * Arbitrary missing-data pattern
+. 
+. * If we were concerned about distributions we could transform variables 
+. * prior to the imputation and then reverse this latter
+. * With a very big dataset, mlong only has complete case observations 
+. * in the 0 imputation. This can save space if that is a problem.
+. mi set flong
+
+. mi register imputed ln_wagem gradem agem ttl_expm tenurem blackm
+(828 m=0 obs now marked as incomplete)
+
+. mi register regular not_smsa south 
+
+. mi impute mvn ln_wagem gradem agem ttl_expm tenurem blackm, add(20) rseed(212
+> 1)
+
+Performing EM optimization:
+  observed log likelihood = -5347.0692 at iteration 12
+
+Performing MCMC data augmentation ... 
+
+Multivariate imputation                     Imputations =       20
+Multivariate normal regression                    added =       20
+Imputed: m=1 through m=20                       updated =        0
+
+Prior: uniform                               Iterations =     2000
+                                                burn-in =      100
+                                                between =      100
+
+------------------------------------------------------------------
+                   |               Observations per m             
+                   |----------------------------------------------
+          Variable |   Complete   Incomplete   Imputed |     Total
+-------------------+-----------------------------------+----------
+          ln_wagem |       1393          300       300 |      1693
+            gradem |       1545          148       148 |      1693
+              agem |       1528          165       165 |      1693
+          ttl_expm |       1487          206       206 |      1693
+           tenurem |       1493          200       200 |      1693
+            blackm |       1594           99        99 |      1693
+------------------------------------------------------------------
+(Complete + Incomplete = Total; Imputed is the minimum across m
+ of the number of filled-in observations.)
+
+. mi estimate, dftable: regress ln_wagem gradem agem ttl_expm tenurem not_smsa 
+> south blackm
+
+Multiple-imputation estimates                   Imputations       =         20
+Linear regression                               Number of obs     =      1,693
+                                                Average RVI       =     0.4091
+                                                Largest FMI       =     0.4344
+                                                Complete DF       =       1685
+DF adjustment:   Small sample                   DF:     min       =      95.58
+                                                        avg       =     229.31
+                                                        max       =     670.94
+Model F test:       Equal FMI                   F(   7,  771.9)   =      69.45
+Within VCE type:          OLS                   Prob > F          =     0.0000
+
+------------------------------------------------------------------------------
+             |                                                      % increase
+    ln_wagem | Coefficient  Std. err.      t    P>|t|           df   std. err.
+-------------+----------------------------------------------------------------
+      gradem |   .0765953   .0066448    11.53   0.000         95.6       31.69
+        agem |   .0208913   .0039398     5.30   0.000        163.2       20.92
+    ttl_expm |   .0144492   .0099197     1.46   0.148        110.3       28.25
+     tenurem |    .060269   .0089321     6.75   0.000        154.1       21.84
+    not_smsa |  -.1148061   .0256842    -4.47   0.000        151.3       22.15
+       south |  -.0833896   .0211312    -3.95   0.000        670.9        6.86
+      blackm |  -.0293377    .025407    -1.15   0.249        222.0       16.64
+       _cons |   .1247307   .0993645     1.26   0.210        267.1       14.51
+------------------------------------------------------------------------------
+
+. mibeta ln_wagem gradem agem ttl_expm tenurem not_smsa south blackm, fisherz m
+> iopts(vartable)
+
+Multiple-imputation estimates                   Imputations       =         20
+Linear regression
+
+Variance information
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+      gradem |   .000025   .000018   .000044   .734106   .433913       .978765
+        agem |   .000011   4.7e-06   .000016    .46211   .323137         .9841
+    ttl_expm |    .00006   .000037   .000098   .644875   .401654       .980313
+     tenurem |   .000054   .000025    .00008   .484594   .333845       .983582
+    not_smsa |   .000442   .000207    .00066   .491946   .337276       .983416
+       south |   .000391   .000053   .000447   .141827   .125629       .993758
+      blackm |   .000474   .000163   .000646   .360586   .270397        .98666
+       _cons |    .00753   .002232   .009873   .311198   .241821       .988053
+------------------------------------------------------------------------------
+Note: FMIs are based on Rubin's large-sample degrees of freedom.
+
+
+Multiple-imputation estimates                   Imputations       =         20
+Linear regression                               Number of obs     =      1,693
+                                                Average RVI       =     0.4091
+                                                Largest FMI       =     0.4339
+                                                Complete DF       =       1685
+DF adjustment:   Small sample                   DF:     min       =      95.58
+                                                        avg       =     229.31
+                                                        max       =     670.94
+Model F test:       Equal FMI                   F(   7,  771.9)   =      69.45
+Within VCE type:          OLS                   Prob > F          =     0.0000
+
+------------------------------------------------------------------------------
+    ln_wagem | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      gradem |   .0765953   .0066448    11.53   0.000     .0634046    .0897859
+        agem |   .0208913   .0039398     5.30   0.000     .0131118    .0286708
+    ttl_expm |   .0144492   .0099197     1.46   0.148    -.0052086    .0341071
+     tenurem |    .060269   .0089321     6.75   0.000     .0426237    .0779142
+    not_smsa |  -.1148061   .0256842    -4.47   0.000     -.165552   -.0640601
+       south |  -.0833896   .0211312    -3.95   0.000    -.1248809   -.0418982
+      blackm |  -.0293377    .025407    -1.15   0.249    -.0794075    .0207322
+       _cons |   .1247307   .0993645     1.26   0.210    -.0709066     .320368
+------------------------------------------------------------------------------
+
+Standardized coefficients and R-squared
+Summary statistics over 20 imputations
+
+             |       mean*      min        p25     median        p75       max
+-------------+----------------------------------------------------------------
+      gradem |   .3219557      .278   .3141422   .3265982   .3345306      .357
+        agem |   .1447876      .119   .1349936   .1457571   .1505709       .18
+    ttl_expm |   .0518086     .0164   .0312976   .0544998   .0635064     .0976
+     tenurem |   .2181023      .186   .2039858   .2191592   .2309489      .254
+    not_smsa |    -.11595     -.138  -.1297013  -.1127403  -.1085154    -.0906
+       south |  -.0931871      -.11  -.0977573  -.0940692   -.088983    -.0757
+      blackm |  -.0294481    -.0565  -.0372899  -.0265284  -.0208183    -.0119
+-------------+----------------------------------------------------------------
+    R-square |   .2918254      .271    .286382   .2930947   .3000547      .309
+Adj R-square |   .2888821      .267   .2834174    .290158    .297147      .306
+------------------------------------------------------------------------------
+* based on Fisher's z transformation
+
+. summarize ln_wagem gradem agem ttl_expm tenurem not_smsa south blackm if _mi_
+> m > 0
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    ln_wagem |     33,860    1.614246    .4375837  -.0769101   4.242752
+      gradem |     33,860    12.15952    1.838568          0   19.27205
+        agem |     33,860    22.81635     3.03105   12.32953   33.09295
+    ttl_expm |     33,860    3.330754    1.569392  -1.422059   15.53846
+     tenurem |     33,860    1.734753    1.582867  -3.253729       15.5
+-------------+---------------------------------------------------------
+    not_smsa |     33,860    .2658004     .441765          0          1
+       south |     33,860    .3951565    .4888915          0          1
+      blackm |     33,860    .2627107    .4394428  -1.130642   1.804802
+
+. 
+end of do-file

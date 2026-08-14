@@ -1,0 +1,771 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do verify-advanced.do 
+
+. * ============================================================
+. * 验证脚本：stata-advanced（第 12–16 章核心命令）
+. * 数据来源：data/agis6/
+. * ============================================================
+. version 15
+
+. set more off
+
+. 
+. * ---- ch12 信度与因子分析 ----
+. use gss2006_chapter12, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. recode empathy2 empathy4 empathy5 (1=5)(2=4)(3=3)(4=2)(5=1), pre(rev)
+(1,027 differences between empathy2 and revempathy2)
+(1,050 differences between empathy4 and revempathy4)
+(1,152 differences between empathy5 and revempathy5)
+
+. alpha empathy1 revempathy2 empathy3 revempathy4 revempathy5 empathy6 empathy7
+> , asis item min(5)
+
+Test scale = mean(unstandardized items)
+
+                                                            Average
+                             Item-test     Item-rest       interitem
+Item         |  Obs  Sign   correlation   correlation     covariance      alpha
+-------------+-----------------------------------------------------------------
+empathy1     | 1349    +       0.6701        0.5151        .3722749      0.7034
+revempathy2  | 1346    +       0.5957        0.3933        .3954405      0.7332
+empathy3     | 1348    +       0.5733        0.4027        .4118086      0.7281
+revempathy4  | 1349    +       0.6303        0.4474        .3827332      0.7191
+revempathy5  | 1342    +       0.6088        0.4277        .3932707      0.7233
+empathy6     | 1347    +       0.6762        0.5358        .3764256      0.7004
+empathy7     | 1349    +       0.6701        0.5204        .3748609      0.7026
+-------------+-----------------------------------------------------------------
+Test scale   |                                             .3866902      0.7462
+-------------------------------------------------------------------------------
+
+. use kappa1, clear
+
+. kap coder1 coder2
+
+             Expected
+Agreement   agreement     Kappa   Std. err.         Z      Prob>Z
+-----------------------------------------------------------------
+  70.00%      24.00%     0.6053     0.1221       4.96      0.0000
+
+. use gss2006_chapter12_selected, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. recode natspac natenvir natheal natcity natcrime natdrug nateduc natrace nata
+> rms natfare natroad natsoc natchld natsci (1=3)(2=2)(3=1), prefix(r)
+(756 differences between natspac and rnatspac)
+(1,081 differences between natenvir and rnatenvir)
+(1,169 differences between natheal and rnatheal)
+(839 differences between natcity and rnatcity)
+(992 differences between natcrime and rnatcrime)
+(1,027 differences between natdrug and rnatdrug)
+(1,152 differences between nateduc and rnateduc)
+(746 differences between natrace and rnatrace)
+(967 differences between natarms and rnatarms)
+(919 differences between natfare and rnatfare)
+(1,392 differences between natroad and rnatroad)
+(1,973 differences between natsoc and rnatsoc)
+(1,756 differences between natchld and rnatchld)
+(1,570 differences between natsci and rnatsci)
+
+. factor rnatspac rnatenvir rnatheal rnatcity rnatcrime rnatdrug rnateduc rnatr
+> ace rnatarms rnatfare rnatroad rnatsoc rnatchld rnatsci, pcf
+(obs=1,082)
+
+Factor analysis/correlation                      Number of obs    =      1,082
+    Method: principal-component factors          Retained factors =          4
+    Rotation: (unrotated)                        Number of params =         50
+
+    --------------------------------------------------------------------------
+         Factor  |   Eigenvalue   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      3.00301      1.62066            0.2145       0.2145
+        Factor2  |      1.38235      0.12372            0.0987       0.3132
+        Factor3  |      1.25863      0.22702            0.0899       0.4031
+        Factor4  |      1.03161      0.06974            0.0737       0.4768
+        Factor5  |      0.96187      0.05047            0.0687       0.5455
+        Factor6  |      0.91140      0.09801            0.0651       0.6106
+        Factor7  |      0.81339      0.02930            0.0581       0.6687
+        Factor8  |      0.78409      0.05945            0.0560       0.7247
+        Factor9  |      0.72464      0.01659            0.0518       0.7765
+       Factor10  |      0.70804      0.04088            0.0506       0.8271
+       Factor11  |      0.66717      0.06485            0.0477       0.8747
+       Factor12  |      0.60231      0.01414            0.0430       0.9178
+       Factor13  |      0.58817      0.02484            0.0420       0.9598
+       Factor14  |      0.56333            .            0.0402       1.0000
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(91) = 1701.47 Prob>chi2 = 0.0000
+
+Factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------------------------------------
+        Variable |  Factor1   Factor2   Factor3   Factor4 |   Uniqueness 
+    -------------+----------------------------------------+--------------
+        rnatspac |  -0.0405    0.6150   -0.4468   -0.0108 |      0.4204  
+       rnatenvir |   0.5562    0.0698   -0.1925    0.1629 |      0.6221  
+        rnatheal |   0.6298    0.0420    0.0923    0.2638 |      0.5235  
+        rnatcity |   0.5264   -0.0580   -0.0677   -0.4598 |      0.5036  
+       rnatcrime |   0.4533    0.1160    0.5154   -0.4234 |      0.3361  
+        rnatdrug |   0.5381    0.1048    0.3346   -0.2872 |      0.5051  
+        rnateduc |   0.5997    0.0035    0.0425    0.3838 |      0.4912  
+        rnatrace |   0.5921   -0.2286   -0.2660   -0.1885 |      0.4909  
+        rnatarms |  -0.1087    0.4926    0.4682    0.1719 |      0.4968  
+        rnatfare |   0.4725   -0.1726   -0.3547   -0.0629 |      0.6172  
+        rnatroad |   0.1421    0.5022    0.0704   -0.1269 |      0.7065  
+         rnatsoc |   0.4196   -0.1209    0.3374    0.4575 |      0.4862  
+        rnatchld |   0.5369   -0.1049   -0.1130    0.1343 |      0.6699  
+         rnatsci |   0.3057    0.6059   -0.2865    0.0493 |      0.4549  
+    ---------------------------------------------------------------------
+
+. screeplot, yline(1)
+
+. rotate
+
+Factor analysis/correlation                      Number of obs    =      1,082
+    Method: principal-component factors          Retained factors =          4
+    Rotation: orthogonal varimax (Kaiser off)    Number of params =         50
+
+    --------------------------------------------------------------------------
+         Factor  |     Variance   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      1.96564      0.29211            0.1404       0.1404
+        Factor2  |      1.67353      0.04093            0.1195       0.2599
+        Factor3  |      1.63260      0.22876            0.1166       0.3766
+        Factor4  |      1.40384            .            0.1003       0.4768
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(91) = 1701.47 Prob>chi2 = 0.0000
+
+Rotated factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------------------------------------
+        Variable |  Factor1   Factor2   Factor3   Factor4 |   Uniqueness 
+    -------------+----------------------------------------+--------------
+        rnatspac |  -0.1295   -0.0143   -0.1449    0.7360 |      0.4204  
+       rnatenvir |   0.4623    0.3085    0.0890    0.2471 |      0.6221  
+        rnatheal |   0.6328    0.1374    0.2186    0.0975 |      0.5235  
+        rnatcity |   0.0262    0.4831    0.5052    0.0839 |      0.5036  
+       rnatcrime |   0.0941   -0.0276    0.8066   -0.0599 |      0.3361  
+        rnatdrug |   0.2187    0.0910    0.6618    0.0296 |      0.5051  
+        rnateduc |   0.6899    0.1329    0.0932    0.0808 |      0.4912  
+        rnatrace |   0.2352    0.6335    0.2259    0.0389 |      0.4909  
+        rnatarms |   0.1103   -0.6491    0.1967    0.1763 |      0.4968  
+        rnatfare |   0.2255    0.5642    0.0480    0.1061 |      0.6172  
+        rnatroad |   0.0039   -0.1708    0.2889    0.4252 |      0.7065  
+         rnatsoc |   0.6718   -0.1136    0.0967   -0.2007 |      0.4862  
+        rnatchld |   0.4475    0.3393    0.1075    0.0559 |      0.6699  
+         rnatsci |   0.1777    0.0334    0.0832    0.7110 |      0.4549  
+    ---------------------------------------------------------------------
+
+Factor rotation matrix
+
+    --------------------------------------------------
+                 | Factor1  Factor2  Factor3  Factor4 
+    -------------+------------------------------------
+         Factor1 |  0.6858   0.4868   0.5116   0.1758 
+         Factor2 | -0.0311  -0.4717   0.1951   0.8594 
+         Factor3 |  0.1676  -0.6530   0.5615  -0.4798 
+         Factor4 |  0.7075  -0.3379  -0.6204  -0.0190 
+    --------------------------------------------------
+
+. 
+. * ---- ch13 sem ----
+. use flourishing_bmi, clear
+
+. sem bmi <- age children incomeln educ quickfood, standardized
+(32 observations with missing values excluded)
+
+Endogenous variables
+  Observed: bmi
+
+Exogenous variables
+  Observed: age children incomeln educ quickfood
+
+Fitting target model:
+Iteration 0:  Log likelihood = -5442.1579  
+Iteration 1:  Log likelihood = -5442.1579  
+
+Structural equation model                                  Number of obs = 448
+Estimation method: ml
+
+Log likelihood = -5442.1579
+
+------------------------------------------------------------------------------
+             |                 OIM
+Standardized | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+Structural   |
+  bmi        |
+         age |    .085525   .0469395     1.82   0.068    -.0064747    .1775247
+    children |   .0983799    .045372     2.17   0.030     .0094524    .1873074
+    incomeln |  -.2080029   .0503358    -4.13   0.000    -.3066593   -.1093464
+        educ |  -.1627779   .0510614    -3.19   0.001    -.2628563   -.0626995
+   quickfood |   .1716324   .0450981     3.81   0.000     .0832418     .260023
+       _cons |   5.883455    .606841     9.70   0.000     4.694069    7.072842
+-------------+----------------------------------------------------------------
+   var(e.bmi)|   .8393695   .0304844                      .7816981    .9012957
+------------------------------------------------------------------------------
+LR test of model vs. saturated: chi2(0) = 0.00                 Prob > chi2 = .
+
+. estat eqgof
+
+Equation-level goodness of fit
+
+------------------------------------------------------------------------------
+   Dependent |             Variance            |
+   variables |    Fitted  Predicted   Residual | R-squared        mc       mc2
+-------------+---------------------------------+------------------------------
+Observed     |                                 |
+         bmi |  40.59283   6.520448   34.07238 |  .1606305  .4007874  .1606305
+-------------+---------------------------------+------------------------------
+     Overall |                                 |  .1606305
+------------------------------------------------------------------------------
+mc  = Correlation between dependent variable and its prediction.
+mc2 = mc^2 is the Bentler–Raykov squared multiple correlation coefficient.
+
+. sem bmi <- age children incomeln educ quickfood, method(mlmv) standardized
+note: Missing values found in observed exogenous variables. Using the
+      noxconditional behavior. Specify the forcexconditional option to
+      override this behavior.
+Endogenous variables
+  Observed: bmi
+
+Exogenous variables
+  Observed: age children incomeln educ quickfood
+
+Fitting saturated model:
+Iteration 0:  Log likelihood = -5755.9852  
+Iteration 1:  Log likelihood = -5755.3782  
+Iteration 2:  Log likelihood = -5755.3751  
+Iteration 3:  Log likelihood = -5755.3751  
+
+Fitting baseline model:
+Iteration 0:  Log likelihood = -5793.2531  
+Iteration 1:  Log likelihood = -5793.2466  
+Iteration 2:  Log likelihood = -5793.2466  
+
+Fitting target model:
+Iteration 0:  Log likelihood = -5755.3751  
+Iteration 1:  Log likelihood = -5755.3751  
+
+Structural equation model                                  Number of obs = 480
+Estimation method: mlmv
+
+Log likelihood = -5755.3751
+
+------------------------------------------------------------------------------
+             |                 OIM
+Standardized | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+Structural   |
+  bmi        |
+         age |   .1025498   .0464111     2.21   0.027     .0115857    .1935139
+    children |   .0761626   .0449013     1.70   0.090    -.0118424    .1641676
+    incomeln |  -.2031064   .0509003    -3.99   0.000    -.3028691   -.1033437
+        educ |   -.174441   .0507598    -3.44   0.001    -.2739285   -.0749536
+   quickfood |   .1560023   .0456212     3.42   0.001     .0665864    .2454182
+       _cons |   5.819998   .6113505     9.52   0.000     4.621773    7.018223
+-------------+----------------------------------------------------------------
+    mean(age)|   6.689349   .2206699    30.31   0.000     6.256844    7.121854
+mean(child~n)|   2.316993   .0876098    26.45   0.000     2.145281    2.488706
+mean(incom~n)|   11.07493   .3621459    30.58   0.000     10.36514    11.78472
+   mean(educ)|   2.944047   .1058155    27.82   0.000     2.736653    3.151442
+mean(quick~d)|   1.727495   .0722062    23.92   0.000     1.585973    1.869016
+-------------+----------------------------------------------------------------
+   var(e.bmi)|   .8477139   .0308644                      .7893288    .9104177
+     var(age)|          1          .                             .           .
+var(children)|          1          .                             .           .
+var(incomeln)|          1          .                             .           .
+    var(educ)|          1          .                             .           .
+var(quickf~d)|          1          .                             .           .
+-------------+----------------------------------------------------------------
+     cov(age,|
+    children)|  -.2302454   .0432238    -5.33   0.000    -.3149625   -.1455282
+     cov(age,|
+    incomeln)|   .2463728    .043313     5.69   0.000      .161481    .3312647
+cov(age,educ)|   .3231003   .0408804     7.90   0.000     .2429762    .4032243
+     cov(age,|
+   quickfood)|  -.1298331   .0451698    -2.87   0.004    -.2183644   -.0413019
+cov(children,|
+    incomeln)|   .0046738   .0460874     0.10   0.919    -.0856559    .0950035
+cov(children,|
+        educ)|  -.1980476    .043919    -4.51   0.000    -.2841273   -.1119679
+cov(children,|
+   quickfood)|  -.0633405   .0454746    -1.39   0.164    -.1524691     .025788
+cov(incomeln,|
+        educ)|   .4756463   .0356959    13.32   0.000     .4056837    .5456089
+cov(incomeln,|
+   quickfood)|  -.3270838   .0410795    -7.96   0.000    -.4075981   -.2465695
+    cov(educ,|
+   quickfood)|  -.2109199   .0438928    -4.81   0.000    -.2969482   -.1248916
+------------------------------------------------------------------------------
+LR test of model vs. saturated: chi2(0) = 0.00                 Prob > chi2 = .
+
+. 
+. * ---- ch14 多重插补 ----
+. use chapter13_missing, clear
+(NLS Women 14-26 in 1968)
+
+. misstable summarize ln_wagem gradem agem ttl_expm tenurem not_smsa south blac
+> km
+                                                               Obs<.
+                                                +------------------------------
+               |                                | Unique
+      Variable |     Obs=.     Obs>.     Obs<.  | values        Min         Max
+  -------------+--------------------------------+------------------------------
+      ln_wagem |       300               1,393  |    393   .0682788    4.242752
+        gradem |       148               1,545  |     13          0          18
+          agem |       165               1,528  |     12         18          30
+      ttl_expm |       206               1,487  |   >500   .0833333    15.53846
+       tenurem |       200               1,493  |     74          0        15.5
+        blackm |        99               1,594  |      2          0           1
+  -----------------------------------------------------------------------------
+
+. mi set flong
+
+. mi register imputed ln_wagem gradem agem ttl_expm tenurem blackm
+(828 m=0 obs now marked as incomplete)
+
+. mi register regular not_smsa south
+
+. mi impute mvn ln_wagem gradem agem ttl_expm tenurem blackm, add(5) rseed(2121
+> )
+
+Performing EM optimization:
+  observed log likelihood = -5347.0692 at iteration 12
+
+Performing MCMC data augmentation ... 
+
+Multivariate imputation                     Imputations =        5
+Multivariate normal regression                    added =        5
+Imputed: m=1 through m=5                        updated =        0
+
+Prior: uniform                               Iterations =      500
+                                                burn-in =      100
+                                                between =      100
+
+------------------------------------------------------------------
+                   |               Observations per m             
+                   |----------------------------------------------
+          Variable |   Complete   Incomplete   Imputed |     Total
+-------------------+-----------------------------------+----------
+          ln_wagem |       1393          300       300 |      1693
+            gradem |       1545          148       148 |      1693
+              agem |       1528          165       165 |      1693
+          ttl_expm |       1487          206       206 |      1693
+           tenurem |       1493          200       200 |      1693
+            blackm |       1594           99        99 |      1693
+------------------------------------------------------------------
+(Complete + Incomplete = Total; Imputed is the minimum across m
+ of the number of filled-in observations.)
+
+. mi estimate, dftable: regress ln_wagem gradem agem ttl_expm tenurem not_smsa 
+> south blackm
+
+Multiple-imputation estimates                   Imputations       =          5
+Linear regression                               Number of obs     =      1,693
+                                                Average RVI       =     0.4008
+                                                Largest FMI       =     0.5306
+                                                Complete DF       =       1685
+DF adjustment:   Small sample                   DF:     min       =      17.08
+                                                        avg       =     132.86
+                                                        max       =     714.64
+Model F test:       Equal FMI                   F(   7,  243.9)   =      70.08
+Within VCE type:          OLS                   Prob > F          =     0.0000
+
+------------------------------------------------------------------------------
+             |                                                      % increase
+    ln_wagem | Coefficient  Std. err.      t    P>|t|           df   std. err.
+-------------+----------------------------------------------------------------
+      gradem |   .0749071   .0061171    12.25   0.000         40.2       20.38
+        agem |   .0211338   .0041792     5.06   0.000         26.1       27.66
+    ttl_expm |   .0085549   .0087665     0.98   0.332         79.2       13.08
+     tenurem |   .0655214   .0084318     7.77   0.000         67.4       14.50
+    not_smsa |  -.1236334   .0262188    -4.72   0.000         31.8       23.97
+       south |  -.0813275   .0204607    -3.97   0.000        714.6        2.90
+      blackm |   -.034998   .0303198    -1.15   0.264         17.1       38.57
+       _cons |   .1547426   .0980709     1.58   0.118         86.5       12.36
+------------------------------------------------------------------------------
+
+. 
+. * ---- ch15 多层模型 ----
+. use longitudinal_mixed, clear
+
+. clonevar drink0 = drink98
+(1,237 missing values generated)
+
+. clonevar drink2 = drink00
+(1,018 missing values generated)
+
+. clonevar drink4 = drink02
+(814 missing values generated)
+
+. clonevar drink6 = drink04
+(795 missing values generated)
+
+. clonevar drink8 = drink06
+(634 missing values generated)
+
+. clonevar drink10 = drink08
+(654 missing values generated)
+
+. drop drink98 drink00 drink02 drink04 drink06 drink08
+
+. reshape long drink, i(id) j(wave)
+(j = 0 2 4 6 8 10)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations            1,771   ->   10,626      
+Number of variables                   8   ->   4           
+j variable (6 values)                     ->   wave
+xij variables:
+              drink0 drink2 ... drink10   ->   drink
+-----------------------------------------------------------------------------
+
+. mixed drink c.wave || id:
+
+Performing EM optimization: 
+
+Performing gradient-based optimization: 
+
+Iteration 0:  Log likelihood = -17216.599  
+Iteration 1:  Log likelihood = -17216.599  
+
+Computing standard errors:
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(1)     = 499.41
+Log likelihood = -17216.599                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4930213   .0220615    22.35   0.000     .4497815    .5362611
+       _cons |   1.917751   .1677386    11.43   0.000     1.588989    2.246512
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Identity                 |
+                  var(_cons) |   10.05363   .6419645      8.870953    11.39398
+-----------------------------+------------------------------------------------
+               var(Residual) |   24.80612   .5520718      23.74734     25.9121
+------------------------------------------------------------------------------
+LR test vs. linear model: chibar2(01) = 568.55        Prob >= chibar2 = 0.0000
+
+. mixed drink c.wave || id: wave, cov(unstructured)
+
+Performing EM optimization: 
+
+Performing gradient-based optimization: 
+
+Iteration 0:  Log likelihood = -17029.795  
+Iteration 1:  Log likelihood = -17013.355  
+Iteration 2:  Log likelihood = -17012.671  
+Iteration 3:  Log likelihood = -17012.446  
+Iteration 4:  Log likelihood =  -17012.39  
+Iteration 5:  Log likelihood = -17012.375  
+Iteration 6:  Log likelihood = -17012.374  
+Iteration 7:  Log likelihood = -17012.374  
+
+Computing standard errors:
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(1)     = 350.87
+Log likelihood = -17012.374                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4493319   .0239879    18.73   0.000     .4023165    .4963473
+       _cons |    2.23915   .1304175    17.17   0.000     1.983537    2.494764
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Unstructured             |
+                   var(wave) |    .240077   .0237871      .1977027    .2915336
+                  var(_cons) |   .3067681    .160186      .1102392    .8536594
+             cov(wave,_cons) |   .2713816   .0611852      .1514608    .3913024
+-----------------------------+------------------------------------------------
+               var(Residual) |   21.31583    .476309      20.40243    22.27012
+------------------------------------------------------------------------------
+LR test vs. linear model: chi2(3) = 977.00                Prob > chi2 = 0.0000
+
+Note: LR test is conservative and provided only for reference.
+
+. mixed drink c.wave i.male c.wave#i.male || id: wave
+
+Performing EM optimization: 
+
+Performing gradient-based optimization: 
+
+Iteration 0:  Log likelihood = -16996.761  
+Iteration 1:  Log likelihood = -16989.789  
+Iteration 2:  Log likelihood =  -16989.76  
+Iteration 3:  Log likelihood =  -16989.76  
+
+Computing standard errors:
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(3)     = 385.04
+Log likelihood =  -16989.76                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .3328034   .0346532     9.60   0.000     .2648844    .4007224
+             |
+        male |
+       Male  |   .2408692   .2673299     0.90   0.368    -.2830877    .7648261
+             |
+ male#c.wave |
+       Male  |   .2227025   .0490476     4.54   0.000      .126571     .318834
+             |
+       _cons |   2.137202    .187434    11.40   0.000     1.769838    2.504566
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Independent              |
+                   var(wave) |   .2766612   .0188117      .2421422    .3161011
+                  var(_cons) |   1.321931   .5187415       .612614    2.852531
+-----------------------------+------------------------------------------------
+               var(Residual) |   21.06079   .4908945       20.1203    22.04524
+------------------------------------------------------------------------------
+LR test vs. linear model: chi2(2) = 915.56                Prob > chi2 = 0.0000
+
+Note: LR test is conservative and provided only for reference.
+
+. 
+. * ---- ch16 IRT ----
+. use attitude, clear
+(PREVENTING DEPRESSION IN COUPLES FACING JOB LOSS, 1996-1998: [BALTIMORE, MD])
+
+. irt 1pl dn2 dn4 dn5 dn7 dn10
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -4621.5209  
+Iteration 1:  Log likelihood =  -4616.607  
+Iteration 2:  Log likelihood = -4616.6057  
+Iteration 3:  Log likelihood = -4616.6057  
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -4196.8333  
+Iteration 1:  Log likelihood = -3993.0408  
+Iteration 2:  Log likelihood =  -3989.611  
+Iteration 3:  Log likelihood = -3989.5915  
+Iteration 4:  Log likelihood = -3989.5915  
+
+One-parameter logistic model                             Number of obs = 1,479
+Log likelihood = -3989.5915
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Discrim |   2.059114   .0765293    26.91   0.000     1.909119    2.209108
+-------------+----------------------------------------------------------------
+dn2          |
+        Diff |   .1709084   .0425518     4.02   0.000     .0875085    .2543084
+-------------+----------------------------------------------------------------
+dn4          |
+        Diff |   1.234974    .056633    21.81   0.000     1.123975    1.345972
+-------------+----------------------------------------------------------------
+dn5          |
+        Diff |   -.512255   .0454498   -11.27   0.000    -.6013349    -.423175
+-------------+----------------------------------------------------------------
+dn7          |
+        Diff |  -.2193236   .0430899    -5.09   0.000    -.3037781    -.134869
+-------------+----------------------------------------------------------------
+dn10         |
+        Diff |   .4660937   .0442333    10.54   0.000     .3793981    .5527892
+------------------------------------------------------------------------------
+
+. estat report, byparm sort(b)
+
+One-parameter logistic model                             Number of obs = 1,479
+Log likelihood = -3989.5915
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Discrim |   2.059114   .0765293    26.91   0.000     1.909119    2.209108
+-------------+----------------------------------------------------------------
+Diff         |
+         dn5 |   -.512255   .0454498   -11.27   0.000    -.6013349    -.423175
+         dn7 |  -.2193236   .0430899    -5.09   0.000    -.3037781    -.134869
+         dn2 |   .1709084   .0425518     4.02   0.000     .0875085    .2543084
+        dn10 |   .4660937   .0442333    10.54   0.000     .3793981    .5527892
+         dn4 |   1.234974    .056633    21.81   0.000     1.123975    1.345972
+------------------------------------------------------------------------------
+
+. estimates store rasch
+
+. predict rasch_score, latent
+(option ebmeans assumed)
+(using 7 quadrature points)
+
+. irt 2pl dn2 dn4 dn5 dn7 dn10
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -4621.5209  
+Iteration 1:  Log likelihood =  -4616.607  
+Iteration 2:  Log likelihood = -4616.6057  
+Iteration 3:  Log likelihood = -4616.6057  
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -4199.6255  
+Iteration 1:  Log likelihood = -3986.9392  
+Iteration 2:  Log likelihood = -3978.2722  
+Iteration 3:  Log likelihood = -3978.0158  
+Iteration 4:  Log likelihood = -3978.0153  
+Iteration 5:  Log likelihood = -3978.0153  
+
+Two-parameter logistic model                             Number of obs = 1,479
+Log likelihood = -3978.0153
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dn2          |
+     Discrim |   2.961973    .305367     9.70   0.000     2.363465    3.560482
+        Diff |   .1506225    .037865     3.98   0.000     .0764085    .2248365
+-------------+----------------------------------------------------------------
+dn4          |
+     Discrim |   1.641559   .1580974    10.38   0.000     1.331694    1.951424
+        Diff |   1.367027   .0893992    15.29   0.000     1.191808    1.542246
+-------------+----------------------------------------------------------------
+dn5          |
+     Discrim |   2.103759   .1797506    11.70   0.000     1.751454    2.456063
+        Diff |  -.5095228   .0473406   -10.76   0.000    -.6023087   -.4167368
+-------------+----------------------------------------------------------------
+dn7          |
+     Discrim |   2.104367   .1766265    11.91   0.000     1.758185    2.450548
+        Diff |  -.2204127   .0430737    -5.12   0.000    -.3048356   -.1359898
+-------------+----------------------------------------------------------------
+dn10         |
+     Discrim |   1.713951   .1422667    12.05   0.000     1.435113    1.992788
+        Diff |   .4987321   .0510842     9.76   0.000      .398609    .5988553
+------------------------------------------------------------------------------
+
+. lrtest rasch
+
+Likelihood-ratio test
+Assumption: rasch nested within .
+
+ LR chi2(4) =  23.15
+Prob > chi2 = 0.0001
+
+. irt grm n2 n4 n5 n7 n10
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -8421.8125  
+Iteration 1:  Log likelihood = -8296.2754  
+Iteration 2:  Log likelihood = -8294.4695  
+Iteration 3:  Log likelihood = -8294.4665  
+Iteration 4:  Log likelihood = -8294.4665  
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -7762.1567  
+Iteration 1:  Log likelihood = -7481.5849  
+Iteration 2:  Log likelihood = -7471.5834  
+Iteration 3:  Log likelihood = -7471.3668  
+Iteration 4:  Log likelihood = -7471.3661  
+Iteration 5:  Log likelihood = -7471.3661  
+
+Graded response model                                    Number of obs = 1,479
+Log likelihood = -7471.3661
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+n2           |
+     Discrim |   2.179148   .1362609    15.99   0.000     1.912082    2.446214
+        Diff |
+        >=2  |  -2.103581   .0972377                     -2.294164   -1.912999
+        >=3  |   -.861577   .0497801                     -.9591442   -.7640098
+         =4  |   .1356028   .0420148                      .0532553    .2179503
+-------------+----------------------------------------------------------------
+n4           |
+     Discrim |   1.609505   .0986348    16.32   0.000     1.416184    1.802826
+        Diff |
+        >=2  |  -1.463049   .0791114                     -1.618104   -1.307993
+        >=3  |  -.0121909   .0466419                     -.1036074    .0792256
+         =4  |   1.368935   .0762028                       1.21958     1.51829
+-------------+----------------------------------------------------------------
+n5           |
+     Discrim |   2.585076   .1924925    13.43   0.000     2.207798    2.962354
+        Diff |
+        >=2  |  -2.209929   .1028444                       -2.4115   -2.008357
+        >=3  |  -1.342604   .0612457                     -1.462643   -1.222564
+         =4  |  -.4911488   .0411847                     -.5718693   -.4104284
+-------------+----------------------------------------------------------------
+n7           |
+     Discrim |   1.470344    .099162    14.83   0.000      1.27599    1.664698
+        Diff |
+        >=2  |  -3.262259   .2031714                     -3.660467    -2.86405
+        >=3  |  -1.953588   .1079976                      -2.16526   -1.741917
+         =4  |  -.2813937   .0502735                      -.379928   -.1828594
+-------------+----------------------------------------------------------------
+n10          |
+     Discrim |   1.372692   .0879344    15.61   0.000     1.200344     1.54504
+        Diff |
+        >=2  |  -2.826451   .1638261                     -3.147544   -2.505357
+        >=3  |  -1.259156    .077168                     -1.410402   -1.107909
+         =4  |   .5437429   .0581496                      .4297719     .657714
+------------------------------------------------------------------------------
+
+. predict confidence, latent
+(option ebmeans assumed)
+(using 7 quadrature points)
+
+. 
+. display "VERIFY ADVANCED DONE"
+VERIFY ADVANCED DONE
+
+. exit, clear
+
+end of do-file

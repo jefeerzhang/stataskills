@@ -1,0 +1,727 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter11.do 
+
+. * chapter11.do
+. * hypothetical data relating divorce in first 5 years of marriage
+. * to score on positive feedback in discussions with spouse prior to 
+. * marriage
+. use "divorce.dta", clear
+
+. list divorce positives
+
+     +--------------------+
+     | divorce   positi~s |
+     |--------------------|
+  1. |       0         10 |
+  2. |       0          8 |
+  3. |       0          9 |
+  4. |       0          7 |
+  5. |       0          8 |
+     |--------------------|
+  6. |       0          5 |
+  7. |       0          9 |
+  8. |       0          6 |
+  9. |       0          8 |
+ 10. |       0          7 |
+     |--------------------|
+ 11. |       1          1 |
+ 12. |       1          1 |
+ 13. |       1          3 |
+ 14. |       1          1 |
+ 15. |       1          4 |
+     |--------------------|
+ 16. |       1          5 |
+ 17. |       1          6 |
+ 18. |       1          3 |
+ 19. |       1          2 |
+ 20. |       1          0 |
+     +--------------------+
+
+. label define yes 1 "Divorced" 0 "Not divorced"
+
+. label values divorce yes
+
+. scatter divorce positives, scheme(s2mono)
+
+. logit divorce positives
+
+Iteration 0:  Log likelihood = -13.862944  
+Iteration 1:  Log likelihood = -3.5768067  
+Iteration 2:  Log likelihood = -3.4221578  
+Iteration 3:  Log likelihood = -3.4189568  
+Iteration 4:  Log likelihood = -3.4189473  
+Iteration 5:  Log likelihood = -3.4189473  
+
+Logistic regression                                     Number of obs =     20
+                                                        LR chi2(1)    =  20.89
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -3.4189473                             Pseudo R2     = 0.7534
+
+------------------------------------------------------------------------------
+     divorce | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   positives |  -1.816682    1.00464    -1.81   0.071     -3.78574    .1523768
+       _cons |   9.921966   5.684654     1.75   0.081    -1.219751    21.06368
+------------------------------------------------------------------------------
+
+. predict prdivorce
+(option pr assumed; Pr(divorce))
+
+. scatter prdivorce positives, scheme(s2mono)
+
+. predict logit, xb
+
+. scatter logit positives, scheme(s2mono)
+
+. regress divorce positives
+
+      Source |       SS           df       MS      Number of obs   =        20
+-------------+----------------------------------   F(1, 18)        =     42.95
+       Model |  3.52343538         1  3.52343538   Prob > F        =    0.0000
+    Residual |  1.47656462        18  .082031368   R-squared       =    0.7047
+-------------+----------------------------------   Adj R-squared   =    0.6883
+       Total |           5        19  .263157895   Root MSE        =    .28641
+
+------------------------------------------------------------------------------
+     divorce | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   positives |  -.1381739    .021083    -6.55   0.000    -.1824677   -.0938801
+       _cons |   1.211596   .1260582     9.61   0.000     .9467574    1.476434
+------------------------------------------------------------------------------
+
+. predict divols
+(option xb assumed; fitted values)
+
+. twoway (scatter divorce positives) (lfit divols positives)
+
+. 
+. ***********************************************
+. * What is a logit?
+. ***********************************************
+. use "environ.dta", clear
+
+. tab2 environ libcand, row
+
+-> tabulation of environ by libcand  
+
++----------------+
+| Key            |
+|----------------|
+|   frequency    |
+| row percentage |
++----------------+
+
+Environmen |
+       tal |    support liberal
+concern: 1 |  candidate: 1 yes, 0
+   high, 0 |          no
+       low |         0          1 |     Total
+-----------+----------------------+----------
+         0 |         6          4 |        10 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+         1 |         3          7 |        10 
+           |     30.00      70.00 |    100.00 
+-----------+----------------------+----------
+     Total |         9         11 |        20 
+           |     45.00      55.00 |    100.00 
+
+. 
+. ***********************************************
+. * Logistic regression examples
+. ***********************************************
+. use nlsy97_chapter11, clear
+(National Survey of Youth, 1997, selected variables from first wave)
+
+. summarize drank30 age97 pdrink97 dinner97 male ///
+>         if !missing(drank30, age97, pdrink97, dinner97, male)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     drank30 |      1,654     .382104    .4860487          0          1
+       age97 |      1,654    13.67352    .9371347         12         16
+    pdrink97 |      1,654    2.108222    1.214858          1          5
+    dinner97 |      1,654    4.699516    2.349352          0          7
+        male |      1,654    .5405079    .4985071          0          1
+
+. logistic drank30 age97 male pdrink97 dinner97
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   1.169241   .0684191     2.67   0.008     1.042546    1.311332
+        male |   .9794922   .1046935    -0.19   0.846     .7943646    1.207764
+    pdrink97 |   1.329275   .0598174     6.33   0.000     1.217056    1.451841
+    dinner97 |    .942086   .0208682    -2.69   0.007     .9020603    .9838878
+       _cons |   .0524677   .0415938    -3.72   0.000     .0110944    .2481314
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. logit drank30 age97 male pdrink97 dinner97
+
+Iteration 0:  Log likelihood = -1100.0502  
+Iteration 1:  Log likelihood =  -1061.142  
+Iteration 2:  Log likelihood = -1061.0474  
+Iteration 3:  Log likelihood = -1061.0474  
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   .1563548   .0585158     2.67   0.008     .0416659    .2710437
+        male |   -.020721   .1068855    -0.19   0.846    -.2302128    .1887708
+    pdrink97 |   .2846336   .0450001     6.33   0.000     .1964351    .3728321
+    dinner97 |  -.0596587    .022151    -2.69   0.007    -.1030739   -.0162434
+       _cons |  -2.947557   .7927494    -3.72   0.000    -4.501317   -1.393797
+------------------------------------------------------------------------------
+
+. logit drank30 if !missing(age97, male, pdrink97, dinner97)
+
+Iteration 0:  Log likelihood = -1100.0502  
+Iteration 1:  Log likelihood = -1100.0502  
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(0)    =   0.00
+                                                        Prob > chi2   =      .
+Log likelihood = -1100.0502                             Pseudo R2     = 0.0000
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       _cons |  -.4806274   .0506039    -9.50   0.000    -.5798091   -.3814456
+------------------------------------------------------------------------------
+
+. 
+. display (-1100.0502 - (-1061.0474))/1100.0502 = 0.0355
+-.03545547.0355
+
+. webuse lbw
+(Hosmer & Lemeshow data)
+
+. logit low smoke, or
+
+Iteration 0:  Log likelihood =   -117.336  
+Iteration 1:  Log likelihood =  -114.9123  
+Iteration 2:  Log likelihood =  -114.9023  
+Iteration 3:  Log likelihood =  -114.9023  
+
+Logistic regression                                     Number of obs =    189
+                                                        LR chi2(1)    =   4.87
+                                                        Prob > chi2   = 0.0274
+Log likelihood = -114.9023                              Pseudo R2     = 0.0207
+
+------------------------------------------------------------------------------
+         low | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       smoke |   2.021944   .6462989     2.20   0.028      1.08066    3.783112
+       _cons |   .3372093   .0724103    -5.06   0.000     .2213694    .5136667
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. 
+. use nlsy97_chapter11, clear
+(National Survey of Youth, 1997, selected variables from first wave)
+
+. logit drank30 age97 male pdrink97 dinner97
+
+Iteration 0:  Log likelihood = -1100.0502  
+Iteration 1:  Log likelihood =  -1061.142  
+Iteration 2:  Log likelihood = -1061.0474  
+Iteration 3:  Log likelihood = -1061.0474  
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   .1563548   .0585158     2.67   0.008     .0416659    .2710437
+        male |   -.020721   .1068855    -0.19   0.846    -.2302128    .1887708
+    pdrink97 |   .2846336   .0450001     6.33   0.000     .1964351    .3728321
+    dinner97 |  -.0596587    .022151    -2.69   0.007    -.1030739   -.0162434
+       _cons |  -2.947557   .7927494    -3.72   0.000    -4.501317   -1.393797
+------------------------------------------------------------------------------
+
+. listcoef, help
+
+logit (N=1654): Factor Change in Odds 
+
+  Odds of: 1 vs 0
+
+----------------------------------------------------------------------
+     drank30 |      b         z     P>|z|    e^b    e^bStdX      SDofX
+-------------+--------------------------------------------------------
+       age97 |   0.15635    2.672   0.008   1.1692   1.1578     0.9371
+        male |  -0.02072   -0.194   0.846   0.9795   0.9897     0.4985
+    pdrink97 |   0.28463    6.325   0.000   1.3293   1.4131     1.2149
+    dinner97 |  -0.05966   -2.693   0.007   0.9421   0.8692     2.3494
+----------------------------------------------------------------------
+       b = raw coefficient
+       z = z-score for test of b=0
+   P>|z| = p-value for z-test
+     e^b = exp(b) = factor change in odds for unit increase in X
+ e^bStdX = exp(b*SD of X) = change in odds for SD increase in X
+   SDofX = standard deviation of X
+
+. listcoef, help percent
+
+logit (N=1654): Percentage Change in Odds 
+
+  Odds of: 1 vs 0
+
+----------------------------------------------------------------------
+     drank30 |      b         z     P>|z|      %      %StdX      SDofX
+-------------+--------------------------------------------------------
+       age97 |   0.15635    2.672   0.008     16.9     15.8     0.9371
+        male |  -0.02072   -0.194   0.846     -2.1     -1.0     0.4985
+    pdrink97 |   0.28463    6.325   0.000     32.9     41.3     1.2149
+    dinner97 |  -0.05966   -2.693   0.007     -5.8    -13.1     2.3494
+----------------------------------------------------------------------
+       b = raw coefficient
+       z = z-score for test of b=0
+   P>|z| = p-value for z-test
+       % = percent change in odds for unit increase in X
+   %StdX = percent change in odds for SD increase in X
+   SDofX = standard deviation of X
+
+. 
+. **************************************************
+. * Create a barchart from listcoef, percent command
+. **************************************************
+. use "c11barchart", clear
+
+. graph bar (asis) age male peers dinner, bargap(10) ///
+>         blabel(name, position(outside)) ytitle(Percent Change in Odds) ///
+>         title(Percentage Change in Odds of Drinking by) ///
+>         subtitle("Age, Gender, Percent of Peers Drinking, Meals with Family")
+>  ///
+>         legend(off) scheme(s2manual)
+
+. 
+. **************************************************
+. * Testing parameter estimates
+. **************************************************
+. use nlsy97_chapter11, clear
+(National Survey of Youth, 1997, selected variables from first wave)
+
+. logistic drank30 male dinner97 pdrink97
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(3)    =  70.83
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1064.6372                             Pseudo R2     = 0.0322
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        male |   .9798341   .1045179    -0.19   0.849     .7949792    1.207673
+    dinner97 |   .9418512    .020823    -2.71   0.007     .9019105    .9835606
+    pdrink97 |   1.376461   .0594022     7.40   0.000     1.264823    1.497953
+       _cons |   .4153532   .0673672    -5.42   0.000     .3022449    .5707898
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. estimates store a
+
+. logistic drank30 age97 male dinner97 pdrink97
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   1.169241   .0684191     2.67   0.008     1.042546    1.311332
+        male |   .9794922   .1046935    -0.19   0.846     .7943646    1.207764
+    dinner97 |    .942086   .0208682    -2.69   0.007     .9020603    .9838878
+    pdrink97 |   1.329275   .0598174     6.33   0.000     1.217056    1.451841
+       _cons |   .0524677   .0415938    -3.72   0.000     .0110944    .2481314
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. lrtest a
+
+Likelihood-ratio test
+Assumption: a nested within .
+
+ LR chi2(1) =   7.18
+Prob > chi2 = 0.0074
+
+. lrdrop1
+Likelihood Ratio Tests: drop 1 term
+logistic regression
+number of obs = 1654
+------------------------------------------------------------------------
+ drank30     Df      Chi2      P>Chi2    -2*log ll   Res. Df   AIC
+------------------------------------------------------------------------
+Original Model                           2122.09     1649    2132.09
+  -age97      1      7.18      0.0074    2129.27     1648    2137.27
+   -male      1      0.04      0.8463    2122.13     1648    2130.13
+-dinner97     1      7.23      0.0072    2129.33     1648    2137.33
+-pdrink97     1     40.62      0.0000    2162.72     1648    2170.72
+------------------------------------------------------------------------
+Terms dropped one at a time in turn.
+
+. test pdrink97 dinner97
+
+ ( 1)  pdrink97 = 0
+ ( 2)  dinner97 = 0
+
+           chi2(  2) =   48.85
+         Prob > chi2 =    0.0000
+
+. generate black = race97 - 1
+(80 missing values generated)
+
+. replace black = . if race97 > 2
+(1,284 real changes made, 1,284 to missing)
+
+. label define black 0 "White" 1 "Black"
+
+. label define drank30 0 "No" 1 "Yes"
+
+. label values drank30 drank30
+
+. label values black black
+
+. logit drank30 age97 i.black pdrink97 dinner97
+
+Iteration 0:  Log likelihood = -935.86755  
+Iteration 1:  Log likelihood = -901.48553  
+Iteration 2:  Log likelihood = -901.37312  
+Iteration 3:  Log likelihood = -901.37311  
+
+Logistic regression                                     Number of obs =  1,413
+                                                        LR chi2(4)    =  68.99
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -901.37311                             Pseudo R2     = 0.0369
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |    .138153   .0635579     2.17   0.030     .0135818    .2627241
+             |
+       black |
+      Black  |  -.3804608   .1352133    -2.81   0.005     -.645474   -.1154476
+    pdrink97 |   .2822417    .048233     5.85   0.000     .1877067    .3767767
+    dinner97 |   -.069024   .0246204    -2.80   0.005    -.1172791   -.0207689
+       _cons |  -2.590308   .8609411    -3.01   0.003    -4.277722   -.9028946
+------------------------------------------------------------------------------
+
+. margins, dydx(black) atmeans
+
+Conditional marginal effects                             Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+dy/dx wrt:  1.black
+At: age97    = 13.67445 (mean)
+    0.black  = .7523001 (mean)
+    1.black  = .2476999 (mean)
+    pdrink97 = 2.112527 (mean)
+    dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       black |
+      Black  |  -.0862436   .0296054    -2.91   0.004     -.144269   -.0282181
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. 
+. margins black, atmeans
+
+Adjusted predictions                                     Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+At: age97    = 13.67445 (mean)
+    pdrink97 = 2.112527 (mean)
+    dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       black |
+      White  |    .393289   .0153725    25.58   0.000     .3631595    .4234186
+      Black  |   .3070455   .0252289    12.17   0.000     .2575977    .3564932
+------------------------------------------------------------------------------
+
+. margins, at(pdrink97=(1 2 3 4 5)) atmeans
+
+Adjusted predictions                                     Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+1._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        1
+       dinner97 = 4.760793 (mean)
+2._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        2
+       dinner97 = 4.760793 (mean)
+3._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        3
+       dinner97 = 4.760793 (mean)
+4._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        4
+       dinner97 = 4.760793 (mean)
+5._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        5
+       dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   .3011665   .0168523    17.87   0.000     .2681367    .3341963
+          2  |   .3636614   .0132156    27.52   0.000     .3377592    .3895636
+          3  |   .4311242   .0169284    25.47   0.000     .3979451    .4643033
+          4  |    .501244   .0261244    19.19   0.000      .450041    .5524469
+          5  |   .5713148   .0361017    15.83   0.000     .5005567    .6420729
+------------------------------------------------------------------------------
+
+. 
+. marginsplot
+
+Variables that uniquely identify margins: pdrink97
+
+. *modified with graph editor
+. 
+. logit drank30 age97 i.black##c.pdrink97 dinner97
+
+Iteration 0:  Log likelihood = -935.86755  
+Iteration 1:  Log likelihood = -898.50967  
+Iteration 2:  Log likelihood = -898.41873  
+Iteration 3:  Log likelihood = -898.41872  
+
+Logistic regression                                     Number of obs =  1,413
+                                                        LR chi2(5)    =  74.90
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -898.41872                             Pseudo R2     = 0.0400
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   .1256206   .0637992     1.97   0.049     .0005765    .2506648
+             |
+       black |
+      Black  |    .185704   .2660364     0.70   0.485    -.3357178    .7071258
+    pdrink97 |   .3563796   .0576201     6.18   0.000     .2434464    .4693129
+             |
+       black#|
+  c.pdrink97 |
+      Black  |  -.2489923    .102516    -2.43   0.015    -.4499199   -.0480647
+             |
+    dinner97 |  -.0691665    .024649    -2.81   0.005    -.1174776   -.0208555
+       _cons |  -2.576897   .8617579    -2.99   0.003    -4.265911   -.8878823
+------------------------------------------------------------------------------
+
+. 
+. margins black,  at(pdrink97=(1 2 3 4 5)) atmeans
+
+Adjusted predictions                                     Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+1._at: age97    = 13.67445 (mean)
+       pdrink97 =        1
+       dinner97 = 4.760793 (mean)
+2._at: age97    = 13.67445 (mean)
+       pdrink97 =        2
+       dinner97 = 4.760793 (mean)
+3._at: age97    = 13.67445 (mean)
+       pdrink97 =        3
+       dinner97 = 4.760793 (mean)
+4._at: age97    = 13.67445 (mean)
+       pdrink97 =        4
+       dinner97 = 4.760793 (mean)
+5._at: age97    = 13.67445 (mean)
+       pdrink97 =        5
+       dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   _at#black |
+    1#White  |     .30322   .0194871    15.56   0.000      .265026    .3414139
+    1#Black  |   .2900174   .0330156     8.78   0.000      .225308    .3547268
+    2#White  |   .3832842   .0154657    24.78   0.000     .3529721    .4135963
+    2#Black  |   .3126171   .0255099    12.25   0.000     .2626187    .3626156
+    3#White  |   .4702223   .0203825    23.07   0.000     .4302733    .5101713
+    3#Black  |   .3361442   .0294923    11.40   0.000     .2783404     .393948
+    4#White  |   .5590057   .0309363    18.07   0.000     .4983717    .6196397
+    4#Black  |   .3605132   .0436407     8.26   0.000      .274979    .4460474
+    5#White  |   .6441695   .0406445    15.85   0.000     .5645078    .7238312
+    5#Black  |   .3856226   .0623185     6.19   0.000     .2634805    .5077647
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: pdrink97 black
+
+. 
+. margins black,  at(pdrink97=(1 2 3 4 5)) atmeans
+
+Adjusted predictions                                     Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+1._at: age97    = 13.67445 (mean)
+       pdrink97 =        1
+       dinner97 = 4.760793 (mean)
+2._at: age97    = 13.67445 (mean)
+       pdrink97 =        2
+       dinner97 = 4.760793 (mean)
+3._at: age97    = 13.67445 (mean)
+       pdrink97 =        3
+       dinner97 = 4.760793 (mean)
+4._at: age97    = 13.67445 (mean)
+       pdrink97 =        4
+       dinner97 = 4.760793 (mean)
+5._at: age97    = 13.67445 (mean)
+       pdrink97 =        5
+       dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   _at#black |
+    1#White  |     .30322   .0194871    15.56   0.000      .265026    .3414139
+    1#Black  |   .2900174   .0330156     8.78   0.000      .225308    .3547268
+    2#White  |   .3832842   .0154657    24.78   0.000     .3529721    .4135963
+    2#Black  |   .3126171   .0255099    12.25   0.000     .2626187    .3626156
+    3#White  |   .4702223   .0203825    23.07   0.000     .4302733    .5101713
+    3#Black  |   .3361442   .0294923    11.40   0.000     .2783404     .393948
+    4#White  |   .5590057   .0309363    18.07   0.000     .4983717    .6196397
+    4#Black  |   .3605132   .0436407     8.26   0.000      .274979    .4460474
+    5#White  |   .6441695   .0406445    15.85   0.000     .5645078    .7238312
+    5#Black  |   .3856226   .0623185     6.19   0.000     .2634805    .5077647
+------------------------------------------------------------------------------
+
+. 
+. marginsplot
+
+Variables that uniquely identify margins: pdrink97 black
+
+. 
+. ******************************************************
+. * Nested logistic regression / Hierarchical Regression
+. ******************************************************
+. nestreg: logistic drank30 (male) (age97) (dinner97 pdrink97)
+
+Block 1: male
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(1)    =   4.37
+                                                        Prob > chi2   = 0.0365
+Log likelihood = -1097.864                              Pseudo R2     = 0.0020
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        male |   .8087911   .0820956    -2.09   0.037     .6628816    .9868173
+       _cons |   .6926503   .0510996    -4.98   0.000      .599401    .8004065
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+Block 2: age97
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(2)    =  27.87
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1086.1173                             Pseudo R2     = 0.0127
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        male |   .8304131   .0849837    -1.82   0.069     .6794898    1.014858
+       age97 |   1.304566   .0723084     4.80   0.000     1.170271    1.454273
+       _cons |   .0178754   .0137142    -5.25   0.000     .0039738     .080409
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+Block 3: dinner97 pdrink97
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        male |   .9794922   .1046935    -0.19   0.846     .7943646    1.207764
+       age97 |   1.169241   .0684191     2.67   0.008     1.042546    1.311332
+    dinner97 |    .942086   .0208682    -2.69   0.007     .9020603    .9838878
+    pdrink97 |   1.329275   .0598174     6.33   0.000     1.217056    1.451841
+       _cons |   .0524677   .0415938    -3.72   0.000     .0110944    .2481314
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+
+  +-----------------------------------+
+  | Block | Wald chi2     df   Pr > F |
+  |-------+---------------------------|
+  |     1 |      4.37      1   0.0366 |
+  |     2 |     23.01      1   0.0000 |
+  |     3 |     48.85      2   0.0000 |
+  +-----------------------------------+
+
+. powerlog, p1(.70) p2(.75) alpha(.05)
+command powerlog is unrecognized
+r(199);
+
+end of do-file
+r(199);

@@ -1,0 +1,276 @@
+
+________________________________________________________________________________
+
+NLSY97 (rounds 1-6) - Public - 2004-10-06 Codebook
+
+            This Report Was Created on June 9, 2005 at 14:22.
+
+________________________________________________________________________________
+________________________________________________________________________________
+
+R00001.00    [PUBID]                                           Survey Year: 1997
+ 
+             PUBID, YOUTH CASE IDENTIFICATION CODE
+ 
+COMMENT: YOUTH CASE IDENTIFICATION CODE
+ 
+       0           0
+     998           1 TO 999
+     999        1000 TO 1999
+     997        2000 TO 2999
+     996        3000 TO 3999
+     998        4000 TO 4999
+     996        5000 TO 5999
+     994        6000 TO 6999
+     994        7000 TO 7999
+     989        8000 TO 8999
+      23        9000 TO 9999
+  -------
+    8984
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    8984   VALID SKIP(-4)       0     NON-INTERVIEW(-5)       0
+ 
+Min:              1        Max:           9022        Mean:              4504.3
+ 
+Lead In: R13114.00[Default]
+Default Next Question: R05362.00
+________________________________________________________________________________
+
+R34836.00    [YSAQ-022]                                        Survey Year: 1999
+ 
+             MOTHER PRAISES R FOR DOING WELL
+ 
+How often does she praise you for doing well?
+ 
+     118       0 NEVER
+     235       1 RARELY
+     917       2 SOMETIMES
+    1546       3 USUALLY
+    1701       4 ALWAYS
+  -------
+    4517
+ 
+Refusal(-1)           20
+Don't Know(-2)         3
+TOTAL =========>    4540   VALID SKIP(-4)    3669     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34835.00[Default]
+Default Next Question: R34837.00
+________________________________________________________________________________
+
+R34837.00    [YSAQ-023]                                        Survey Year: 1999
+ 
+             MOTHER CRITICIZE RS IDEAS
+ 
+How often does she criticize you or your ideas?
+ 
+    1107       0 NEVER
+    1654       1 RARELY
+    1285       2 SOMETIMES
+     324       3 USUALLY
+     145       4 ALWAYS
+  -------
+    4515
+ 
+Refusal(-1)           20
+Don't Know(-2)         5
+TOTAL =========>    4540   VALID SKIP(-4)    3669     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34836.00[Default]
+Default Next Question: R34838.00
+________________________________________________________________________________
+
+R34838.00    [YSAQ-024]                                        Survey Year: 1999
+ 
+             MOTHER HELPS R WITH WHAT IS IMPORTANT TO R
+ 
+How often does she help you do things that are important to you?
+ 
+     123       0 NEVER
+     301       1 RARELY
+     913       2 SOMETIMES
+    1560       3 USUALLY
+    1619       4 ALWAYS
+  -------
+    4516
+ 
+Refusal(-1)           21
+Don't Know(-2)         3
+TOTAL =========>    4540   VALID SKIP(-4)    3669     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34837.00[Default]
+Default Next Question: R34839.00
+________________________________________________________________________________
+
+R34839.00    [YSAQ-025]                                        Survey Year: 1999
+ 
+             MOTHER BLAMES R FOR PROBLEMS
+ 
+How often does she blame you for her problems?
+ 
+    2793       0 NEVER
+    1039       1 RARELY
+     477       2 SOMETIMES
+     131       3 USUALLY
+      74       4 ALWAYS
+  -------
+    4514
+ 
+Refusal(-1)           21
+Don't Know(-2)         5
+TOTAL =========>    4540   VALID SKIP(-4)    3669     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34838.00[Default]
+Default Next Question: R34840.00
+________________________________________________________________________________
+
+R34852.00    [YSAQ-043]                                        Survey Year: 1999
+ 
+             FATHER PRAISES R FOR DOING WELL
+ 
+How often does he praise you for doing well?
+ 
+     136       0 NEVER
+     322       1 RARELY
+     755       2 SOMETIMES
+    1121       3 USUALLY
+    1042       4 ALWAYS
+  -------
+    3376
+ 
+Refusal(-1)           15
+Don't Know(-2)         2
+TOTAL =========>    3393   VALID SKIP(-4)    4816     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34851.00[Default]
+Default Next Question: R34853.00
+________________________________________________________________________________
+
+R34853.00    [YSAQ-044]                                        Survey Year: 1999
+ 
+             FATHER CRITICIZE RS IDEAS
+ 
+How often does he criticize you or your ideas?
+ 
+    1120       0 NEVER
+    1078       1 RARELY
+     811       2 SOMETIMES
+     247       3 USUALLY
+     117       4 ALWAYS
+  -------
+    3373
+ 
+Refusal(-1)           16
+Don't Know(-2)         4
+TOTAL =========>    3393   VALID SKIP(-4)    4816     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34852.00[Default]
+Default Next Question: R34854.00
+________________________________________________________________________________
+
+R34854.00    [YSAQ-045]                                        Survey Year: 1999
+ 
+             FATHER HELPS WITH WHAT IS IMPORTANT TO R
+ 
+How often does he help you do things that are important to you?
+ 
+     190       0 NEVER
+     373       1 RARELY
+     829       2 SOMETIMES
+    1050       3 USUALLY
+     932       4 ALWAYS
+  -------
+    3374
+ 
+Refusal(-1)           15
+Don't Know(-2)         4
+TOTAL =========>    3393   VALID SKIP(-4)    4816     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34853.00[Default]
+Default Next Question: R34855.00
+________________________________________________________________________________
+
+R34855.00    [YSAQ-046]                                        Survey Year: 1999
+ 
+             FATHER BLAMES R FOR PROBLEMS
+ 
+How often does he blame you for his problems?
+ 
+    2265       0 NEVER
+     674       1 RARELY
+     303       2 SOMETIMES
+      95       3 USUALLY
+      36       4 ALWAYS
+  -------
+    3373
+ 
+Refusal(-1)           16
+Don't Know(-2)         4
+TOTAL =========>    3393   VALID SKIP(-4)    4816     NON-INTERVIEW(-5)     775
+ 
+Lead In: R34854.00[Default]
+Default Next Question: R34856.00
+________________________________________________________________________________
+
+R38281.00    [SYMBOL!KEY!AGE]                                  Survey Year: 1999
+ 
+             SYMBOL!KEY!AGE, RS CURRENT AGE
+ 
+COMMENT: Age of Respondent
+ 
+       0           0
+       0           1
+       0           2
+       0           3
+       0           4
+       0           5
+       0           6
+       0           7
+       0           8
+       0           9
+       0          10
+       0          11
+       0          12
+       0          13
+     109          14
+    1664          15
+    1632          16
+    1728          17
+    1622          18
+    1387          19
+      67          20 TO 99: 20+
+  -------
+    8209
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    8209   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     775
+ 
+Min:             14        Max:             20        Mean:               16.92
+ 
+Lead In: R38280.00[Default]
+Default Next Question: R38282.00
+________________________________________________________________________________
+
+R38287.00    [SYMBOL!KEY!SEX]                                  Survey Year: 1999
+ 
+             SYMBOL!KEY!SEX, RS GENDER
+ 
+COMMENT: Gender of Respondent
+ 
+    4170       1 Male
+    4039       2 Female
+  -------
+    8209
+ 
+Refusal(-1)            0
+Don't Know(-2)         0
+TOTAL =========>    8209   VALID SKIP(-4)       0     NON-INTERVIEW(-5)     775
+ 
+Lead In: R38286.00[Default]
+Default Next Question: R38288.00
+________________________________________________________________________________
+
+

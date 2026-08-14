@@ -1,0 +1,416 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do verify-regression.do 
+
+. * ============================================================
+. * 验证脚本：stata-regression（第 9–11 章核心命令）
+. * 数据来源：data/agis6/
+. * ============================================================
+. version 15
+
+. set more off
+
+. 
+. * ---- ch9 ANOVA ----
+. use partyid, clear
+
+. oneway stemcell partyid, bonferroni tabulate
+
+      party |  Summary of support for stem cell
+identificat |              research
+        ion |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+   democrat |           8   1.2060454          12
+  republica |   4.6666667   2.6053558          12
+  independe |           7   .78446454          14
+  noninvolv |        4.75   .88640526           8
+------------+------------------------------------
+      Total |   6.2608696   2.0916212          46
+
+                        Analysis of variance
+    Source              SS         df      MS            F     Prob > F
+------------------------------------------------------------------------
+Between groups      92.7028986      3   30.9009662     12.46     0.0000
+ Within groups      104.166667     42   2.48015873
+------------------------------------------------------------------------
+    Total           196.869565     45   4.37487923
+
+Bartlett's equal-variances test: chi2(3) =  20.1167    Prob>chi2 = 0.000
+
+     Comparison of support for stem cell research by party identification
+                                (Bonferroni)
+Row Mean-|
+Col Mean |   democrat   republic   independ
+---------+---------------------------------
+republic |   -3.33333
+         |      0.000
+         |
+independ |         -1    2.33333
+         |      0.684      0.003
+         |
+noninvol |      -3.25    .083333      -2.25
+         |      0.000      1.000      0.015
+
+. kwallis stemcell, by(partyid)
+
+Kruskal–Wallis equality-of-populations rank test
+
+  +------------------------------+
+  |     partyid | Obs | Rank sum |
+  |-------------+-----+----------|
+  |    democrat |  12 |   422.00 |
+  |  republican |  12 |   174.00 |
+  | independent |  14 |   391.00 |
+  | noninvolved |   8 |    94.00 |
+  +------------------------------+
+
+  chi2(3) = 22.115
+     Prob = 0.0001
+
+  chi2(3) with ties = 22.696
+               Prob = 0.0001
+
+. use gss2006_chapter9, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. anova prestg80 mobile16 c.age if age > 29 & age < 60 & wrkstat==1
+
+                         Number of obs =      1,090    R-squared     =  0.0183
+                         Root MSE      =    13.6511    Adj R-squared =  0.0156
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  3777.3325          3   1259.1108      6.76  0.0002
+                         |
+                mobile16 |  3750.7312          2   1875.3656     10.06  0.0000
+                     age |  61.258461          1   61.258461      0.33  0.5665
+                         |
+                Residual |  202378.93      1,086    186.3526  
+              -----------+----------------------------------------------------
+                   Total |  206156.26      1,089   189.30786  
+
+. margins mobile16, atmeans
+
+Adjusted predictions                                     Number of obs = 1,090
+
+Expression: Linear prediction, predict()
+At: age        = 43.82294 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    mobile16 |
+  SAME CITY  |   44.10402   .6863205    64.26   0.000     42.75736    45.45068
+SAME ST,D..  |   48.68809    .832746    58.47   0.000     47.05412    50.32206
+DIFFERENT..  |   47.18756   .6621822    71.26   0.000     45.88826    48.48686
+------------------------------------------------------------------------------
+
+. use gss2006_chapter9_2way, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. anova tvhours workfull married workfull#married
+
+                         Number of obs =      1,986    R-squared     =  0.0719
+                         Root MSE      =    2.20434    Adj R-squared =  0.0705
+
+                  Source | Partial SS         df         MS        F    Prob>F
+        -----------------+----------------------------------------------------
+                   Model |   746.1336          3    248.7112     51.18  0.0000
+                         |
+                workfull |  525.37818          1   525.37818    108.12  0.0000
+                 married |  169.42138          1   169.42138     34.87  0.0000
+        workfull#married |  18.535767          1   18.535767      3.81  0.0509
+                         |
+                Residual |   9630.745      1,982   4.8591045  
+        -----------------+----------------------------------------------------
+                   Total |  10376.879      1,985   5.2276467  
+
+. 
+. * ---- ch10 多元回归 ----
+. use ops2004, clear
+
+. regress env_con educat inc com3 hlthprob epht3, beta
+
+      Source |       SS           df       MS      Number of obs   =     3,769
+-------------+----------------------------------   F(5, 3763)      =    320.15
+       Model |   647.67793         5  129.535586   Prob > F        =    0.0000
+    Residual |   1522.5587     3,763  .404612995   R-squared       =    0.2984
+-------------+----------------------------------   Adj R-squared   =    0.2975
+       Total |  2170.23663     3,768  .575965136   Root MSE        =    .63609
+
+------------------------------------------------------------------------------
+     env_con | Coefficient  Std. err.      t    P>|t|                     Beta
+-------------+----------------------------------------------------------------
+      educat |   .0011841    .004077     0.29   0.772                 .0044584
+         inc |   5.51e-08   3.62e-07     0.15   0.879                 .0023317
+        com3 |  -.0503162   .0092717    -5.43   0.000                 -.074352
+    hlthprob |   .2974034   .0248129    11.99   0.000                  .172927
+       epht3 |   .4020741    .012687    31.69   0.000                 .4575999
+       _cons |   1.273655   .0651735    19.54   0.000                        .
+------------------------------------------------------------------------------
+
+. pcorr env_con educat inc com3 hlthprob epht3
+(obs=3769)
+
+Partial and semipartial correlations of env_con with
+
+               Partial   Semipartial      Partial   Semipartial   Significance
+   Variable |    corr.         corr.      corr.^2       corr.^2          value
+------------+-----------------------------------------------------------------
+     educat |   0.0047        0.0040       0.0000        0.0000         0.7715
+        inc |   0.0025        0.0021       0.0000        0.0000         0.8788
+       com3 |  -0.0881       -0.0741       0.0078        0.0055         0.0000
+   hlthprob |   0.1918        0.1637       0.0368        0.0268         0.0000
+      epht3 |   0.4590        0.4327       0.2107        0.1873         0.0000
+
+. estat vif
+
+    Variable |       VIF       1/VIF  
+-------------+----------------------
+      educat |      1.26    0.791143
+         inc |      1.25    0.797304
+       epht3 |      1.12    0.894240
+    hlthprob |      1.12    0.895659
+        com3 |      1.01    0.993215
+-------------+----------------------
+    Mean VIF |      1.15
+
+. regress env_con educat inc com3 hlthprob epht3, vce(robust)
+
+Linear regression                               Number of obs     =      3,769
+                                                F(5, 3763)        =     364.77
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.2984
+                                                Root MSE          =     .63609
+
+------------------------------------------------------------------------------
+             |               Robust
+     env_con | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      educat |   .0011841   .0040566     0.29   0.770    -.0067693    .0091374
+         inc |   5.51e-08   3.53e-07     0.16   0.876    -6.37e-07    7.47e-07
+        com3 |  -.0503162   .0097376    -5.17   0.000    -.0694077   -.0312247
+    hlthprob |   .2974034    .025649    11.60   0.000     .2471162    .3476907
+       epht3 |   .4020741   .0132853    30.26   0.000     .3760269    .4281212
+       _cons |   1.273655   .0664517    19.17   0.000      1.14337     1.40394
+------------------------------------------------------------------------------
+
+. use c10interaction, clear
+
+. regress inc i.male##c.educ, beta
+
+      Source |       SS           df       MS      Number of obs   =       120
+-------------+----------------------------------   F(3, 116)       =     34.89
+       Model |  122604.719         3  40868.2397   Prob > F        =    0.0000
+    Residual |  135875.281       116  1171.33863   R-squared       =    0.4743
+-------------+----------------------------------   Adj R-squared   =    0.4607
+       Total |      258480       119  2172.10084   Root MSE        =    34.225
+
+------------------------------------------------------------------------------
+         inc | Coefficient  Std. err.      t    P>|t|                     Beta
+-------------+----------------------------------------------------------------
+      1.male |  -91.88539   26.27242    -3.50   0.001                -.9899052
+        educ |   3.602369   1.388076     2.60   0.011                 .2585699
+             |
+ male#c.educ |
+          1  |   8.196446   1.885263     4.35   0.000                 1.287508
+             |
+       _cons |   16.84834   19.07279     0.88   0.379                        .
+------------------------------------------------------------------------------
+
+. 
+. * ---- ch11 逻辑回归 ----
+. use nlsy97_chapter11, clear
+(National Survey of Youth, 1997, selected variables from first wave)
+
+. logistic drank30 age97 male pdrink97 dinner97
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   1.169241   .0684191     2.67   0.008     1.042546    1.311332
+        male |   .9794922   .1046935    -0.19   0.846     .7943646    1.207764
+    pdrink97 |   1.329275   .0598174     6.33   0.000     1.217056    1.451841
+    dinner97 |    .942086   .0208682    -2.69   0.007     .9020603    .9838878
+       _cons |   .0524677   .0415938    -3.72   0.000     .0110944    .2481314
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. logit drank30 age97 male pdrink97 dinner97
+
+Iteration 0:  Log likelihood = -1100.0502  
+Iteration 1:  Log likelihood =  -1061.142  
+Iteration 2:  Log likelihood = -1061.0474  
+Iteration 3:  Log likelihood = -1061.0474  
+
+Logistic regression                                     Number of obs =  1,654
+                                                        LR chi2(4)    =  78.01
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1061.0474                             Pseudo R2     = 0.0355
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |   .1563548   .0585158     2.67   0.008     .0416659    .2710437
+        male |   -.020721   .1068855    -0.19   0.846    -.2302128    .1887708
+    pdrink97 |   .2846336   .0450001     6.33   0.000     .1964351    .3728321
+    dinner97 |  -.0596587    .022151    -2.69   0.007    -.1030739   -.0162434
+       _cons |  -2.947557   .7927494    -3.72   0.000    -4.501317   -1.393797
+------------------------------------------------------------------------------
+
+. generate black = race97 - 1
+(80 missing values generated)
+
+. replace black = . if race97 > 2
+(1,284 real changes made, 1,284 to missing)
+
+. logit drank30 age97 i.black pdrink97 dinner97
+
+Iteration 0:  Log likelihood = -935.86755  
+Iteration 1:  Log likelihood = -901.48553  
+Iteration 2:  Log likelihood = -901.37312  
+Iteration 3:  Log likelihood = -901.37311  
+
+Logistic regression                                     Number of obs =  1,413
+                                                        LR chi2(4)    =  68.99
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -901.37311                             Pseudo R2     = 0.0369
+
+------------------------------------------------------------------------------
+     drank30 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       age97 |    .138153   .0635579     2.17   0.030     .0135818    .2627241
+     1.black |  -.3804608   .1352133    -2.81   0.005     -.645474   -.1154476
+    pdrink97 |   .2822417    .048233     5.85   0.000     .1877067    .3767767
+    dinner97 |   -.069024   .0246204    -2.80   0.005    -.1172791   -.0207689
+       _cons |  -2.590308   .8609411    -3.01   0.003    -4.277722   -.9028946
+------------------------------------------------------------------------------
+
+. margins, dydx(black) atmeans
+
+Conditional marginal effects                             Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+dy/dx wrt:  1.black
+At: age97    = 13.67445 (mean)
+    0.black  = .7523001 (mean)
+    1.black  = .2476999 (mean)
+    pdrink97 = 2.112527 (mean)
+    dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     1.black |  -.0862436   .0296054    -2.91   0.004     -.144269   -.0282181
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. margins, at(pdrink97=(1 2 3 4 5)) atmeans
+
+Adjusted predictions                                     Number of obs = 1,413
+Model VCE: OIM
+
+Expression: Pr(drank30), predict()
+1._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        1
+       dinner97 = 4.760793 (mean)
+2._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        2
+       dinner97 = 4.760793 (mean)
+3._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        3
+       dinner97 = 4.760793 (mean)
+4._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        4
+       dinner97 = 4.760793 (mean)
+5._at: age97    = 13.67445 (mean)
+       0.black  = .7523001 (mean)
+       1.black  = .2476999 (mean)
+       pdrink97 =        5
+       dinner97 = 4.760793 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   .3011665   .0168523    17.87   0.000     .2681367    .3341963
+          2  |   .3636614   .0132156    27.52   0.000     .3377592    .3895636
+          3  |   .4311242   .0169284    25.47   0.000     .3979451    .4643033
+          4  |    .501244   .0261244    19.19   0.000      .450041    .5524469
+          5  |   .5713148   .0361017    15.83   0.000     .5005567    .6420729
+------------------------------------------------------------------------------
+
+. use environ, clear
+
+. tab2 environ libcand, row
+
+-> tabulation of environ by libcand  
+
++----------------+
+| Key            |
+|----------------|
+|   frequency    |
+| row percentage |
++----------------+
+
+Environmen |
+       tal |    support liberal
+concern: 1 |  candidate: 1 yes, 0
+   high, 0 |          no
+       low |         0          1 |     Total
+-----------+----------------------+----------
+         0 |         6          4 |        10 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+         1 |         3          7 |        10 
+           |     30.00      70.00 |    100.00 
+-----------+----------------------+----------
+     Total |         9         11 |        20 
+           |     45.00      55.00 |    100.00 
+
+. 
+. display "VERIFY REGRESSION DONE"
+VERIFY REGRESSION DONE
+
+. exit, clear
+
+end of do-file

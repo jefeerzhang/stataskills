@@ -1,0 +1,669 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter15.do 
+
+. set scheme s2mono
+
+. 
+. /* code for figure 15.1 - doesn't go to users */
+. 
+. clear
+
+. input y x1 x2 x3 x4 x5
+
+             y         x1         x2         x3         x4         x5
+  1. 0  2  0  4  0  2
+  2. 2  3  1  5  0  4
+  3. 4  4  2  6  0  6
+  4. 6  5  3  7  0  8
+  5. 8  6  4  8  0  10
+  6. 10 7  5  9  0  12
+  7. end
+
+. 
+. twoway connected x1 y, msymbol(circle) mcolor(black) ///
+>   xtitle(Wave) ytitle(Number of Drinks Last 30 Days) ///
+>   title(Fixed Part of Random-Effects Model) name(A, replace) legend(off)
+
+. twoway connected x1 y, msymbol(circle) mcolor(black) || ///
+>   connected x2 y, msymbol(circle) mcolor(black) || ///
+>   connected x3 y, msymbol(circle) mcolor(black) ///
+>   xtitle(Wave) ytitle(Number of Drinks Last 30 Days) ///
+>   title(Random Intercepts) name(B, replace) legend(off)
+
+. twoway connected x3 y, msymbol(circle) mcolor(black) || ///
+>   connected x4 y, msymbol(circle) mcolor(black) || ///
+>   connected x5 y, msymbol(circle) mcolor(black) ///
+>   xtitle(Wave) ytitle(Number of Drinks Last 30 Days) ///
+>   title(Random Coefficients) name(C, replace) legend(off)
+
+. graph combine A B C
+
+. 
+. /* end figure 15.1 - commands below go in the do-file for readers*/
+. 
+. use "longitudinal_mixed.dta", clear
+
+. /*
+>  age of all people was 17 in 1997. We analyze # days they drank
+> in the last 30 days for 1998, 2000, 2002, 2004, 2006, and 2008
+> */
+. 
+. 
+. clonevar drink0 = drink98
+(1,237 missing values generated)
+
+. clonevar drink2 = drink00
+(1,018 missing values generated)
+
+. clonevar drink4 = drink02
+(814 missing values generated)
+
+. clonevar drink6 = drink04
+(795 missing values generated)
+
+. clonevar drink8 = drink06
+(634 missing values generated)
+
+. clonevar drink10 = drink08
+(654 missing values generated)
+
+. drop drink98 drink00 drink02 drink04 drink06 drink08
+
+. 
+. reshape long drink, i(id) j(wave)
+(j = 0 2 4 6 8 10)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations            1,771   ->   10,626      
+Number of variables                   8   ->   4           
+j variable (6 values)                     ->   wave
+xij variables:
+              drink0 drink2 ... drink10   ->   drink
+-----------------------------------------------------------------------------
+
+. 
+. twoway connected drink wave if id < 100, connect(L)
+
+. 
+. * Random Intercept Linear Trend
+. mixed drink c.wave || id:
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17216.599  
+Iteration 1:  Log likelihood = -17216.599  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(1)     = 499.41
+Log likelihood = -17216.599                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4930213   .0220615    22.35   0.000     .4497815    .5362611
+       _cons |   1.917751   .1677386    11.43   0.000     1.588989    2.246512
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Identity                 |
+                  var(_cons) |   10.05363   .6419645      8.870953    11.39398
+-----------------------------+------------------------------------------------
+               var(Residual) |   24.80612   .5520718      23.74734     25.9121
+------------------------------------------------------------------------------
+LR test vs. linear model: chibar2(01) = 568.55        Prob >= chibar2 = 0.0000
+
+. estimates store linear
+
+. margins, at(wave=(0(2)10))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave =  0
+2._at: wave =  2
+3._at: wave =  4
+4._at: wave =  6
+5._at: wave =  8
+6._at: wave = 10
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   1.917751   .1677386    11.43   0.000     1.588989    2.246512
+          2  |   2.903793   .1369429    21.20   0.000      2.63539    3.172196
+          3  |   3.889836   .1151703    33.77   0.000     3.664106    4.115565
+          4  |   4.875878   .1080218    45.14   0.000      4.66416    5.087597
+          5  |   5.861921   .1181817    49.60   0.000     5.630289    6.093553
+          6  |   6.847963   .1419817    48.23   0.000     6.569684    7.126243
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: wave
+
+. 
+. * Random Intercept Quadratic Trend
+. mixed drink c.wave##c.wave || id:
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17201.188  
+Iteration 1:  Log likelihood = -17201.188  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(2)     = 535.19
+Log likelihood = -17201.188                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .9295978   .0813806    11.42   0.000     .7700948    1.089101
+             |
+      c.wave#|
+      c.wave |  -.0405579   .0072885    -5.56   0.000     -.054843   -.0262727
+             |
+       _cons |   1.173831   .2137214     5.49   0.000     .7549443    1.592717
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Identity                 |
+                  var(_cons) |   10.14196   .6431121      8.956669    11.48412
+-----------------------------+------------------------------------------------
+               var(Residual) |   24.60029   .5475923       23.5501     25.6973
+------------------------------------------------------------------------------
+LR test vs. linear model: chibar2(01) = 581.20        Prob >= chibar2 = 0.0000
+
+. estimates store quadratic
+
+. margins, at(wave=(0(2)10))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave =  0
+2._at: wave =  2
+3._at: wave =  4
+4._at: wave =  6
+5._at: wave =  8
+6._at: wave = 10
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   1.173831   .2137214     5.49   0.000     .7549443    1.592717
+          2  |   2.870795   .1369328    20.96   0.000     2.602411    3.139178
+          3  |   4.243296   .1317906    32.20   0.000     3.984991    4.501601
+          4  |   5.291334   .1315462    40.22   0.000     5.033508    5.549159
+          5  |   6.014909   .1213646    49.56   0.000     5.777038    6.252779
+          6  |    6.41402   .1619082    39.62   0.000     6.096686    6.731355
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: wave
+
+. lrtest linear quadratic
+
+Likelihood-ratio test
+Assumption: linear nested within quadratic
+
+ LR chi2(1) =  30.82
+Prob > chi2 = 0.0000
+
+. 
+. * Treating time as categorical
+. mixed drink i.wave || id:
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17198.516  
+Iteration 1:  Log likelihood = -17198.515  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(5)     = 541.66
+Log likelihood = -17198.515                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |
+          2  |    1.15965    .291726     3.98   0.000     .5878774    1.731422
+          4  |   3.014499   .2802921    10.75   0.000     2.465136    3.563861
+          6  |   3.864924   .2806947    13.77   0.000     3.314773    4.415075
+          8  |   4.718234    .273886    17.23   0.000     4.181427     5.25504
+         10  |   4.983518   .2749629    18.12   0.000     4.444601    5.522436
+             |
+       _cons |   1.378645   .2414423     5.71   0.000     .9054266    1.851863
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Identity                 |
+                  var(_cons) |   10.17328   .6441162      8.986025     11.5174
+-----------------------------+------------------------------------------------
+               var(Residual) |   24.55744   .5467355       23.5089    25.65275
+------------------------------------------------------------------------------
+LR test vs. linear model: chibar2(01) = 584.11        Prob >= chibar2 = 0.0000
+
+. estimates store means
+
+. margins, at(wave=(0(2)10))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave =  0
+2._at: wave =  2
+3._at: wave =  4
+4._at: wave =  6
+5._at: wave =  8
+6._at: wave = 10
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   1.378645   .2414423     5.71   0.000     .9054266    1.851863
+          2  |   2.538295    .206095    12.32   0.000     2.134356    2.942234
+          3  |   4.393144   .1851641    23.73   0.000     4.030229    4.756059
+          4  |   5.243569   .1835962    28.56   0.000     4.883727    5.603411
+          5  |   6.096879   .1716476    35.52   0.000     5.760455    6.433302
+          6  |   6.362163   .1729029    36.80   0.000      6.02328    6.701047
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: wave
+
+. lrtest linear means
+
+Likelihood-ratio test
+Assumption: linear nested within means
+
+ LR chi2(4) =  36.17
+Prob > chi2 = 0.0000
+
+. lrtest quadratic means
+
+Likelihood-ratio test
+Assumption: quadratic nested within means
+
+ LR chi2(3) =   5.34
+Prob > chi2 = 0.1482
+
+. 
+. * Random coefficients
+. mixed drink c.wave || id: wave, cov(unstructured)
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17029.795  
+Iteration 1:  Log likelihood = -17013.354  
+Iteration 2:  Log likelihood = -17012.671  
+Iteration 3:  Log likelihood = -17012.446  
+Iteration 4:  Log likelihood =  -17012.39  
+Iteration 5:  Log likelihood = -17012.375  
+Iteration 6:  Log likelihood = -17012.374  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(1)     = 350.87
+Log likelihood = -17012.374                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4493337   .0239881    18.73   0.000     .4023178    .4963496
+       _cons |   2.239133   .1304158    17.17   0.000     1.983523    2.494743
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Unstructured             |
+                   var(wave) |   .2401082   .0239537      .1974646     .291961
+                  var(_cons) |   .3068269   .1670719      .1055362    .8920427
+             cov(wave,_cons) |   .2714246   .0652301      .1435761    .3992732
+-----------------------------+------------------------------------------------
+               var(Residual) |   21.31518   .4765172      20.40139     22.2699
+------------------------------------------------------------------------------
+LR test vs. linear model: chi2(3) = 977.00                Prob > chi2 = 0.0000
+
+Note: LR test is conservative and provided only for reference.
+
+. predict yhat_drink, fitted
+(1,302 missing values generated)
+
+. twoway (lfit yhat_drink wave, lwidth(thick))                            ///
+>                 (line yhat_drink wave if id == 13)      ///
+>                 (line yhat_drink wave if id == 61)      ///
+>                 (line yhat_drink wave if id == 77)      ///
+>                 (line yhat_drink wave if id == 82)      ///     
+>                 (line yhat_drink wave if id == 54)      ///
+>                 (line yhat_drink wave if id == 125)     ///
+>            (line yhat_drink wave if id == 134)  ///     
+>            (line yhat_drink wave if id == 138)  ///
+>            (line yhat_drink wave if id == 334)  ///
+>            (line yhat_drink wave if id == 364)  ///
+>            (line yhat_drink wave if id == 559)  ///
+>            (line yhat_drink wave if id == 715)  ///
+>            (line yhat_drink wave if id == 938), legend(off)
+
+. 
+. * Random coefficients model with time invariant covariate
+. * gender coded as male = 1, female = 0
+. mixed drink c.wave i.male || id: wave
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17007.215  
+Iteration 1:  Log likelihood = -17000.063  
+Iteration 2:  Log likelihood = -17000.038  
+Iteration 3:  Log likelihood = -17000.038  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(2)     = 361.84
+Log likelihood = -17000.038                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4437515   .0245979    18.04   0.000     .3955405    .4919626
+             |
+        male |
+       Male  |   1.086603   .1913298     5.68   0.000     .7116039    1.461603
+       _cons |   1.725033   .1636966    10.54   0.000     1.404194    2.045872
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Independent              |
+                   var(wave) |   .2803658   .0190368      .2454306    .3202738
+                  var(_cons) |   1.286128   .5196101      .5826252     2.83909
+-----------------------------+------------------------------------------------
+               var(Residual) |   21.12014   .4929654      20.17571    22.10877
+------------------------------------------------------------------------------
+LR test vs. linear model: chi2(2) = 913.96                Prob > chi2 = 0.0000
+
+Note: LR test is conservative and provided only for reference.
+
+. margins male, at(wave=(0(2)8))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave = 0
+2._at: wave = 2
+3._at: wave = 4
+4._at: wave = 6
+5._at: wave = 8
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    _at#male |
+   1#Female  |   1.725033   .1636966    10.54   0.000     1.404194    2.045872
+     1#Male  |   2.811636   .1650895    17.03   0.000     2.488067    3.135206
+   2#Female  |   2.612536   .1421612    18.38   0.000     2.333905    2.891167
+     2#Male  |   3.699139   .1424786    25.96   0.000     3.419886    3.978392
+   3#Female  |   3.500039   .1358805    25.76   0.000     3.233718     3.76636
+     3#Male  |   4.586643   .1348563    34.01   0.000     4.322329    4.850956
+   4#Female  |   4.387542   .1468253    29.88   0.000      4.09977    4.675315
+     4#Male  |   5.474146   .1446124    37.85   0.000     5.190711    5.757581
+   5#Female  |   5.275045   .1717332    30.72   0.000     4.938454    5.611636
+     5#Male  |   6.361649   .1687593    37.70   0.000     6.030887    6.692411
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: wave male
+
+. 
+. * Random coefficients, with wave interacting with the
+. * time invariant covariate--gender coded
+. mixed drink c.wave##i.male || id: wave
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -16996.761  
+Iteration 1:  Log likelihood = -16989.789  
+Iteration 2:  Log likelihood =  -16989.76  
+Iteration 3:  Log likelihood =  -16989.76  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(3)     = 385.04
+Log likelihood =  -16989.76                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .3328034   .0346532     9.60   0.000     .2648844    .4007224
+             |
+        male |
+       Male  |   .2408692   .2673299     0.90   0.368    -.2830877    .7648261
+             |
+ male#c.wave |
+       Male  |   .2227025   .0490476     4.54   0.000      .126571     .318834
+             |
+       _cons |   2.137202    .187434    11.40   0.000     1.769838    2.504566
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Independent              |
+                   var(wave) |   .2766612   .0188117      .2421422    .3161011
+                  var(_cons) |   1.321931   .5187413      .6126148    2.852531
+-----------------------------+------------------------------------------------
+               var(Residual) |   21.06079   .4908945       20.1203    22.04524
+------------------------------------------------------------------------------
+LR test vs. linear model: chi2(2) = 915.56                Prob > chi2 = 0.0000
+
+Note: LR test is conservative and provided only for reference.
+
+. margins male, at(wave=(0(2)8))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave = 0
+2._at: wave = 2
+3._at: wave = 4
+4._at: wave = 6
+5._at: wave = 8
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    _at#male |
+   1#Female  |   2.137202    .187434    11.40   0.000     1.769838    2.504566
+     1#Male  |   2.378071   .1906142    12.48   0.000     2.004474    2.751668
+   2#Female  |   2.802809   .1482871    18.90   0.000     2.512171    3.093446
+     2#Male  |   3.489083   .1497256    23.30   0.000     3.195626     3.78254
+   3#Female  |   3.468416   .1358433    25.53   0.000     3.202168    3.734664
+     3#Male  |   4.600095   .1346861    34.15   0.000     4.336115    4.864075
+   4#Female  |   4.134022   .1566029    26.40   0.000     3.827086    4.440959
+     4#Male  |   5.711107    .153302    37.25   0.000      5.41064    6.011573
+   5#Female  |   4.799629   .2005051    23.94   0.000     4.406647    5.192612
+     5#Male  |   6.822118   .1962174    34.77   0.000      6.43754    7.206697
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: wave male
+
+. 
+. mixed drink c.wave##c.wave##i.male || id: wave
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -16985.292  
+Iteration 1:  Log likelihood = -16979.131  
+Iteration 2:  Log likelihood = -16979.091  
+Iteration 3:  Log likelihood = -16979.091  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(5)     = 411.41
+Log likelihood = -16979.091                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .5446892   .1057079     5.15   0.000     .3375054    .7518729
+             |
+      c.wave#|
+      c.wave |  -.0199158   .0094552    -2.11   0.035    -.0384476    -.001384
+             |
+        male |
+       Male  |  -.1165619   .3566648    -0.33   0.744     -.815612    .5824882
+             |
+ male#c.wave |
+       Male  |   .4305478   .1502755     2.87   0.004     .1360132    .7250824
+             |
+ male#c.wave#|
+      c.wave |
+       Male  |  -.0195614   .0134288    -1.46   0.145    -.0458813    .0067585
+             |
+       _cons |   1.782608   .2489512     7.16   0.000     1.294673    2.270544
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Independent              |
+                   var(wave) |   .2717541   .0187158      .2374398    .3110274
+                  var(_cons) |   1.547145   .5279445      .7926265    3.019905
+-----------------------------+------------------------------------------------
+               var(Residual) |   20.91894   .4885036      19.98307    21.89864
+------------------------------------------------------------------------------
+LR test vs. linear model: chi2(2) = 917.80                Prob > chi2 = 0.0000
+
+Note: LR test is conservative and provided only for reference.
+
+. margins male, at(wave=(0(2)8))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave = 0
+2._at: wave = 2
+3._at: wave = 4
+4._at: wave = 6
+5._at: wave = 8
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    _at#male |
+   1#Female  |   1.782608   .2489512     7.16   0.000     1.294673    2.270544
+     1#Male  |   1.666046   .2554076     6.52   0.000     1.165457    2.166636
+   2#Female  |   2.792323   .1491329    18.72   0.000     2.500028    3.084619
+     2#Male  |   3.458611   .1505728    22.97   0.000     3.163494    3.753729
+   3#Female  |   3.642712   .1609373    22.63   0.000     3.327281    3.958143
+     3#Male  |   4.935359   .1583395    31.17   0.000     4.625019    5.245698
+   4#Female  |   4.333774   .1837362    23.59   0.000     3.973658     4.69389
+     4#Male  |   6.096288   .1797028    33.92   0.000     5.744077    6.448499
+   5#Female  |   4.865509   .2023525    24.04   0.000     4.468906    5.262113
+     5#Male  |   6.941399   .1977806    35.10   0.000     6.553756    7.329042
+------------------------------------------------------------------------------
+
+. marginsplot
+
+Variables that uniquely identify margins: wave male
+
+. 
+. 
+end of do-file

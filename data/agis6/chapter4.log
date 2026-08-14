@@ -1,0 +1,151 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do chapter4.do 
+
+. * c4.do
+. * do-file opens firstsurvey_chapter4.dta, summarizes education 
+. * and prison for women and then graphs a pie chart on prison.
+. use firstsurvey_chapter4, clear
+
+. summarize
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          id |         20        10.5     5.91608          1         20
+      gender |         20         1.5    .5129892          1          2
+   education |         20       14.45    2.946452          8         20
+      sch_st |         18    3.444444    1.149026          2          5
+     sch_com |         20         3.5    1.395481          1          5
+-------------+---------------------------------------------------------
+      prison |         17    3.176471    1.550617          1          5
+     conserv |         19    2.947368    1.544657          1          5
+
+. summarize education, detail
+
+                     Years of education
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%            8              8
+ 5%          9.5             11
+10%         11.5             12       Obs                  20
+25%           12             12       Sum of wgt.          20
+
+50%         14.5                      Mean              14.45
+                        Largest       Std. dev.      2.946452
+75%         16.5             17
+90%           18             18       Variance       8.681579
+95%           19             18       Skewness      -.1636124
+99%           20             20       Kurtosis       2.522208
+
+. list gender education prison in 1/5
+
+     +--------------------------------------+
+     | gender   educat~n             prison |
+     |--------------------------------------|
+  1. |  woman         15           too long |
+  2. |    man         12   much too lenient |
+  3. |    man         16        about right |
+  4. |    man          8                  . |
+  5. |  woman         12        about right |
+     +--------------------------------------+
+
+. list gender education prison in 1/5, nolabel
+
+     +----------------------------+
+     | gender   educat~n   prison |
+     |----------------------------|
+  1. |      2         15        4 |
+  2. |      1         12        1 |
+  3. |      1         16        3 |
+  4. |      1          8        . |
+  5. |      2         12        3 |
+     +----------------------------+
+
+. numlabel _all, add
+
+. list gender education prison in 1/5
+
+     +-------------------------------------------+
+     |   gender   educat~n                prison |
+     |-------------------------------------------|
+  1. | 2. woman         15           4. too long |
+  2. |   1. man         12   1. much too lenient |
+  3. |   1. man         16        3. about right |
+  4. |   1. man          8                     . |
+  5. | 2. woman         12        3. about right |
+     +-------------------------------------------+
+
+. use firstsurvey_chapter4, clear
+
+. summarize education  prison if gender == 2, detail
+
+                     Years of education
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           11             11
+ 5%           11             12
+10%         11.5             12       Obs                  10
+25%           12             14       Sum of wgt.          10
+
+50%         14.5                      Mean               14.6
+                        Largest       Std. dev.      2.458545
+75%           16             16
+90%           18             16       Variance       6.044444
+95%           18             18       Skewness       .0151322
+99%           18             18       Kurtosis       1.806445
+
+                 Rating of prison sentences
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%            1              1
+ 5%            1              1
+10%            1              2       Obs                   9
+25%            2              3       Sum of wgt.           9
+
+50%            4                      Mean           3.111111
+                        Largest       Std. dev.      1.452966
+75%            4              4
+90%            5              4       Variance       2.111111
+95%            5              4       Skewness      -.4599831
+99%            5              5       Kurtosis       1.782029
+
+. list gender education prison in 1/5
+
+     +--------------------------------------+
+     | gender   educat~n             prison |
+     |--------------------------------------|
+  1. |  woman         15           too long |
+  2. |    man         12   much too lenient |
+  3. |    man         16        about right |
+  4. |    man          8                  . |
+  5. |  woman         12        about right |
+     +--------------------------------------+
+
+. graph pie, over(prison) title(Length of Prison Sentences) ///
+>     note(firstsurvey_chapter4.dta) plabel(_all name) cw
+
+. 
+. 
+end of do-file
