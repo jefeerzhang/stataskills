@@ -1,0 +1,353 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do dofiles/04_stata-advanced.do 
+
+. *==========================================================*
+. * DEMO 4/5 : stata-advanced —— 进阶测量与现代方法（书第 12–14 章）
+. * 技能源   : skills/stata-advanced/SKILL.md
+. * 数据     : auto.dta
+. *==========================================================*
+. version 19.5
+
+. set more off
+
+. clear all
+
+. sysuse auto, clear
+(1978 automobile data)
+
+. 
+. *---- 第 12 章：因子分析（PCF 主成分因子）-----------------
+. factor price mpg weight length displacement gear_ratio, pcf
+(obs=74)
+
+Factor analysis/correlation                      Number of obs    =         74
+    Method: principal-component factors          Retained factors =          1
+    Rotation: (unrotated)                        Number of params =          6
+
+    --------------------------------------------------------------------------
+         Factor  |   Eigenvalue   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      4.45999      3.71485            0.7433       0.7433
+        Factor2  |      0.74514      0.33128            0.1242       0.8675
+        Factor3  |      0.41386      0.17583            0.0690       0.9365
+        Factor4  |      0.23803      0.13250            0.0397       0.9762
+        Factor5  |      0.10553      0.06808            0.0176       0.9938
+        Factor6  |      0.03745            .            0.0062       1.0000
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(15) =  473.26 Prob>chi2 = 0.0000
+
+Factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------
+        Variable |  Factor1 |   Uniqueness 
+    -------------+----------+--------------
+           price |   0.5925 |      0.6489  
+             mpg |  -0.8591 |      0.2619  
+          weight |   0.9709 |      0.0573  
+          length |   0.9298 |      0.1355  
+    displacement |   0.9345 |      0.1266  
+      gear_ratio |  -0.8308 |      0.3098  
+    ---------------------------------------
+
+. screeplot, title("Scree Plot") scheme(s1mono)
+
+. graph export "output/04_screeplot.png", replace
+file output/04_screeplot.png written in PNG format
+
+. rotate
+
+Factor analysis/correlation                      Number of obs    =         74
+    Method: principal-component factors          Retained factors =          1
+    Rotation: orthogonal varimax (Kaiser off)    Number of params =          6
+
+    --------------------------------------------------------------------------
+         Factor  |     Variance   Difference        Proportion   Cumulative
+    -------------+------------------------------------------------------------
+        Factor1  |      4.45999            .            0.7433       0.7433
+    --------------------------------------------------------------------------
+    LR test: independent vs. saturated:  chi2(15) =  473.26 Prob>chi2 = 0.0000
+
+Rotated factor loadings (pattern matrix) and unique variances
+
+    ---------------------------------------
+        Variable |  Factor1 |   Uniqueness 
+    -------------+----------+--------------
+           price |   0.5925 |      0.6489  
+             mpg |  -0.8591 |      0.2619  
+          weight |   0.9709 |      0.0573  
+          length |   0.9298 |      0.1355  
+    displacement |   0.9345 |      0.1266  
+      gear_ratio |  -0.8308 |      0.3098  
+    ---------------------------------------
+
+Factor rotation matrix
+
+    -----------------------
+                 | Factor1 
+    -------------+---------
+         Factor1 |  1.0000 
+    -----------------------
+
+. * 仅 1 个因子被保留（特征值>1），预测因子得分 f1
+. predict f1
+(option regression assumed; regression scoring)
+
+Scoring coefficients (method = regression; based on varimax rotated factors)
+
+    ------------------------
+        Variable |  Factor1 
+    -------------+----------
+           price |  0.13286 
+             mpg | -0.19263 
+          weight |  0.21769 
+          length |  0.20847 
+    displacement |  0.20954 
+      gear_ratio | -0.18628 
+    ------------------------
+
+
+. list make f1 in 1/10, noobs
+
+  +---------------------------+
+  | make                   f1 |
+  |---------------------------|
+  | AMC Concord     -.5644155 |
+  | AMC Pacer        .3685094 |
+  | AMC Spirit      -.6235657 |
+  | Buick Century    .1542137 |
+  | Buick Electra    1.495895 |
+  |---------------------------|
+  | Buick LeSabre    .7497172 |
+  | Buick Opel      -.3201352 |
+  | Buick Regal      .2168691 |
+  | Buick Riviera    .8969722 |
+  | Buick Skylark    .2525345 |
+  +---------------------------+
+
+. 
+. *---- 第 13 章：SEM / GSEM --------------------------------
+. * sem 等价于线性回归（可画路径图、可用 FIML 处理缺失）
+. regress price mpg weight length
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(3, 70)        =     12.98
+       Model |   226957412         3  75652470.6   Prob > F        =    0.0000
+    Residual |   408107984        70  5830114.06   R-squared       =    0.3574
+-------------+----------------------------------   Adj R-squared   =    0.3298
+       Total |   635065396        73  8699525.97   Root MSE        =    2414.6
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -86.78928   83.94335    -1.03   0.305     -254.209    80.63046
+      weight |   4.364798   1.167455     3.74   0.000     2.036383    6.693213
+      length |  -104.8682   39.72154    -2.64   0.010    -184.0903   -25.64607
+       _cons |   14542.43   5890.632     2.47   0.016      2793.94    26290.93
+------------------------------------------------------------------------------
+
+. sem price <- mpg weight length, standardized
+
+Endogenous variables
+  Observed: price
+
+Exogenous variables
+  Observed: mpg weight length
+
+Fitting target model:
+Iteration 0:  Log likelihood = -1721.4565  
+Iteration 1:  Log likelihood = -1721.4565  
+
+Structural equation model                                   Number of obs = 74
+Estimation method: ml
+
+Log likelihood = -1721.4565
+
+------------------------------------------------------------------------------
+             |                 OIM
+Standardized | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+Structural   |
+  price      |
+         mpg |  -.1702392   .1591031    -1.07   0.285    -.4820756    .1415973
+      weight |   1.150126   .2726527     4.22   0.000     .6157368    1.684516
+      length |   -.791671   .2790476    -2.84   0.005    -1.338594   -.2447478
+       _cons |   4.964137   1.929622     2.57   0.010     1.182147    8.746127
+-------------+----------------------------------------------------------------
+ var(e.price)|   .6426236   .0809446                      .5020416    .8225714
+------------------------------------------------------------------------------
+LR test of model vs. saturated: chi2(0) = 0.00                 Prob > chi2 = .
+
+. estat eqgof
+
+Equation-level goodness of fit
+
+------------------------------------------------------------------------------
+   Dependent |             Variance            |
+   variables |    Fitted  Predicted   Residual | R-squared        mc       mc2
+-------------+---------------------------------+------------------------------
+Observed     |                                 |
+       price |   8581965    3066992    5514973 |  .3573764  .5978097  .3573764
+-------------+---------------------------------+------------------------------
+     Overall |                                 |  .3573764
+------------------------------------------------------------------------------
+mc  = Correlation between dependent variable and its prediction.
+mc2 = mc^2 is the Bentler–Raykov squared multiple correlation coefficient.
+
+. 
+. * gsem 做 logistic
+. logit foreign mpg weight price
+
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -22.244792  
+Iteration 2:  Log likelihood = -18.069284  
+Iteration 3:  Log likelihood = -17.184699  
+Iteration 4:  Log likelihood = -17.161975  
+Iteration 5:  Log likelihood = -17.161893  
+Iteration 6:  Log likelihood = -17.161893  
+
+Logistic regression                                     Number of obs =     74
+                                                        LR chi2(3)    =  55.74
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -17.161893                             Pseudo R2     = 0.6189
+
+------------------------------------------------------------------------------
+     foreign | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -.1210918   .0956855    -1.27   0.206     -.308632    .0664483
+      weight |  -.0068497   .0019996    -3.43   0.001    -.0107688   -.0029306
+       price |   .0009264   .0003074     3.01   0.003      .000324    .0015288
+       _cons |   14.42237   5.414367     2.66   0.008      3.81041    25.03434
+------------------------------------------------------------------------------
+
+. gsem foreign <- mpg weight price, family(binomial) link(logit)
+
+Iteration 0:  Log likelihood = -22.408902  
+Iteration 1:  Log likelihood =  -17.19311  
+Iteration 2:  Log likelihood = -17.161982  
+Iteration 3:  Log likelihood = -17.161893  
+Iteration 4:  Log likelihood = -17.161893  
+
+Generalized structural equation model                       Number of obs = 74
+Response: foreign  
+Family:   Bernoulli
+Link:     Logit    
+Log likelihood = -17.161893
+
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+foreign      |
+         mpg |  -.1210918   .0956855    -1.27   0.206     -.308632    .0664483
+      weight |  -.0068497   .0019996    -3.43   0.001    -.0107688   -.0029306
+       price |   .0009264   .0003074     3.01   0.003      .000324    .0015288
+       _cons |   14.42237   5.414367     2.66   0.008      3.81041    25.03434
+------------------------------------------------------------------------------
+
+. estat eform
+------------------------------------------------------------------------------
+             |     exp(b)   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+foreign      |
+         mpg |   .8859526   .0847728    -1.27   0.206      .734451    1.068706
+      weight |   .9931737   .0019859    -3.43   0.001     .9892889    .9970737
+       price |   1.000927   .0003077     3.01   0.003     1.000324     1.00153
+       _cons |    1834669    9933574     2.66   0.008     45.16896    7.45e+10
+------------------------------------------------------------------------------
+
+. 
+. *---- 第 14 章：多重插补（rep78 有缺失）-------------------
+. misstable summarize rep78 price mpg weight length
+                                                               Obs<.
+                                                +------------------------------
+               |                                | Unique
+      Variable |     Obs=.     Obs>.     Obs<.  | values        Min         Max
+  -------------+--------------------------------+------------------------------
+         rep78 |         5                  69  |      5          1           5
+  -----------------------------------------------------------------------------
+
+. drop make
+
+. mi set mlong
+
+. mi register imputed rep78
+(5 m=0 obs now marked as incomplete)
+
+. mi register regular price mpg headroom trunk weight length turn displacement 
+> gear_ratio foreign
+
+. mi impute mvn rep78 = price mpg weight length, add(20) rseed(12345)
+
+Performing EM optimization:
+note: 5 observations omitted from EM estimation because of all imputation
+      variables missing.
+  observed log likelihood = -21.660333 at iteration 1
+
+Performing MCMC data augmentation ... 
+
+Multivariate imputation                     Imputations =       20
+Multivariate normal regression                    added =       20
+Imputed: m=1 through m=20                       updated =        0
+
+Prior: uniform                               Iterations =     2000
+                                                burn-in =      100
+                                                between =      100
+
+------------------------------------------------------------------
+                   |               Observations per m             
+                   |----------------------------------------------
+          Variable |   Complete   Incomplete   Imputed |     Total
+-------------------+-----------------------------------+----------
+             rep78 |         69            5         5 |        74
+------------------------------------------------------------------
+(Complete + Incomplete = Total; Imputed is the minimum across m
+ of the number of filled-in observations.)
+
+. mi estimate: regress price rep78 mpg weight length foreign
+
+Multiple-imputation estimates                   Imputations       =         20
+Linear regression                               Number of obs     =         74
+                                                Average RVI       =     0.0116
+                                                Largest FMI       =     0.0593
+                                                Complete DF       =         68
+DF adjustment:   Small sample                   DF:     min       =      61.69
+                                                        avg       =      64.96
+                                                        max       =      65.96
+Model F test:       Equal FMI                   F(   5,   66.0)   =      16.94
+Within VCE type:          OLS                   Prob > F          =     0.0000
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       rep78 |    362.626   311.3759     1.16   0.249    -259.8674    985.1194
+         mpg |  -37.26857   74.74642    -0.50   0.620    -186.5126    111.9754
+      weight |   5.773225   1.014807     5.69   0.000     3.747072    7.799377
+      length |  -98.75833   33.95806    -2.91   0.005    -166.5613   -30.95537
+     foreign |   3113.709   755.6396     4.12   0.000     1604.395    4623.023
+       _cons |   5921.714   5243.938     1.13   0.263    -4548.431    16391.86
+------------------------------------------------------------------------------
+
+. 
+end of do-file

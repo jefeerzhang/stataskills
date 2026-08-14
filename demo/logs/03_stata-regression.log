@@ -1,0 +1,476 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do dofiles/03_stata-regression.do 
+
+. *==========================================================*
+. * DEMO 3/5 : stata-regression —— 方差分析与回归建模（书第 9–11 章）
+. * 技能源   : skills/stata-regression/SKILL.md
+. * 数据     : auto.dta
+. *==========================================================*
+. version 19.5
+
+. set more off
+
+. clear all
+
+. sysuse auto, clear
+(1978 automobile data)
+
+. 
+. *---- 第 9 章：ANOVA / ANCOVA -----------------------------
+. oneway price foreign, tabulate
+
+            |          Summary of Price
+ Car origin |        Mean   Std. dev.       Freq.
+------------+------------------------------------
+   Domestic |   6,072.423   3,097.104          52
+    Foreign |   6,384.682   2,621.915          22
+------------+------------------------------------
+      Total |   6,165.257   2,949.496          74
+
+                        Analysis of variance
+    Source              SS         df      MS            F     Prob > F
+------------------------------------------------------------------------
+Between groups      1507382.66      1   1507382.66      0.17     0.6802
+ Within groups       633558013     72   8799416.85
+------------------------------------------------------------------------
+    Total            635065396     73   8699525.97
+
+Bartlett's equal-variances test: chi2(1) =   0.7719    Prob>chi2 = 0.380
+
+. oneway mpg foreign
+
+                        Analysis of variance
+    Source              SS         df      MS            F     Prob > F
+------------------------------------------------------------------------
+Between groups      378.153515      1   378.153515     13.18     0.0005
+ Within groups      2065.30594     72   28.6848048
+------------------------------------------------------------------------
+    Total           2443.45946     73   33.4720474
+
+Bartlett's equal-variances test: chi2(1) =   3.4818    Prob>chi2 = 0.062
+
+. anova price c.weight foreign
+
+                         Number of obs =         74    R-squared     =  0.4989
+                         Root MSE      =    2117.02    Adj R-squared =  0.4848
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  3.169e+08          2   1.584e+08     35.35  0.0000
+                         |
+                  weight |  3.154e+08          1   3.154e+08     70.36  0.0000
+                 foreign |  1.326e+08          1   1.326e+08     29.59  0.0000
+                         |
+                Residual |  3.182e+08         71   4481776.4  
+              -----------+----------------------------------------------------
+                   Total |  6.351e+08         73     8699526  
+
+. anova mpg foreign rep78
+
+                         Number of obs =         69    R-squared     =  0.2825
+                         Root MSE      =    5.16246    Adj R-squared =  0.2256
+
+                  Source | Partial SS         df         MS        F    Prob>F
+              -----------+----------------------------------------------------
+                   Model |  661.18952          5    132.2379      4.96  0.0007
+                         |
+                 foreign |  111.77375          1   111.77375      4.19  0.0447
+                   rep78 |  179.18901          4   44.797252      1.68  0.1655
+                         |
+                Residual |  1679.0134         63   26.651006  
+              -----------+----------------------------------------------------
+                   Total |  2340.2029         68   34.414749  
+
+. 
+. *---- 第 10 章：多元回归 ----------------------------------
+. regress price mpg weight length displacement, beta
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(4, 69)        =      9.60
+       Model |   227103053         4  56775763.3   Prob > F        =    0.0000
+    Residual |   407962343        69  5912497.72   R-squared       =    0.3576
+-------------+----------------------------------   Adj R-squared   =    0.3204
+       Total |   635065396        73  8699525.97   Root MSE        =    2431.6
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|                     Beta
+-------------+----------------------------------------------------------------
+         mpg |  -87.46619   84.64432    -1.03   0.305                -.1715669
+      weight |   4.233111   1.444372     2.93   0.005                 1.115427
+      length |  -104.4305   40.09829    -2.60   0.011                -.7883668
+displacement |   1.094677    6.97476     0.16   0.876                 .0340845
+       _cons |   14656.24    5976.26     2.45   0.017                        .
+------------------------------------------------------------------------------
+
+. regress price mpg weight length displacement
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(4, 69)        =      9.60
+       Model |   227103053         4  56775763.3   Prob > F        =    0.0000
+    Residual |   407962343        69  5912497.72   R-squared       =    0.3576
+-------------+----------------------------------   Adj R-squared   =    0.3204
+       Total |   635065396        73  8699525.97   Root MSE        =    2431.6
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -87.46619   84.64432    -1.03   0.305     -256.327     81.3946
+      weight |   4.233111   1.444372     2.93   0.005     1.351668    7.114553
+      length |  -104.4305   40.09829    -2.60   0.011    -184.4244   -24.43659
+displacement |   1.094677    6.97476     0.16   0.876    -12.81959    15.00894
+       _cons |   14656.24    5976.26     2.45   0.017      2733.93    26578.56
+------------------------------------------------------------------------------
+
+. estat vif
+
+    Variable |       VIF       1/VIF  
+-------------+----------------------
+      weight |     15.56    0.064273
+      length |      9.84    0.101601
+displacement |      5.07    0.197402
+         mpg |      2.96    0.337730
+-------------+----------------------
+    Mean VIF |      8.36
+
+. 
+. * 残差诊断
+. predict r, residual
+
+. sktest r
+
+Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob>chi2
+-------------+-----------------------------------------------------------------
+           r |        74         0.0170         0.8780          5.51     0.0636
+
+. rvfplot, yline(0) title("Residuals vs Fitted") scheme(s1mono)
+
+. graph export "output/03_rvfplot.png", replace
+(file output/03_rvfplot.png not found)
+file output/03_rvfplot.png written in PNG format
+
+. 
+. * 稳健标准误
+. regress price mpg weight length displacement, vce(robust)
+
+Linear regression                               Number of obs     =         74
+                                                F(4, 69)          =       9.62
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3576
+                                                Root MSE          =     2431.6
+
+------------------------------------------------------------------------------
+             |               Robust
+       price | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -87.46619   92.01022    -0.95   0.345    -271.0216    96.08918
+      weight |   4.233111   2.005753     2.11   0.038     .2317428    8.234479
+      length |  -104.4305   56.91079    -1.83   0.071    -217.9644    9.103435
+displacement |   1.094677   6.877332     0.16   0.874    -12.62522    14.81458
+       _cons |   14656.24   6683.347     2.19   0.032     1323.329    27989.16
+------------------------------------------------------------------------------
+
+. 
+. * 因子变量 + 交互
+. regress price mpg weight i.foreign, beta
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(3, 70)        =     23.29
+       Model |   317252881         3   105750960   Prob > F        =    0.0000
+    Residual |   317812515        70  4540178.78   R-squared       =    0.4996
+-------------+----------------------------------   Adj R-squared   =    0.4781
+       Total |   635065396        73  8699525.97   Root MSE        =    2130.8
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|                     Beta
+-------------+----------------------------------------------------------------
+         mpg |    21.8536   74.22114     0.29   0.769                 .0428663
+      weight |   3.464706    .630749     5.49   0.000                 .9129516
+             |
+     foreign |
+    Foreign  |    3673.06   683.9783     5.37   0.000                  .573081
+       _cons |  -5853.696   3376.987    -1.73   0.087                        .
+------------------------------------------------------------------------------
+
+. test 1.foreign
+
+ ( 1)  1.foreign = 0
+
+       F(  1,    70) =   28.84
+            Prob > F =    0.0000
+
+. regress price c.weight##i.foreign
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(3, 70)        =     26.20
+       Model |   335885357         3   111961786   Prob > F        =    0.0000
+    Residual |   299180039        70  4274000.55   R-squared       =    0.5289
+-------------+----------------------------------   Adj R-squared   =    0.5087
+       Total |   635065396        73  8699525.97   Root MSE        =    2067.4
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      weight |   2.994814   .4163132     7.19   0.000     2.164503    3.825124
+             |
+     foreign |
+    Foreign  |  -2171.597   2829.409    -0.77   0.445    -7814.676    3471.482
+             |
+     foreign#|
+    c.weight |
+    Foreign  |   2.367227   1.121973     2.11   0.038      .129522    4.604931
+             |
+       _cons |  -3861.719   1410.404    -2.74   0.008    -6674.681   -1048.757
+------------------------------------------------------------------------------
+
+. margins foreign, at(weight=(2000(500)4500))
+
+Adjusted predictions                                        Number of obs = 74
+Model VCE: OLS
+
+Expression: Linear prediction, predict()
+1._at: weight = 2000
+2._at: weight = 2500
+3._at: weight = 3000
+4._at: weight = 3500
+5._at: weight = 4000
+6._at: weight = 4500
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ _at#foreign |
+ 1#Domestic  |   2127.908   618.7575     3.44   0.001     893.8352    3361.981
+  1#Foreign  |   4690.765   550.0952     8.53   0.000     3593.634    5787.895
+ 2#Domestic  |   3625.315    444.873     8.15   0.000     2738.044    4512.586
+  2#Foreign  |   7371.785    480.687    15.34   0.000     6413.085    8330.485
+ 3#Domestic  |   5122.722   315.6286    16.23   0.000      4493.22    5752.223
+  3#Foreign  |    10052.8   838.0147    12.00   0.000     8381.437    11724.17
+ 4#Domestic  |   6620.128   296.6297    22.32   0.000     6028.519    7211.738
+  4#Foreign  |   12733.82    1310.05     9.72   0.000     10121.01    15346.64
+ 5#Domestic  |   8117.535   403.7516    20.11   0.000     7312.278    8922.792
+  5#Foreign  |   15414.84   1809.129     8.52   0.000     11806.65    19023.04
+ 6#Domestic  |   9614.942   569.8243    16.87   0.000     8478.463    10751.42
+  6#Foreign  |   18095.87   2317.847     7.81   0.000     13473.06    22718.67
+------------------------------------------------------------------------------
+
+. marginsplot, noci title("Price: weight x origin") scheme(s1mono)
+
+Variables that uniquely identify margins: weight foreign
+
+. graph export "output/03_margins_interaction.png", replace
+(file output/03_margins_interaction.png not found)
+file output/03_margins_interaction.png written in PNG format
+
+. 
+. * 非线性（二次项）
+. regress price c.weight##c.weight
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(2, 71)        =     23.09
+       Model |   250285462         2   125142731   Prob > F        =    0.0000
+    Residual |   384779934        71  5419435.69   R-squared       =    0.3941
+-------------+----------------------------------   Adj R-squared   =    0.3770
+       Total |   635065396        73  8699525.97   Root MSE        =      2328
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      weight |  -7.273097   2.691747    -2.70   0.009    -12.64029   -1.905906
+             |
+    c.weight#|
+    c.weight |   .0015142   .0004337     3.49   0.001     .0006494     .002379
+             |
+       _cons |    13418.8   3997.822     3.36   0.001     5447.372    21390.23
+------------------------------------------------------------------------------
+
+. margins, at(weight=(2000(500)4500))
+
+Adjusted predictions                                        Number of obs = 74
+Model VCE: OLS
+
+Expression: Linear prediction, predict()
+1._at: weight = 2000
+2._at: weight = 2500
+3._at: weight = 3000
+4._at: weight = 3500
+5._at: weight = 4000
+6._at: weight = 4500
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   4929.346   509.8655     9.67   0.000     3912.703    5945.989
+          2  |   4699.712   346.0846    13.58   0.000     4009.639    5389.785
+          3  |    5227.17   373.4866    14.00   0.000     4482.459    5971.881
+          4  |    6511.72   367.1288    17.74   0.000     5779.686    7243.754
+          5  |   8553.363   451.1008    18.96   0.000     7653.893    9452.832
+          6  |    11352.1   851.8431    13.33   0.000      9653.57    13050.62
+------------------------------------------------------------------------------
+
+. marginsplot, noci title("Price vs Weight (quadratic)") scheme(s1mono)
+
+Variables that uniquely identify margins: weight
+
+. graph export "output/03_margins_quadratic.png", replace
+(file output/03_margins_quadratic.png not found)
+file output/03_margins_quadratic.png written in PNG format
+
+. 
+. * 回归功效
+. power rsquared 0.30, power(0.90) ntested(4)
+
+Performing iteration ...
+
+Estimated sample size for multiple linear regression
+F test for R2 testing all coefficients
+H0: R2_T = 0  versus  Ha: R2_T != 0
+
+Study parameters:
+
+        alpha =    0.0500
+        power =    0.9000
+        delta =    0.4286
+         R2_T =    0.3000
+      ntested =         4
+
+Estimated sample size:
+
+            N =        42
+
+. 
+. *---- 第 11 章：逻辑回归 ----------------------------------
+. logistic foreign mpg weight price
+
+Logistic regression                                     Number of obs =     74
+                                                        LR chi2(3)    =  55.74
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -17.161893                             Pseudo R2     = 0.6189
+
+------------------------------------------------------------------------------
+     foreign | Odds ratio   Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |   .8859526   .0847728    -1.27   0.206      .734451    1.068706
+      weight |   .9931737   .0019859    -3.43   0.001     .9892889    .9970737
+       price |   1.000927   .0003077     3.01   0.003     1.000324     1.00153
+       _cons |    1834670    9933575     2.66   0.008     45.16896    7.45e+10
+------------------------------------------------------------------------------
+Note: _cons estimates baseline odds.
+
+. logit foreign mpg weight price
+
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -22.244792  
+Iteration 2:  Log likelihood = -18.069284  
+Iteration 3:  Log likelihood = -17.184699  
+Iteration 4:  Log likelihood = -17.161975  
+Iteration 5:  Log likelihood = -17.161893  
+Iteration 6:  Log likelihood = -17.161893  
+
+Logistic regression                                     Number of obs =     74
+                                                        LR chi2(3)    =  55.74
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -17.161893                             Pseudo R2     = 0.6189
+
+------------------------------------------------------------------------------
+     foreign | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -.1210918   .0956855    -1.27   0.206     -.308632    .0664483
+      weight |  -.0068497   .0019996    -3.43   0.001    -.0107688   -.0029306
+       price |   .0009264   .0003074     3.01   0.003      .000324    .0015288
+       _cons |   14.42237   5.414367     2.66   0.008      3.81041    25.03434
+------------------------------------------------------------------------------
+
+. margins, dydx(mpg) atmeans
+
+Conditional marginal effects                                Number of obs = 74
+Model VCE: OIM
+
+Expression: Pr(foreign), predict()
+dy/dx wrt:  mpg
+At: mpg    =  21.2973 (mean)
+    weight = 3019.459 (mean)
+    price  = 6165.257 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -.0048703   .0056638    -0.86   0.390    -.0159712    .0062306
+------------------------------------------------------------------------------
+
+. margins, at(mpg=(15(5)40)) atmeans
+
+Adjusted predictions                                        Number of obs = 74
+Model VCE: OIM
+
+Expression: Pr(foreign), predict()
+1._at: mpg    =       15
+       weight = 3019.459 (mean)
+       price  = 6165.257 (mean)
+2._at: mpg    =       20
+       weight = 3019.459 (mean)
+       price  = 6165.257 (mean)
+3._at: mpg    =       25
+       weight = 3019.459 (mean)
+       price  = 6165.257 (mean)
+4._at: mpg    =       30
+       weight = 3019.459 (mean)
+       price  = 6165.257 (mean)
+5._at: mpg    =       35
+       weight = 3019.459 (mean)
+       price  = 6165.257 (mean)
+6._at: mpg    =       40
+       weight = 3019.459 (mean)
+       price  = 6165.257 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   .0858752   .0902905     0.95   0.342     -.091091    .2628414
+          2  |   .0487751   .0496452     0.98   0.326    -.0485278     .146078
+          3  |   .0272257    .031613     0.86   0.389    -.0347347    .0891861
+          4  |   .0150465   .0217931     0.69   0.490    -.0276671    .0577601
+          5  |   .0082692   .0150275     0.55   0.582    -.0211841    .0377226
+          6  |   .0045306   .0100958     0.45   0.654    -.0152568     .024318
+------------------------------------------------------------------------------
+
+. marginsplot, title("Predicted P(foreign) by MPG") scheme(s1mono)
+
+Variables that uniquely identify margins: mpg
+
+. graph export "output/03_logit_margins.png", replace
+(file output/03_logit_margins.png not found)
+file output/03_logit_margins.png written in PNG format
+
+. 
+end of do-file

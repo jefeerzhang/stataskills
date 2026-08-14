@@ -1,0 +1,420 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do dofiles/02_stata-descriptives.do 
+
+. *==========================================================*
+. * DEMO 2/5 : stata-descriptives —— 描述统计/图形/检验（书第 5–8 章）
+. * 技能源   : skills/stata-descriptives/SKILL.md
+. * 数据     : auto.dta
+. *==========================================================*
+. version 19.5
+
+. set more off
+
+. clear all
+
+. sysuse auto, clear
+(1978 automobile data)
+
+. 
+. *---- 第 5 章：单变量描述统计 -----------------------------
+. tab1 foreign rep78
+
+-> tabulation of foreign  
+
+ Car origin |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   Domestic |         52       70.27       70.27
+    Foreign |         22       29.73      100.00
+------------+-----------------------------------
+      Total |         74      100.00
+
+-> tabulation of rep78  
+
+     Repair |
+record 1978 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |          2        2.90        2.90
+          2 |          8       11.59       14.49
+          3 |         30       43.48       57.97
+          4 |         18       26.09       84.06
+          5 |         11       15.94      100.00
+------------+-----------------------------------
+      Total |         69      100.00
+
+. summarize price mpg weight length, detail
+
+                            Price
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%         3291           3291
+ 5%         3748           3299
+10%         3895           3667       Obs                  74
+25%         4195           3748       Sum of wgt.          74
+
+50%       5006.5                      Mean           6165.257
+                        Largest       Std. dev.      2949.496
+75%         6342          13466
+90%        11385          13594       Variance        8699526
+95%        13466          14500       Skewness       1.653434
+99%        15906          15906       Kurtosis       4.819188
+
+                        Mileage (mpg)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           12             12
+ 5%           14             12
+10%           14             14       Obs                  74
+25%           18             14       Sum of wgt.          74
+
+50%           20                      Mean            21.2973
+                        Largest       Std. dev.      5.785503
+75%           25             34
+90%           29             35       Variance       33.47205
+95%           34             35       Skewness       .9487176
+99%           41             41       Kurtosis       3.975005
+
+                        Weight (lbs.)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%         1760           1760
+ 5%         1830           1800
+10%         2020           1800       Obs                  74
+25%         2240           1830       Sum of wgt.          74
+
+50%         3190                      Mean           3019.459
+                        Largest       Std. dev.      777.1936
+75%         3600           4290
+90%         4060           4330       Variance       604029.8
+95%         4290           4720       Skewness       .1481164
+99%         4840           4840       Kurtosis       2.118403
+
+                        Length (in.)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%          142            142
+ 5%          154            147
+10%          157            149       Obs                  74
+25%          170            154       Sum of wgt.          74
+
+50%        192.5                      Mean           187.9324
+                        Largest       Std. dev.      22.26634
+75%          204            221
+90%          218            222       Variance       495.7899
+95%          221            230       Skewness      -.0409746
+99%          233            233       Kurtosis        2.04156
+
+. tabstat price mpg weight length, statistics(mean median sd iqr skewness kurto
+> sis) ///
+>         by(foreign) columns(statistics)
+
+Summary for variables: price mpg weight length
+Group variable: foreign (Car origin)
+
+ foreign |      Mean       p50        SD       IQR  Skewness  Kurtosis
+---------+------------------------------------------------------------
+Domestic |  6072.423    4782.5  3097.104      2050  1.777939  5.090316
+         |  19.82692        19  4.743297       5.5  .7712432  3.441459
+         |  3317.115      3360  695.3637       940   -.24371  2.784673
+         |  196.1346       200  20.04605        30 -.4450463  2.506233
+---------+------------------------------------------------------------
+ Foreign |  6384.682      5759  2621.915      2641  1.215236  3.555178
+         |  24.77273      24.5  6.611187         7   .657329   3.10734
+         |  2315.909      2180  433.0035       630  1.056582  3.368013
+         |  168.5455       170  13.68255        19  .0809646  2.397803
+---------+------------------------------------------------------------
+   Total |  6165.257    5006.5  2949.496      2147  1.653434  4.819188
+         |   21.2973        20  5.785503         7  .9487176  3.975005
+         |  3019.459      3190  777.1936      1360  .1481164  2.118403
+         |  187.9324     192.5  22.26634        34 -.0409746   2.04156
+----------------------------------------------------------------------
+
+. 
+. * 正态性检验
+. sktest mpg
+
+Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob>chi2
+-------------+-----------------------------------------------------------------
+         mpg |        74         0.0015         0.0804         10.95     0.0042
+
+. sktest price
+
+Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob>chi2
+-------------+-----------------------------------------------------------------
+       price |        74         0.0000         0.0127         21.77     0.0000
+
+. 
+. * 图形：直方图、箱线图
+. histogram price, freq title("Distribution of Price") scheme(s1mono)
+(bin=8, start=3291, width=1576.875)
+
+. graph export "output/02_hist_price.png", replace
+(file output/02_hist_price.png not found)
+file output/02_hist_price.png written in PNG format
+
+. histogram mpg, freq title("Distribution of MPG") scheme(s1mono)
+(bin=8, start=12, width=3.625)
+
+. graph export "output/02_hist_mpg.png", replace
+(file output/02_hist_mpg.png not found)
+file output/02_hist_mpg.png written in PNG format
+
+. graph hbox mpg, over(foreign) title("MPG by Car Origin") scheme(s1mono)
+
+. graph export "output/02_hbox_mpg_by_foreign.png", replace
+(file output/02_hbox_mpg_by_foreign.png not found)
+file output/02_hbox_mpg_by_foreign.png written in PNG format
+
+. 
+. *---- 第 6 章：两分类变量交叉表与卡方 ----------------------
+. tabulate rep78 foreign, chi2 row V
+
++----------------+
+| Key            |
+|----------------|
+|   frequency    |
+| row percentage |
++----------------+
+
+    Repair |
+    record |      Car origin
+      1978 |  Domestic    Foreign |     Total
+-----------+----------------------+----------
+         1 |         2          0 |         2 
+           |    100.00       0.00 |    100.00 
+-----------+----------------------+----------
+         2 |         8          0 |         8 
+           |    100.00       0.00 |    100.00 
+-----------+----------------------+----------
+         3 |        27          3 |        30 
+           |     90.00      10.00 |    100.00 
+-----------+----------------------+----------
+         4 |         9          9 |        18 
+           |     50.00      50.00 |    100.00 
+-----------+----------------------+----------
+         5 |         2          9 |        11 
+           |     18.18      81.82 |    100.00 
+-----------+----------------------+----------
+     Total |        48         21 |        69 
+           |     69.57      30.43 |    100.00 
+
+          Pearson chi2(4) =  27.2640   Pr = 0.000
+               Cramér's V =   0.6286
+
+. tabulate rep78 foreign, chi2 expected
+
++--------------------+
+| Key                |
+|--------------------|
+|     frequency      |
+| expected frequency |
++--------------------+
+
+    Repair |
+    record |      Car origin
+      1978 |  Domestic    Foreign |     Total
+-----------+----------------------+----------
+         1 |         2          0 |         2 
+           |       1.4        0.6 |       2.0 
+-----------+----------------------+----------
+         2 |         8          0 |         8 
+           |       5.6        2.4 |       8.0 
+-----------+----------------------+----------
+         3 |        27          3 |        30 
+           |      20.9        9.1 |      30.0 
+-----------+----------------------+----------
+         4 |         9          9 |        18 
+           |      12.5        5.5 |      18.0 
+-----------+----------------------+----------
+         5 |         2          9 |        11 
+           |       7.7        3.3 |      11.0 
+-----------+----------------------+----------
+     Total |        48         21 |        69 
+           |      48.0       21.0 |      69.0 
+
+          Pearson chi2(4) =  27.2640   Pr = 0.000
+
+. 
+. *---- 第 7 章：均值检验与功效 -----------------------------
+. ttest price, by(foreign)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. err.   Std. dev.   [95% conf. interval]
+---------+--------------------------------------------------------------------
+Domestic |      52    6072.423    429.4911    3097.104    5210.184    6934.662
+ Foreign |      22    6384.682    558.9942    2621.915     5222.19    7547.174
+---------+--------------------------------------------------------------------
+Combined |      74    6165.257    342.8719    2949.496    5481.914      6848.6
+---------+--------------------------------------------------------------------
+    diff |           -312.2587    754.4488               -1816.225    1191.708
+------------------------------------------------------------------------------
+    diff = mean(Domestic) - mean(Foreign)                         t =  -0.4139
+H0: diff = 0                                     Degrees of freedom =       72
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.3401         Pr(|T| > |t|) = 0.6802          Pr(T > t) = 0.6599
+
+. ttest mpg, by(foreign)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. err.   Std. dev.   [95% conf. interval]
+---------+--------------------------------------------------------------------
+Domestic |      52    19.82692     .657777    4.743297    18.50638    21.14747
+ Foreign |      22    24.77273     1.40951    6.611187    21.84149    27.70396
+---------+--------------------------------------------------------------------
+Combined |      74     21.2973    .6725511    5.785503     19.9569    22.63769
+---------+--------------------------------------------------------------------
+    diff |           -4.945804    1.362162               -7.661225   -2.230384
+------------------------------------------------------------------------------
+    diff = mean(Domestic) - mean(Foreign)                         t =  -3.6308
+H0: diff = 0                                     Degrees of freedom =       72
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.0003         Pr(|T| > |t|) = 0.0005          Pr(T > t) = 0.9997
+
+. esize twosample mpg, by(foreign) cohensd hedgesg
+
+Effect size based on mean comparison
+
+                               Obs per group:
+                                    Domestic =         52
+                                     Foreign =         22
+---------------------------------------------------------
+        Effect size |   Estimate     [95% conf. interval]
+--------------------+------------------------------------
+          Cohen's d |  -.9234449    -1.441225   -.3997744
+         Hedges's g |  -.9137865    -1.426151   -.3955932
+---------------------------------------------------------
+
+. power twomeans 20 25, sd(6) power(0.90)
+
+Performing iteration ...
+
+Estimated sample sizes for a two-sample means test
+t test assuming sd1 = sd2 = sd
+H0: m2 = m1  versus  Ha: m2 != m1
+
+Study parameters:
+
+        alpha =    0.0500
+        power =    0.9000
+        delta =    5.0000
+           m1 =   20.0000
+           m2 =   25.0000
+           sd =    6.0000
+
+Estimated sample sizes:
+
+            N =        64
+  N per group =        32
+
+. 
+. *---- 第 8 章：相关与双变量回归 ---------------------------
+. pwcorr price mpg weight length displacement, obs sig star(5)
+
+             |    price      mpg   weight   length displa~t
+-------------+---------------------------------------------
+       price |   1.0000 
+             |
+             |       74
+             |
+         mpg |  -0.4686*  1.0000 
+             |   0.0000
+             |       74       74
+             |
+      weight |   0.5386* -0.8072*  1.0000 
+             |   0.0000   0.0000
+             |       74       74       74
+             |
+      length |   0.4318* -0.7958*  0.9460*  1.0000 
+             |   0.0001   0.0000   0.0000
+             |       74       74       74       74
+             |
+displacement |   0.4949* -0.7056*  0.8949*  0.8351*  1.0000 
+             |   0.0000   0.0000   0.0000   0.0000
+             |       74       74       74       74       74
+             |
+
+. correlate price mpg weight length displacement
+(obs=74)
+
+             |    price      mpg   weight   length displa~t
+-------------+---------------------------------------------
+       price |   1.0000
+         mpg |  -0.4686   1.0000
+      weight |   0.5386  -0.8072   1.0000
+      length |   0.4318  -0.7958   0.9460   1.0000
+displacement |   0.4949  -0.7056   0.8949   0.8351   1.0000
+
+
+. 
+. twoway (scatter price mpg) (lfit price mpg), ///
+>        title("Price vs MPG") legend(off) scheme(s1mono)
+
+. graph export "output/02_scatter_price_mpg.png", replace
+(file output/02_scatter_price_mpg.png not found)
+file output/02_scatter_price_mpg.png written in PNG format
+
+. 
+. regress price mpg
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(1, 72)        =     20.26
+       Model |   139449474         1   139449474   Prob > F        =    0.0000
+    Residual |   495615923        72  6883554.48   R-squared       =    0.2196
+-------------+----------------------------------   Adj R-squared   =    0.2087
+       Total |   635065396        73  8699525.97   Root MSE        =    2623.7
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -238.8943   53.07669    -4.50   0.000    -344.7008   -133.0879
+       _cons |   11253.06   1170.813     9.61   0.000     8919.088    13587.03
+------------------------------------------------------------------------------
+
+. regress price weight, beta
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(1, 72)        =     29.42
+       Model |   184233937         1   184233937   Prob > F        =    0.0000
+    Residual |   450831459        72  6261548.04   R-squared       =    0.2901
+-------------+----------------------------------   Adj R-squared   =    0.2802
+       Total |   635065396        73  8699525.97   Root MSE        =    2502.3
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|                     Beta
+-------------+----------------------------------------------------------------
+      weight |   2.044063   .3768341     5.42   0.000                 .5386115
+       _cons |  -6.707353    1174.43    -0.01   0.995                        .
+------------------------------------------------------------------------------
+
+. 
+end of do-file

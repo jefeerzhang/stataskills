@@ -1,0 +1,323 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do dofiles/05_stata-advanced-extra.do 
+
+. *==========================================================*
+. * DEMO 5/5 : stata-advanced（补充）—— 多层模型与 IRT（书第 15–16 章）
+. * 说明     : 这两个方法需要纵向数据 / 条目数据，auto.dta 不具备该结构，
+. *            故改用本仓库自带配套数据 skills/data/agis6/。
+. * 技能源   : skills/stata-advanced/SKILL.md
+. *==========================================================*
+. version 19.5
+
+. set more off
+
+. clear all
+
+. 
+. *---- 第 15 章：多层（混合）模型 --------------------------
+. use "skills/data/agis6/longitudinal_mixed.dta", clear
+
+. clonevar drink0 = drink98
+(1,237 missing values generated)
+
+. clonevar drink2 = drink00
+(1,018 missing values generated)
+
+. clonevar drink4 = drink02
+(814 missing values generated)
+
+. clonevar drink6 = drink04
+(795 missing values generated)
+
+. clonevar drink8 = drink06
+(634 missing values generated)
+
+. clonevar drink10 = drink08
+(654 missing values generated)
+
+. drop drink98 drink00 drink02 drink04 drink06 drink08
+
+. reshape long drink, i(id) j(wave)
+(j = 0 2 4 6 8 10)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations            1,771   ->   10,626      
+Number of variables                   8   ->   4           
+j variable (6 values)                     ->   wave
+xij variables:
+              drink0 drink2 ... drink10   ->   drink
+-----------------------------------------------------------------------------
+
+. 
+. * 随机截距线性增长模型
+. mixed drink c.wave || id:
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17216.599  
+Iteration 1:  Log likelihood = -17216.599  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(1)     = 499.41
+Log likelihood = -17216.599                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4930213   .0220615    22.35   0.000     .4497815    .5362611
+       _cons |   1.917751   .1677386    11.43   0.000     1.588989    2.246512
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Identity                 |
+                  var(_cons) |   10.05363   .6419645      8.870953    11.39398
+-----------------------------+------------------------------------------------
+               var(Residual) |   24.80612   .5520718      23.74734     25.9121
+------------------------------------------------------------------------------
+LR test vs. linear model: chibar2(01) = 568.55        Prob >= chibar2 = 0.0000
+
+. estimates store linear
+
+. margins, at(wave=(0(2)10))
+
+Adjusted predictions                                     Number of obs = 5,474
+
+Expression: Linear prediction, fixed portion, predict()
+1._at: wave =  0
+2._at: wave =  2
+3._at: wave =  4
+4._at: wave =  6
+5._at: wave =  8
+6._at: wave = 10
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   1.917751   .1677386    11.43   0.000     1.588989    2.246512
+          2  |   2.903793   .1369429    21.20   0.000      2.63539    3.172196
+          3  |   3.889836   .1151703    33.77   0.000     3.664106    4.115565
+          4  |   4.875878   .1080218    45.14   0.000      4.66416    5.087597
+          5  |   5.861921   .1181817    49.60   0.000     5.630289    6.093553
+          6  |   6.847963   .1419817    48.23   0.000     6.569684    7.126243
+------------------------------------------------------------------------------
+
+. marginsplot, title("Drinking across waves") scheme(s1mono)
+
+Variables that uniquely identify margins: wave
+
+. graph export "output/05_mixed_margins.png", replace
+(file output/05_mixed_margins.png not found)
+file output/05_mixed_margins.png written in PNG format
+
+. 
+. * 二次增长模型 + LR 比较
+. mixed drink c.wave##c.wave || id:
+
+Performing EM optimization ...
+
+Performing gradient-based optimization: 
+Iteration 0:  Log likelihood = -17201.188  
+Iteration 1:  Log likelihood = -17201.188  
+
+Computing standard errors ...
+
+Mixed-effects ML regression                          Number of obs    =  5,474
+Group variable: id                                   Number of groups =  1,554
+                                                     Obs per group:
+                                                                  min =      1
+                                                                  avg =    3.5
+                                                                  max =      6
+                                                     Wald chi2(2)     = 535.19
+Log likelihood = -17201.188                          Prob > chi2      = 0.0000
+
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .9295978   .0813806    11.42   0.000     .7700948    1.089101
+             |
+      c.wave#|
+      c.wave |  -.0405579   .0072885    -5.56   0.000     -.054843   -.0262727
+             |
+       _cons |   1.173831   .2137214     5.49   0.000     .7549443    1.592717
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+  Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
+-----------------------------+------------------------------------------------
+id: Identity                 |
+                  var(_cons) |   10.14196   .6431121      8.956669    11.48412
+-----------------------------+------------------------------------------------
+               var(Residual) |   24.60029   .5475923       23.5501     25.6973
+------------------------------------------------------------------------------
+LR test vs. linear model: chibar2(01) = 581.20        Prob >= chibar2 = 0.0000
+
+. estimates store quadratic
+
+. lrtest linear quadratic
+
+Likelihood-ratio test
+Assumption: linear nested within quadratic
+
+ LR chi2(1) =  30.82
+Prob > chi2 = 0.0000
+
+. 
+. *---- 第 16 章：项目反应理论（IRT）-----------------------
+. use "skills/data/agis6/attitude.dta", clear
+(PREVENTING DEPRESSION IN COUPLES FACING JOB LOSS, 1996-1998: [BALTIMORE, MD])
+
+. irt 1pl dn2 dn4 dn5 dn7 dn10
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -4621.5209  
+Iteration 1:  Log likelihood =  -4616.607  
+Iteration 2:  Log likelihood = -4616.6057  
+Iteration 3:  Log likelihood = -4616.6057  
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -4196.8333  
+Iteration 1:  Log likelihood = -3993.0408  
+Iteration 2:  Log likelihood =  -3989.611  
+Iteration 3:  Log likelihood = -3989.5915  
+Iteration 4:  Log likelihood = -3989.5915  
+
+One-parameter logistic model                             Number of obs = 1,479
+Log likelihood = -3989.5915
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Discrim |   2.059114   .0765293    26.91   0.000     1.909119    2.209108
+-------------+----------------------------------------------------------------
+dn2          |
+        Diff |   .1709084   .0425518     4.02   0.000     .0875085    .2543084
+-------------+----------------------------------------------------------------
+dn4          |
+        Diff |   1.234974    .056633    21.81   0.000     1.123975    1.345972
+-------------+----------------------------------------------------------------
+dn5          |
+        Diff |   -.512255   .0454498   -11.27   0.000    -.6013349    -.423175
+-------------+----------------------------------------------------------------
+dn7          |
+        Diff |  -.2193236   .0430899    -5.09   0.000    -.3037781    -.134869
+-------------+----------------------------------------------------------------
+dn10         |
+        Diff |   .4660937   .0442333    10.54   0.000     .3793981    .5527892
+------------------------------------------------------------------------------
+
+. estat report, byparm sort(b)
+
+One-parameter logistic model                             Number of obs = 1,479
+Log likelihood = -3989.5915
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Discrim |   2.059114   .0765293    26.91   0.000     1.909119    2.209108
+-------------+----------------------------------------------------------------
+Diff         |
+         dn5 |   -.512255   .0454498   -11.27   0.000    -.6013349    -.423175
+         dn7 |  -.2193236   .0430899    -5.09   0.000    -.3037781    -.134869
+         dn2 |   .1709084   .0425518     4.02   0.000     .0875085    .2543084
+        dn10 |   .4660937   .0442333    10.54   0.000     .3793981    .5527892
+         dn4 |   1.234974    .056633    21.81   0.000     1.123975    1.345972
+------------------------------------------------------------------------------
+
+. estimates store rasch
+
+. irt 2pl dn2 dn4 dn5 dn7 dn10
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -4621.5209  
+Iteration 1:  Log likelihood =  -4616.607  
+Iteration 2:  Log likelihood = -4616.6057  
+Iteration 3:  Log likelihood = -4616.6057  
+
+Fitting full model:
+
+Iteration 0:  Log likelihood = -4199.6255  
+Iteration 1:  Log likelihood = -3986.9392  
+Iteration 2:  Log likelihood = -3978.2722  
+Iteration 3:  Log likelihood = -3978.0158  
+Iteration 4:  Log likelihood = -3978.0153  
+Iteration 5:  Log likelihood = -3978.0153  
+
+Two-parameter logistic model                             Number of obs = 1,479
+Log likelihood = -3978.0153
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+dn2          |
+     Discrim |   2.961973    .305367     9.70   0.000     2.363465    3.560482
+        Diff |   .1506225    .037865     3.98   0.000     .0764085    .2248365
+-------------+----------------------------------------------------------------
+dn4          |
+     Discrim |   1.641559   .1580974    10.38   0.000     1.331694    1.951424
+        Diff |   1.367027   .0893992    15.29   0.000     1.191808    1.542246
+-------------+----------------------------------------------------------------
+dn5          |
+     Discrim |   2.103759   .1797506    11.70   0.000     1.751454    2.456063
+        Diff |  -.5095228   .0473406   -10.76   0.000    -.6023087   -.4167368
+-------------+----------------------------------------------------------------
+dn7          |
+     Discrim |   2.104367   .1766265    11.91   0.000     1.758185    2.450548
+        Diff |  -.2204127   .0430737    -5.12   0.000    -.3048356   -.1359898
+-------------+----------------------------------------------------------------
+dn10         |
+     Discrim |   1.713951   .1422667    12.05   0.000     1.435113    1.992788
+        Diff |   .4987321   .0510842     9.76   0.000      .398609    .5988553
+------------------------------------------------------------------------------
+
+. lrtest rasch
+
+Likelihood-ratio test
+Assumption: rasch nested within .
+
+ LR chi2(4) =  23.15
+Prob > chi2 = 0.0001
+
+. irtgraph icc dn4, blocation
+
+. graph export "output/05_irt_icc.png", replace
+(file output/05_irt_icc.png not found)
+file output/05_irt_icc.png written in PNG format
+
+. 
+end of do-file
