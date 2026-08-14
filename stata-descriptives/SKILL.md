@@ -133,7 +133,7 @@ kwallis stemcell, by(partyid)      // Kruskal–Wallis（3+ 组，第 9 章）
 
 ### 散点图
 ```stata
-use gss2006_chapter8, clear
+use gss2006_chapter8_selected, clear   // 或 gss2006_chapter8（需先确认含所需变量）
 set seed 111
 sample 100, count                    // 大样本散点图失真，先抽子样本
 twoway (scatter educ paeduc) if sex==1, ytitle(...) xtitle(...) title(...) legend(off)
@@ -141,7 +141,7 @@ twoway (scatter educ paeduc, jitter(6) jitterseed(222)) if sex==1, ...   // jitt
 twoway (scatter educ paeduc) (lfit educ paeduc) if sex==1, ...           // 叠加回归线
 twoway (scatter prestg80 hrs1) (lfitci prestg80 hrs1), ...               // 加置信带
 ```
-- `set seed` 保证随机抽样可复现。
+- `set seed` 保证随机抽样可复现。`prestg80`/`hrs1` 的回归示例在 `gss2006_chapter8_selected` 中（见"双变量回归"）。
 
 ### binscatter（大样本替代）
 ```stata

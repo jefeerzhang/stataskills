@@ -22,13 +22,24 @@ local datasets attitude c10interaction c11barchart chapter13_missing ///
 	nlsy97_selected_variables ops2004 partyid relate retest spearman wide wide9
 
 foreach f of local datasets {
+	capture erase "`f'.dta"
 	quietly copy "http://www.stata-press.com/data/agis6/`f'.dta" "`f'.dta", replace
-	* 验证文件存在且非空（HTML 错误页会很小，但此处主要防 404 页面）
-	if fileexists("`f'.dta") {
+	* 读文件首行：真实 dta 以 <stata_dta> 开头，404 错误页是 HTML
+	local ok 0
+	quietly {
+		file open _fh using "`f'.dta", read
+		file read _fh _line
+		file close _fh
+	}
+	if strpos("`_line'", "<stata_dta>") == 1 {
+		local ok 1
+	}
+	if `ok' {
 		display "OK    `f'.dta"
 	}
 	else {
 		display as error "FAIL  `f'.dta"
+		capture erase "`f'.dta"
 	}
 }
 

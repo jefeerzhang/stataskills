@@ -14,4 +14,4 @@ Issues 和 PRDs 存放在 GitHub Issues 中（使用 `gh` CLI）。See `docs/age
 
 ### Domain docs
 
-Single-context：repo 根目录一个 `CONTEXT.md` + `docs/adr/`。See `docs/agents/domain.md`.
+Single-context：repo 根目录 `CONTEXT.md` + `docs/adr/`（尚未创建，由 `/domain-modeling` 在 terms/decisions 实际被解决时懒创建）。See `docs/agents/domain.md`.

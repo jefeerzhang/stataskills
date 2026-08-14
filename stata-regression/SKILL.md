@@ -30,8 +30,9 @@ estat esize                                      // η²（eta-squared）
 - 非参数替代：`kwallis stemcell, by(partyid)`（比较中位数）。
 
 ### ANCOVA（协方差分析）
-- **关键：连续协变量必须加 `c.` 前缀**，否则被当作分类变量（每个取值一个 dummy，浪费自由度）：
+- **关键：连续协变量必须加 `c.` 前缀**，否则被当作分类变量（每个取值一个 dummy，浪费自由度）。数据集 `gss2006_chapter9`：
   ```stata
+  use gss2006_chapter9, clear
   anova prestg80 mobile16 c.age if age > 29 & age < 60 & wrkstat==1
   margins mobile16, atmeans            // 调整均值（固定协变量在均值处）
   margins mobile16#sex, atmeans        // 分组×类别
@@ -171,6 +172,12 @@ logit drank30 age97 male pdrink97 dinner97      // 输出系数（logit 单位�
 - **pseudo-R² 不是解释方差的百分比**，是相对仅截距模型的似然改进；pseudo-R² 低但 OR 重要的情况常见（如 lbw 例中 OR=2.02 但 pseudo-R²=0.021）。
 
 ### Odds ratio 解读
+- 2×2 表手算示例（书 11.3，environ.dta）：
+  ```stata
+  use environ, clear
+  tab2 environ libcand, row
+  ```
+  高环保关注者支持自由派候选人的 odds 是低关注者的 3.48 倍（OR=(7/3)/(4/6)）。
 - OR>1：每单位增加 `(OR−1)×100%` 的几率；OR<1：减少 `(1−OR)×100%`。
 - **多单位变化取幂不取乘法**：年龄 OR=1.17，15 岁 vs 12 岁 = `1.17^3 = 1.60`（`display 1.17^3`）。
 - OR ≠ 风险比（risk ratio）：OR 描述几率、RR 描述概率，结果不罕见时差别大；`ssc install oddsrisk` 可转换。
