@@ -368,7 +368,7 @@ $STATA -b do dofiles/05_stata-advanced-extra.do   # 05 依赖 ../data/agis6/（�
 ## 附录 B ：数据说明
 
 - `auto.dta`： Stata 自带 1978 汽车数据（ 74 obs ），变量含 `make price mpg rep78 headroom trunk weight length turn displacement gear_ratio foreign`。
-- `skills/data/agis6/`：书配套数据（ 38 个 `.dta` + 每章 do/log ），用于 ch15 多层、 ch16 IRT 及全 16 章验证。
+- `data/agis6/`：书配套数据（ 38 个 `.dta` + 每章 do/log ），用于 ch15 多层、 ch16 IRT 及全 16 章验证。
 
 ---
 

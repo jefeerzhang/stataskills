@@ -1,7 +1,7 @@
 # 运行 Stata（平台命令速查）
 
 4 份 `stata-*/SKILL.md` 里的「运行 Stata 的方式」只保留平台无关的批处理接口一行；
-**平台二进制路径、批处理命令与执行机制的唯一来源是本文件。**
+命令形式与执行机制见本文件；**平台二进制路径的唯一来源是 `verify/stata.conf`**。
 
 ## 当前验证环境
 
@@ -11,7 +11,7 @@
 |---|---|
 | 平台 | macOS（Apple Silicon） |
 | Stata | StataNow 19.5，MP — Parallel Edition，Single-user 16-core 永久授权 |
-| 可执行文件 | `/Applications/StataNow/StataMP.app/Contents/MacOS/stata-mp` |
+| 可执行文件 | `verify/stata.conf` 的 `STATA_MAC` |
 | 批处理方式 | `stata-mp -b do "脚本.do"`（结束生成同名 `.log`） |
 
 ## macOS
@@ -22,19 +22,17 @@
 stata-mp -b do "脚本.do"
 ```
 
-未加入 PATH 时用完整路径：
-
-```bash
-/Applications/StataNow/StataMP.app/Contents/MacOS/stata-mp -b do "脚本.do"
-```
+未加入 PATH 时，用 `verify/stata.conf` 的 `STATA_MAC` 完整路径调用（命令形式同上）。
 
 ## Windows
 
+批处理（无界面）：
+
 ```bat
-"C:\Program Files\StataNow19\StataMP-64.exe" /e do "脚本.do"
+"<StataNow 可执行文件路径>" /e do "脚本.do"
 ```
 
-（以上为 StataNow 19 默认安装路径；其他版本把 `StataNow19` 改为对应版本号。）
+可执行文件路径见 `verify/stata.conf` 的 `STATA_WIN`。
 
 ## 执行机制
 

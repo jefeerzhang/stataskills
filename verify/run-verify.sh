@@ -10,21 +10,42 @@
 # 判定标准（与 demo/REPORT.md 一致）：日志恰好一次 "end of do-file"
 # 且无 r(错误码) → PASS；任一失败以非零退出码结束。
 #
-# 平台二进制路径见 docs/run-stata.md（本仓库验证环境 = macOS）。
+# 平台二进制路径唯一来源：verify/stata.conf（macOS / Windows 双平台）。
 # ============================================================
 set -u
 
-# ---- 解析 Stata 可执行文件（macOS：PATH 优先，fallback 已知路径）----
-if command -v stata-mp >/dev/null 2>&1; then
-  STATA_BIN="$(command -v stata-mp)"
-elif [ -x "/Applications/StataNow/StataMP.app/Contents/MacOS/stata-mp" ]; then
-  STATA_BIN="/Applications/StataNow/StataMP.app/Contents/MacOS/stata-mp"
-else
-  echo "ERROR: 找不到 stata-mp。macOS 完整路径见 docs/run-stata.md。" >&2
-  exit 1
-fi
-
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# ---- 平台二进制路径（唯一来源：verify/stata.conf）----
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/stata.conf"
+
+# ---- 解析 Stata 可执行文件（macOS：PATH 优先；Windows：config 直取）----
+case "$(uname -s)" in
+  Darwin)
+    if command -v stata-mp >/dev/null 2>&1; then
+      STATA_BIN="$(command -v stata-mp)"
+    elif [ -n "${STATA_MAC:-}" ] && [ -x "$STATA_MAC" ]; then
+      STATA_BIN="$STATA_MAC"
+    else
+      echo "ERROR: 找不到 stata-mp。macOS 路径见 verify/stata.conf 的 STATA_MAC。" >&2
+      exit 1
+    fi
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    if [ -n "${STATA_WIN:-}" ]; then
+      STATA_BIN="$STATA_WIN"
+    else
+      echo "ERROR: verify/stata.conf 缺少 STATA_WIN。" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "ERROR: 未识别的平台 $(uname -s)，请在 verify/stata.conf 补充该平台路径。" >&2
+    exit 1
+    ;;
+esac
+
 DATA_DIR="$(cd "$VERIFY_DIR/../data/agis6" && pwd)"
 
 # ---- 目标：全部或指定一个 ----

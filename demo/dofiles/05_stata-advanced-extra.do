@@ -1,8 +1,8 @@
 *==========================================================*
 * DEMO 5/5 : stata-advanced（补充）—— 多层模型与 IRT（书第 15–16 章）
 * 说明     : 这两个方法需要纵向数据 / 条目数据，auto.dta 不具备该结构，
-*            故改用本仓库自带配套数据 skills/data/agis6/。
-* 技能源   : skills/stata-advanced/SKILL.md
+*            故改用本仓库自带配套数据 data/agis6/。
+* 技能源   : stata-advanced/SKILL.md
 *==========================================================*
 version 19.5
 set more off

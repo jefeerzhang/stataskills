@@ -1,6 +1,6 @@
 *==========================================================*
 * DEMO 2/5 : stata-descriptives —— 描述统计/图形/检验（书第 5–8 章）
-* 技能源   : skills/stata-descriptives/SKILL.md
+* 技能源   : stata-descriptives/SKILL.md
 * 数据     : auto.dta
 *==========================================================*
 version 19.5

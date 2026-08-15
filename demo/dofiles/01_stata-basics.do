@@ -1,6 +1,6 @@
 *==========================================================*
 * DEMO 1/5 : stata-basics —— 数据管理与清洗（书第 1–4 章）
-* 技能源   : skills/stata-basics/SKILL.md
+* 技能源   : stata-basics/SKILL.md
 * 数据     : auto.dta（Stata 自带 1978 Automobile Data, N=74）
 * 运行     : stata-mp -b do dofiles/01_stata-basics.do
 *==========================================================*

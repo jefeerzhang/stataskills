@@ -1,6 +1,6 @@
 *==========================================================*
 * DEMO 3/5 : stata-regression —— 方差分析与回归建模（书第 9–11 章）
-* 技能源   : skills/stata-regression/SKILL.md
+* 技能源   : stata-regression/SKILL.md
 * 数据     : auto.dta
 *==========================================================*
 version 19.5
