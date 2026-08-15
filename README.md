@@ -19,17 +19,26 @@
 ```
 stataskills/
 ├── README.md
-├── download_data.do          # 一键下载全部配套数据（别人 clone 后使用）
+├── CLAUDE.md
+├── download_data.do          # 一键下载全部配套数据（按 data/manifest.txt）
 ├── stata-basics/SKILL.md     # skill 1
 ├── stata-descriptives/SKILL.md
 ├── stata-regression/SKILL.md
 ├── stata-advanced/SKILL.md
-├── data/agis6/               # 书配套数据集（38 个 .dta + relate.cdb + 每章 do 文件）
-└── verify/                   # 四个 skill 的验证脚本与 Stata 输出日志
-    ├── verify-basics.do / .log
-    ├── verify-descriptives.do / .log
-    ├── verify-regression.do / .log
-    └── verify-advanced.do / .log
+├── data/                     # 数据集清单与配套数据
+│   ├── manifest.txt          # 38 个 .dta 数据集清单（单一来源）
+│   └── agis6/                # 书配套数据集（.dta + relate.cdb + 每章 do/log）
+├── docs/                     # 平台命令与架构决策
+│   ├── run-stata.md          # 平台二进制路径与批处理命令（单一来源）
+│   └── adr/                  # 架构决策记录（ADR）
+├── verify/                   # 验证 harness 与四个 skill 的验证脚本/日志
+│   ├── run-verify.sh         # 验证 harness（执行 + 判定 + 汇总）
+│   ├── verify-basics.do / .log
+│   ├── verify-descriptives.do / .log
+│   ├── verify-regression.do / .log
+│   └── verify-advanced.do / .log
+├── demo/                     # 技能演示（REPORT.md + dofiles + logs + output）
+└── book/                     # 教材原文 Markdown 与图片
 ```
 
 ## 安装
@@ -98,13 +107,6 @@ runner 依次在每个 skill 的数据目录下以批处理方式执行 do 文�
 ## 与书/版本的差异说明
 
 - 书基于 **Stata 15**，本机为 **StataNow 19**（MP 版）。绝大多数命令与选项在 19 中完全兼容。
-- **Stata 17+ 语法变化**：`table` 命令的 `contents()` 与 `row` 选项自 Stata 17 起被 `statistic()` 取代：
-  ```stata
-  * Stata 15（书）：
-  table sex, contents(mean hrs1 sd hrs1 count hrs1)
-  * Stata 17+：
-  table sex, statistic(mean hrs1) statistic(sd hrs1) statistic(count hrs1)
-  ```
-- **社区命令安装**：`ssc install fre binscatter hangroot lrdrop1` 可直接安装；
-  `listcoef`（spost 包）与 `mibeta` 不在 SSC 索引，需从 GitHub 镜像手动安装（见各 skill 说明）。
-- Stata 图形默认英文标签；需要中文作图时先与用户确认（避免字体乱码）。
+- **Stata 17+ 语法变化**：`table` 命令的 `contents()` 与 `row` 选项自 Stata 17 起被 `statistic()` 取代，新旧写法对照见 `stata-descriptives/SKILL.md` 第 6 章。
+- **社区命令安装**：各 skill 的正文与「关键陷阱速查」已说明直接 `ssc install` 可装的命令（`fre`、`binscatter`、`lrdrop1`）与需从 GitHub 镜像手动安装的包（`listcoef` 见 `stata-regression/SKILL.md`，`mibeta` 见 `stata-advanced/SKILL.md`）。
+- 中文作图规矩与字体乱码的技术说明见 `docs/run-stata.md`。
