@@ -42,8 +42,8 @@
 | 演示数据 | `auto.dta`（ Stata 自带 1978 Automobile Data ， N=74 ） |
 | 技能来源 | 仓库自带的 4 个 `stata-*/SKILL.md`（`stata-basics` / `stata-descriptives` / `stata-regression` / `stata-advanced`） |
 
-> 说明：仓库 skill 文档里的 Windows 路径写法（`C:\Program Files\StataNow19\StataMP-64.exe /e do ...`）
-> 在本机等价替换为 macOS 的 `stata-mp -b do ...`，命令本体完全一致。
+> 说明：仓库的平台二进制路径现收在 `docs/run-stata.md`（macOS / Windows 双平台对照）；
+> 本机以 macOS 方式执行（`stata-mp -b do ...`），命令本体完全一致。
 
 ---
 

@@ -1,9 +1,4 @@
-* ============================================================
-* 验证脚本：stata-advanced（第 12–16 章核心命令）
-* 数据来源：data/agis6/
-* ============================================================
-version 15
-set more off
+version 19.5
 
 * ---- ch12 信度与因子分析 ----
 use gss2006_chapter12, clear
@@ -56,6 +51,3 @@ irt 2pl dn2 dn4 dn5 dn7 dn10
 lrtest rasch
 irt grm n2 n4 n5 n7 n10
 predict confidence, latent
-
-display "VERIFY ADVANCED DONE"
-exit, clear

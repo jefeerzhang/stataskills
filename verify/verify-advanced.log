@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: 114514-student 64-core lab perpetual
-Serial number: 9223372036854775807
-  Licensed to: zhangjian
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
                sicau
 
 Notes:
@@ -22,15 +22,10 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do verify-advanced.do 
+. do /Users/jefeerzhang/Downloads/stataskills-demo/stataskills-repo/verify/veri
+> fy-advanced.do 
 
-. * ============================================================
-. * 验证脚本：stata-advanced（第 12–16 章核心命令）
-. * 数据来源：data/agis6/
-. * ============================================================
-. version 15
-
-. set more off
+. version 19.5
 
 . 
 . * ---- ch12 信度与因子分析 ----
@@ -447,14 +442,13 @@ xij variables:
 
 . mixed drink c.wave || id:
 
-Performing EM optimization: 
+Performing EM optimization ...
 
 Performing gradient-based optimization: 
-
 Iteration 0:  Log likelihood = -17216.599  
 Iteration 1:  Log likelihood = -17216.599  
 
-Computing standard errors:
+Computing standard errors ...
 
 Mixed-effects ML regression                          Number of obs    =  5,474
 Group variable: id                                   Number of groups =  1,554
@@ -484,20 +478,18 @@ LR test vs. linear model: chibar2(01) = 568.55        Prob >= chibar2 = 0.0000
 
 . mixed drink c.wave || id: wave, cov(unstructured)
 
-Performing EM optimization: 
+Performing EM optimization ...
 
 Performing gradient-based optimization: 
-
 Iteration 0:  Log likelihood = -17029.795  
-Iteration 1:  Log likelihood = -17013.355  
+Iteration 1:  Log likelihood = -17013.354  
 Iteration 2:  Log likelihood = -17012.671  
 Iteration 3:  Log likelihood = -17012.446  
 Iteration 4:  Log likelihood =  -17012.39  
 Iteration 5:  Log likelihood = -17012.375  
 Iteration 6:  Log likelihood = -17012.374  
-Iteration 7:  Log likelihood = -17012.374  
 
-Computing standard errors:
+Computing standard errors ...
 
 Mixed-effects ML regression                          Number of obs    =  5,474
 Group variable: id                                   Number of groups =  1,554
@@ -511,19 +503,19 @@ Log likelihood = -17012.374                          Prob > chi2      = 0.0000
 ------------------------------------------------------------------------------
        drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
-        wave |   .4493319   .0239879    18.73   0.000     .4023165    .4963473
-       _cons |    2.23915   .1304175    17.17   0.000     1.983537    2.494764
+        wave |   .4493336   .0239881    18.73   0.000     .4023177    .4963495
+       _cons |   2.239133   .1304159    17.17   0.000     1.983523    2.494744
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
   Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
 -----------------------------+------------------------------------------------
 id: Unstructured             |
-                   var(wave) |    .240077   .0237871      .1977027    .2915336
-                  var(_cons) |   .3067681    .160186      .1102392    .8536594
-             cov(wave,_cons) |   .2713816   .0611852      .1514608    .3913024
+                   var(wave) |   .2401079   .0241718       .197113    .2924808
+                  var(_cons) |   .3068255   .1665202      .1059077    .8889048
+             cov(wave,_cons) |   .2714238   .0652175      .1435999    .3992478
 -----------------------------+------------------------------------------------
-               var(Residual) |   21.31583    .476309      20.40243    22.27012
+               var(Residual) |   21.31519   .4765175      20.40139    22.26991
 ------------------------------------------------------------------------------
 LR test vs. linear model: chi2(3) = 977.00                Prob > chi2 = 0.0000
 
@@ -531,16 +523,15 @@ Note: LR test is conservative and provided only for reference.
 
 . mixed drink c.wave i.male c.wave#i.male || id: wave
 
-Performing EM optimization: 
+Performing EM optimization ...
 
 Performing gradient-based optimization: 
-
 Iteration 0:  Log likelihood = -16996.761  
 Iteration 1:  Log likelihood = -16989.789  
 Iteration 2:  Log likelihood =  -16989.76  
 Iteration 3:  Log likelihood =  -16989.76  
 
-Computing standard errors:
+Computing standard errors ...
 
 Mixed-effects ML regression                          Number of obs    =  5,474
 Group variable: id                                   Number of groups =  1,554
@@ -570,9 +561,9 @@ Log likelihood =  -16989.76                          Prob > chi2      = 0.0000
 -----------------------------+------------------------------------------------
 id: Independent              |
                    var(wave) |   .2766612   .0188117      .2421422    .3161011
-                  var(_cons) |   1.321931   .5187415       .612614    2.852531
+                  var(_cons) |   1.321933    .518741      .6126164     2.85253
 -----------------------------+------------------------------------------------
-               var(Residual) |   21.06079   .4908945       20.1203    22.04524
+               var(Residual) |   21.06079   .4908944       20.1203    22.04524
 ------------------------------------------------------------------------------
 LR test vs. linear model: chi2(2) = 915.56                Prob > chi2 = 0.0000
 
@@ -763,9 +754,4 @@ n10          |
 (using 7 quadrature points)
 
 . 
-. display "VERIFY ADVANCED DONE"
-VERIFY ADVANCED DONE
-
-. exit, clear
-
 end of do-file

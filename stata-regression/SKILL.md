@@ -9,12 +9,13 @@ description: Stata 方差分析与回归建模。基于《A Gentle Introduction 
 
 ## 运行 Stata 的方式
 
-- 本机 Stata：`C:\Program Files\StataNow19\StataMP-64.exe`；批处理：`"…\StataMP-64.exe" /e do "脚本.do"`，结束生成同名 `.log`。
-- 数据在仓库 `data/agis6/`；示例假设已 `cd` 到该目录。
-- **中文作图规矩**：生成图形前先询问用户是否需要中文标签；默认英文作图。
-- 报告 p 值惯例：Stata 输出 0.0000 时报告 `p < 0.001`。
+- 批处理（无界面）：`stata-mp -b do "脚本.do"`，结束生成同名 `.log`，内含全部输出。平台二进制路径与 Windows 等价命令见 `docs/run-stata.md`。
+- 数据在仓库 `data/agis6/`；示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录。
+- **中文作图规矩**：生成图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
 ## 第 9 章 方差分析（ANOVA）
+
+- 报告惯例：Stata 输出 0.0000 时报告 `p < 0.001`，绝不写 p=0.000。
 
 ### 单因素 ANOVA
 ```stata

@@ -1,9 +1,4 @@
-* ============================================================
-* 验证脚本：stata-basics（第 1–4 章核心命令）
-* 数据来源：data/agis6/
-* ============================================================
-version 15
-set more off
+version 19.5
 
 * ---- ch3 缺失值处理 + 反向编码 + 量表构建 ----
 use relate, clear
@@ -26,6 +21,3 @@ summarize
 list gender education prison in 1/5, nolabel
 numlabel _all, add
 list gender education prison in 1/5
-
-display "VERIFY BASICS DONE"
-exit, clear

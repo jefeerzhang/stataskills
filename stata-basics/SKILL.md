@@ -9,14 +9,9 @@ description: Stata 入门与数据管理。基于《A Gentle Introduction to Sta
 
 ## 运行 Stata 的方式
 
-- 本机 Stata：`C:\Program Files\StataNow19\StataMP-64.exe`（StataNow 19 MP）。
-- 批处理（无界面，推荐在 do-file 里跑完整流程）：
-  ```
-  "C:\Program Files\StataNow19\StataMP-64.exe" /e do "脚本.do"
-  ```
-  运行结束后在当前目录生成同名 `.log` 文件，内含全部输出。
-- 本书配套数据位于仓库 `data/agis6/` 目录。示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录；若不在，用完整路径 `use "…\data\agis6\firstsurvey.dta", clear`。
-- **中文作图规矩**：需要生成图形命令（`graph *`、`histogram`、`twoway` 等）且图表文字可能含中文时，先询问用户是否确需中文，避免字体乱码；默认按英文标签作图。
+- 批处理（无界面，推荐在 do-file 里跑完整流程）：`stata-mp -b do "脚本.do"`，结束生成同名 `.log` 文件，内含全部输出。平台二进制路径与 Windows 等价命令见 `docs/run-stata.md`。
+- 本书配套数据位于仓库 `data/agis6/` 目录。示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录；若不在，用完整路径 `use "…/data/agis6/firstsurvey.dta", clear`。
+- **中文作图规矩**：需要生成图形命令（`graph *`、`histogram`、`twoway` 等）且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
 ## 核心语法
 

@@ -56,13 +56,14 @@ use firstsurvey, clear
 ## 运行 Stata
 
 本仓库 skill 面向 StataNow 19（兼容 Stata 15 及以后版本，书基于 Stata 15 编写）。
-无界面批处理运行方式：
+无界面批处理运行方式（本仓库验证环境为 macOS）：
 
 ```
-"C:\Program Files\StataNow19\StataMP-64.exe" /e do "脚本.do"
+stata-mp -b do "脚本.do"
 ```
 
 运行结束后在当前目录生成同名 `.log` 文件（含全部输出）。
+平台二进制路径与 Windows 等价命令见 `docs/run-stata.md`。
 
 ## 验证
 
@@ -70,9 +71,13 @@ use firstsurvey, clear
 `.log` 为运行记录（含错误检查）。修改 skill 内容后可重跑验证：
 
 ```
-cd data/agis6   （或把 do 文件复制到此目录）
-"C:\Program Files\StataNow19\StataMP-64.exe" /e do "verify-basics.do"
+bash verify/run-verify.sh            # 全量（四个 skill）
+bash verify/run-verify.sh advanced   # 单个 skill（basics/descriptives/regression/advanced）
 ```
+
+runner 依次在每个 skill 的数据目录下以批处理方式执行 do 文件，判定标准与 demo 一致：
+日志恰好一次 `end of do-file` 且无 `r(错误码)` → 通过；任一失败以非零退出码结束。
+平台二进制路径见 `docs/run-stata.md`。
 
 ### 全书 16 章逐命令实测结果（StataNow 19.5）
 

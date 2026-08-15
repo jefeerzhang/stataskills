@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: 114514-student 64-core lab perpetual
-Serial number: 9223372036854775807
-  Licensed to: zhangjian
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
                sicau
 
 Notes:
@@ -22,15 +22,10 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do verify-basics.do 
+. do /Users/jefeerzhang/Downloads/stataskills-demo/stataskills-repo/verify/veri
+> fy-basics.do 
 
-. * ============================================================
-. * 验证脚本：stata-basics（第 1–4 章核心命令）
-. * 数据来源：data/agis6/
-. * ============================================================
-. version 15
-
-. set more off
+. version 19.5
 
 . 
 . * ---- ch3 缺失值处理 + 反向编码 + 量表构建 ----
@@ -152,9 +147,4 @@ Notes:
      +-------------------------------------------+
 
 . 
-. display "VERIFY BASICS DONE"
-VERIFY BASICS DONE
-
-. exit, clear
-
 end of do-file

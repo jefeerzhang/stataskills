@@ -9,11 +9,9 @@ description: Stata 描述统计、双分类变量分析、均值检验与相关�
 
 ## 运行 Stata 的方式
 
-- 本机 Stata：`C:\Program Files\StataNow19\StataMP-64.exe`。
-- 批处理：`"C:\Program Files\StataNow19\StataMP-64.exe" /e do "脚本.do"`，结束生成同名 `.log`。
-- 数据在仓库 `data/agis6/`；示例假设已 `cd` 到该目录。
-- **中文作图规矩**：生成图形前先询问用户是否需要中文标签；默认英文作图，避免字体乱码。
-- 报告 p 值惯例：Stata 输出 0.0000 时报告 `p < 0.001`，绝不写 p=0.000。
+- 批处理（无界面）：`stata-mp -b do "脚本.do"`，结束生成同名 `.log`，内含全部输出。平台二进制路径与 Windows 等价命令见 `docs/run-stata.md`。
+- 数据在仓库 `data/agis6/`；示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录。
+- **中文作图规矩**：生成图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
 ## 第 5 章 单变量描述统计与图形
 
@@ -86,6 +84,8 @@ tabulate sex abany, chi2 row V        // V 必须大写！Cramér's V
 - 卡方功效：先 `tab sex health, lrchi2 row`（必须用似然比卡方）。书的 `chi2power`（UCLA 包）已随 UCLA 服务器下线无法安装；可用近似替代（比较比例功效 `power twoproportions` 或参考 7.10 的 `power twomeans`）。
 
 ## 第 7 章 单/双均值检验
+
+- 报告惯例：Stata 输出 0.0000 时报告 `p < 0.001`，绝不写 p=0.000。
 
 ### 比例检验（要求 0/1 变量）
 ```stata

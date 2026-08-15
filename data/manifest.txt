@@ -1,0 +1,46 @@
+# 《A Gentle Introduction to Stata》第 6 版（agis6）配套数据集清单
+#
+# 每行一个 .dta 基名（不含后缀）；空行与 # 开头的行为注释。
+# 这是 data/agis6/ 下 .dta 文件的单一来源：
+#   - download_data.do 按此清单下载
+#   - verify/run-verify.sh 按此校验 verify 脚本引用的数据集
+# 新增/改名数据集时改这里即可，两处自动同步。
+#
+attitude
+c10interaction
+c11barchart
+chapter13_missing
+chapter6_aspirin
+chores
+descriptive_gss
+divorce
+environ
+firstsurvey
+firstsurvey_chapter4
+flourishing_bmi
+gss2002_chapter6
+gss2002_chapter7
+gss2006_chapter12
+gss2006_chapter12_selected
+gss2006_chapter6
+gss2006_chapter6_10percent
+gss2006_chapter8
+gss2006_chapter8_selected
+gss2006_chapter9
+gss2006_chapter9_2way
+gss_2016ch12
+intraclass
+kappa1
+kuder-richardson
+long
+longitudinal_mixed
+nlsy97_chapter11
+nlsy97_chapter7
+nlsy97_selected_variables
+ops2004
+partyid
+relate
+retest
+spearman
+wide
+wide9

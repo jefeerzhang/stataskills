@@ -1,9 +1,4 @@
-* ============================================================
-* 验证脚本：stata-descriptives（第 5–8 章核心命令）
-* 数据来源：data/agis6/
-* ============================================================
-version 15
-set more off
+version 19.5
 
 * ---- ch5 描述统计 ----
 use descriptive_gss, clear
@@ -33,6 +28,3 @@ pwcorr prestg80 hrs1, obs sig
 regress prestg80 hrs1, beta
 use spearman, clear
 spearman age liberal
-
-display "VERIFY DESCRIPTIVES DONE"
-exit, clear

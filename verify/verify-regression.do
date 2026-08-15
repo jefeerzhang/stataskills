@@ -1,9 +1,4 @@
-* ============================================================
-* 验证脚本：stata-regression（第 9–11 章核心命令）
-* 数据来源：data/agis6/
-* ============================================================
-version 15
-set more off
+version 19.5
 
 * ---- ch9 ANOVA ----
 use partyid, clear
@@ -35,6 +30,3 @@ margins, dydx(black) atmeans
 margins, at(pdrink97=(1 2 3 4 5)) atmeans
 use environ, clear
 tab2 environ libcand, row
-
-display "VERIFY REGRESSION DONE"
-exit, clear

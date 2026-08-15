@@ -11,15 +11,19 @@ capture mkdir "data"
 capture mkdir "data/agis6"
 cd "data/agis6"
 
-* ---- 数据集（按字母顺序，逐个下载并验证非空）----
-local datasets attitude c10interaction c11barchart chapter13_missing ///
-	chapter6_aspirin chores descriptive_gss divorce environ firstsurvey ///
-	firstsurvey_chapter4 flourishing_bmi gss2002_chapter6 gss2002_chapter7 ///
-	gss2006_chapter12 gss2006_chapter12_selected gss2006_chapter6 ///
-	gss2006_chapter6_10percent gss2006_chapter8 gss2006_chapter8_selected ///
-	gss2006_chapter9 gss2006_chapter9_2way gss_2016ch12 intraclass kappa1 ///
-	kuder-richardson long longitudinal_mixed nlsy97_chapter11 nlsy97_chapter7 ///
-	nlsy97_selected_variables ops2004 partyid relate retest spearman wide wide9
+* ---- 数据集清单（单一来源：data/manifest.txt）----
+capture file close _fh
+file open _fh using "../manifest.txt", read
+local datasets
+while r(eof) == 0 {
+	file read _fh _line
+	local trimmed = trim("`_line'")
+	if strpos("`trimmed'", "#") == 1 continue
+	if "`trimmed'" == "" continue
+	local datasets `datasets' `trimmed'
+}
+file close _fh
+display "从 data/manifest.txt 读取 `: word count `datasets'' 个数据集"
 
 foreach f of local datasets {
 	capture erase "`f'.dta"
