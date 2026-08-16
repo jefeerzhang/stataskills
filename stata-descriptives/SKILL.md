@@ -1,6 +1,6 @@
 ---
 name: stata-descriptives
-description: Stata 描述统计、双分类变量分析、均值检验与相关回归。基于《A Gentle Introduction to Stata》第 6 版第 5–8 章：频数表/直方图/箱线图、交叉表与卡方、t 检验/比例检验、相关与简单回归、功效分析。含完整命令与解读逻辑。
+description: 帮助用户做描述统计、图形与基础统计推断。Use when needing 频数表与直方图 / 箱线图与饼图 / 两分类变量交叉表与卡方（含 Cramér's V，V 必须大写）/ 比例检验（变量先 recode 成 0/1）/ 单双样本 t 检验与配对检验 / 效应量（cohensd / hedgesg）/ 相关与双变量回归 / 功效分析（power twomeans / twoproportions）。配套 38 个 AGIS6 数据集；记牢 Stata 报告惯例（p<0.001 不写 0.000；峰度正态值=3；统计显著不等于实质显著）。
 ---
 
 # Stata 描述统计、表格与均值检验（本书第 5–8 章）

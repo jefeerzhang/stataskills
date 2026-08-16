@@ -1,6 +1,6 @@
 ---
 name: stata-regression
-description: Stata 方差分析与回归建模。基于《A Gentle Introduction to Stata》第 6 版第 9–11 章：ANOVA/ANCOVA/双因素/重复测量、多元回归（诊断/交互/非线性/加权）、逻辑回归（odds ratio/margins/嵌套模型）、功效分析。含完整命令与解读逻辑。
+description: 帮助用户做方差分析、回归建模与功效分析。Use when needing 单因素 / 双因素 / 重复测量 ANOVA / ANCOVA（连续协变量必须加 c. 前缀，否则按分类处理）/ 多元回归诊断（VIF / Cook's D / 异方差稳健 SE / 中心化后再放二次项）/ 交互与非线性（margins + marginsplot 解读，不直接读主效应）/ 加权回归 [pweight=] / 逻辑回归（odds ratio 与 pseudo-R² 不是解释方差）/ margins 边际效应 / 嵌套模型 nestreg / 功效分析（power oneway / twoway / rsquared）。配套 38 个 AGIS6 数据集。
 ---
 
 # Stata 方差分析与回归建模（本书第 9–11 章）
