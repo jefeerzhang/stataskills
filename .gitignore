@@ -2,6 +2,12 @@
 *.smcl
 # 验证运行产生的本地日志副本（正式验证记录在 verify/ 下）
 data/agis6/verify-*.log
+# panelview / fect 安装时复制到 demo/ 的配套数据（net install ... , all replace 会重出）
+demo/simdata.dta
+demo/simdata1.dta
+demo/turnout.dta
+# Stata graph export 路径解析异常时在 demo/ 根目录多写的副本（同 output/03_*.png）
+demo/.png
 # Windows 临时文件
 Thumbs.db
 .DS_Store
