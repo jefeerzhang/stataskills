@@ -77,7 +77,7 @@ flowchart LR
 | 脚本载体 | 5 个 do-file （`.do`） | 按 skill 命令写成的可执行脚本 |
 | 执行引擎 | StataNow 19.5 MP | `-b` 批处理执行 |
 | 运行记录 | 5 个 `.log` | 全量输出，可审计 |
-| 图形产物 | `graph export` PNG （ 11 张） | 可视化 |
+| 图形产物 | `graph export` PNG （ 15 张） | 可视化 |
 | 数据 | `auto.dta` + 仓库 `data/agis6/` | 演示数据 |
 
 ---
@@ -93,7 +93,7 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
 ├── data/agis6/                     # 书配套数据（longitudinal_mixed.dta、attitude.dta 等）
 ├── ...（README.md / CLAUDE.md / docs/ / verify/ / book/ / download_data.do 等原有内容）
 └── demo/                           # ← 本 demo，作为 skills 的端到端示例
-    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、11 张嵌入图）
+    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、15 张 PNG（11 张嵌入））
     ├── dofiles/                    # 5 个 do-file
     │   ├── 01_stata-basics.do
     │   ├── 02_stata-descriptives.do
@@ -108,11 +108,14 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
     │   └── 05_stata-advanced-extra.log
     ├── data/
     │   └── auto_clean.dta          # basics 技能清洗后的数据
-    └── output/                     # 11 张图（PNG，嵌入在 REPORT.md 各章节）
+    └── output/                     # 15 张图（PNG，其中 11 张嵌入在 REPORT.md 各章节）
         ├── 02_hist_price.png / 02_hist_mpg.png / 02_hbox_mpg_by_foreign.png
         ├── 02_scatter_price_mpg.png
+        ├── 02_panelview_missing.png / 02_panelview_treat.png
         ├── 03_rvfplot.png / 03_margins_interaction.png / 03_margins_quadratic.png
         ├── 03_logit_margins.png
+        ├── 03_reghdfe_resid_compare.png
+        ├── 03_fect_ife.png
         ├── 04_screeplot.png
         └── 05_mixed_margins.png / 05_irt_icc.png
 ```
@@ -341,7 +344,7 @@ irtgraph icc dn4, blocation              // 条目特征曲线
 ## 6. 结论与佐证价值
 
 1. **可执行**： 4 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
-2. **可复现**： 5 个 do-file + 5 个 log + 11 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
+2. **可复现**： 5 个 do-file + 5 个 log + 15 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
 3. **覆盖完整**： 4 个技能覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
    （数据管理 → 描述统计 → 回归建模 → 因子/SEM/插补/多层/IRT ）。
 4. **陷阱有效**： skill 中的"陷阱清单"在 demo 中真实发挥作用（如值标签重复定义 r(110)、因子只保留 1 个导致 `predict f2` 失败），

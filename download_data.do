@@ -15,12 +15,16 @@ cd "data/agis6"
 capture file close _fh
 file open _fh using "../manifest.txt", read
 local datasets
+* 先读第一行再进入 while 循环：r(eof) 只在 file read 之后才被设置。
+* 注意：跳过注释/空行不能写 continue，否则没有 file read 下一行，
+* 会死循环；统一在循环末尾读下一行。
+file read _fh _line
 while r(eof) == 0 {
-	file read _fh _line
 	local trimmed = trim("`_line'")
-	if strpos("`trimmed'", "#") == 1 continue
-	if "`trimmed'" == "" continue
-	local datasets `datasets' `trimmed'
+	if strpos("`trimmed'", "#") != 1 & "`trimmed'" != "" {
+		local datasets `datasets' `trimmed'
+	}
+	file read _fh _line
 }
 file close _fh
 display "从 data/manifest.txt 读取 `: word count `datasets'' 个数据集"

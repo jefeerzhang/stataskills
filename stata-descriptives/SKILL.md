@@ -236,7 +236,16 @@ panelview Y D, type(bivariate) i(id) t(wave)
 ### 快速示例（longitudinal_mixed.dta reshape long）
 ```stata
 use longitudinal_mixed, clear
-keep id drink98 drink00 drink02 drink04 drink06 drink08
+* 先统一重命名为 drink0/drink2/.../drink10。
+* 不能直接 keep drink98 drink00 ... 后 reshape long drink：Stata 会把
+* drink98 解析为 stub=drink + j=98，导致 j 错位为 0 2 4 6 8 98。
+clonevar drink0 = drink98
+clonevar drink2 = drink00
+clonevar drink4 = drink02
+clonevar drink6 = drink04
+clonevar drink8 = drink06
+clonevar drink10 = drink08
+drop drink98 drink00 drink02 drink04 drink06 drink08
 reshape long drink, i(id) j(wave)
 replace drink = . if drink < 0   // -9 表示缺失，先转 Stata 缺失
 

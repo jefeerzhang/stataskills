@@ -53,7 +53,15 @@ cap which panelview
 if _rc == 0 {
     * 用 longitudinal_mixed.dta（5,474 obs × 1,554 人 × 6 波，1998-2008）
     use "../data/agis6/longitudinal_mixed.dta", clear
-    keep id drink98 drink00 drink02 drink04 drink06 drink08
+    * 先统一重命名，再 reshape：直接 reshape drink98/drink00/... 会被
+    * Stata 解析为 j=0 2 4 6 8 98 并报 variable drink0 not found。
+    clonevar drink0 = drink98
+    clonevar drink2 = drink00
+    clonevar drink4 = drink02
+    clonevar drink6 = drink04
+    clonevar drink8 = drink06
+    clonevar drink10 = drink08
+    drop drink98 drink00 drink02 drink04 drink06 drink08
     reshape long drink, i(id) j(wave)
     replace drink = . if drink < 0   // -9 表示缺失
 

@@ -10,7 +10,7 @@
    ```bash
    bash verify/run-verify.sh        # 全部 4 个 skill 通过
    cd demo && for f in dofiles/*.do; do
-       STATA=$(which stata-mp) $STATA -b do "$f"
+       stata-mp -b do "$f"
    done                              # 全部 ends=1, 无错误码
    ```
 4. **Commit message** 用 [Conventional Commits 中文规范](https://www.conventionalcommits.org/)：

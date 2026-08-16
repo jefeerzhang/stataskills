@@ -26,7 +26,7 @@ Notes:
 
 . *==========================================================*
 . * DEMO 1/5 : stata-basics —— 数据管理与清洗（书第 1–4 章）
-. * 技能源   : skills/stata-basics/SKILL.md
+. * 技能源   : stata-basics/SKILL.md
 . * 数据     : auto.dta（Stata 自带 1978 Automobile Data, N=74）
 . * 运行     : stata-mp -b do dofiles/01_stata-basics.do
 . *==========================================================*
@@ -218,7 +218,6 @@ Value label origin
 . 
 . *---- 第 4 章：do-file 结果管理 —— 保存清洗后的数据 --------
 . save "data/auto_clean.dta", replace
-(file data/auto_clean.dta not found)
 file data/auto_clean.dta saved
 
 . 
@@ -227,7 +226,7 @@ file data/auto_clean.dta saved
 
 Contains data from data/auto_clean.dta
  Observations:            74                  1978 automobile data
-    Variables:            18                  14 Aug 2026 23:24
+    Variables:            18                  16 Aug 2026 10:49
                                               (_dta has notes)
 -------------------------------------------------------------------------------
 Variable      Storage   Display    Value

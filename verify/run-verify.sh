@@ -8,7 +8,9 @@
 #   bash verify/run-verify.sh advanced   # 单个（basics/descriptives/regression/advanced）
 #
 # 判定标准（与 demo/REPORT.md 一致）：日志恰好一次 "end of do-file"
-# 且无 Stata 错误码 r(NN) → PASS；任一失败以非零退出码结束。
+# 且无 Stata 错误码 r(NN) 且无静默错误（variable not found /
+# option not allowed / invalid syntax / no observations 等）→ PASS；
+# 任一失败以非零退出码结束。
 # 错误码匹配用 `r\([0-9]{2,}\)`（至少 2 位数字），避免误吃合法命令参数
 # 如 power(0.90) / star(5) 中的 r(...) 子串。
 #
@@ -78,7 +80,7 @@ for name in "${TARGETS[@]}"; do
 
   # data readiness：该 skill 引用的数据集必须存在（清单见 data/manifest.txt）
   missing_data=""
-  for ds in $(grep -oE '^use[[:space:]]+[A-Za-z0-9_]+' "$dofile" | awk '{print $2}'); do
+  for ds in $(grep -oE '^use[[:space:]]+[A-Za-z0-9_-]+' "$dofile" | awk '{print $2}'); do
     if [ ! -f "$DATA_DIR/$ds.dta" ]; then
       missing_data="${missing_data} ${ds}.dta"
     fi
@@ -101,15 +103,20 @@ for name in "${TARGETS[@]}"; do
 
   ends=$(grep -c "end of do-file" "$log")
   errs=$(grep -cE "r\([0-9]{2,}\)" "$log")
-  if [ "$ends" -eq 1 ] && [ "$errs" -eq 0 ]; then
-    echo "PASS  ${name}（end of do-file x1，无错误码）"
+  # 捕获 cap 掩盖不住的静默错误（reshape 错位、变量不存在等），
+  # 避免只靠 end of do-file + r(NN) 漏掉 data-integrity 问题。
+  silent=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|0 observations|insufficient observations|not sorted" "$log")
+  if [ "$ends" -eq 1 ] && [ "$errs" -eq 0 ] && [ "$silent" -eq 0 ]; then
+    echo "PASS  ${name}（end of do-file x1，无错误码，无静默错误）"
     pass=$((pass+1))
   else
-    echo "FAIL  ${name}（end of do-file x${ends}，r(错误 x${errs}）→ 见 ${log}"
+    echo "FAIL  ${name}（end of do-file x${ends}，r(错误 x${errs}，静默错误 x${silent}）→ 见 ${log}"
     fail=$((fail+1))
   fi
   # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
   cp "$log" "$VERIFY_DIR/$name.log"
+  # 不留副本在数据目录（数据目录只放数据）
+  rm -f "$log"
 done
 
 echo

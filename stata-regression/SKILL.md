@@ -1,6 +1,6 @@
 ---
 name: stata-regression
-description: 帮助用户做方差分析、回归建模与功效分析。Use when needing 单因素 / 双因素 / 重复测量 ANOVA / ANCOVA（连续协变量必须加 c. 前缀，否则按分类处理）/ 多元回归诊断（VIF / Cook's D / 异方差稳健 SE / 中心化后再放二次项）/ 交互与非线性（margins + marginsplot 解读，不直接读主效应）/ 加权回归 [pweight=] / 逻辑回归（odds ratio 与 pseudo-R² 不是解释方差）/ margins 边际效应 / 嵌套模型 nestreg / 功效分析（power oneway / twoway / rsquared）/ 高维固定效应 reghdfe（2+ 层 FE / 面板双向 FE / 固定斜率 feslope / 多向聚类 vce(cluster fe1 fe2) / IV-GMM 吸收 FE / 自动剔除单点组）/ IV 内生变量 ivreghdfe（IV / 2SLS / LIML / GMM2S + 多层 FE / 高级 SE 含 Driscoll-Kraay / 两向聚类 cluster(fe1 fe2)）/ staggered DiD 偏差修正 fect（method(ife) 交互固定效应 / method(mc) 矩阵补全 / placeboTest / 解决 TWFE 负权重偏误）。配套 38 个 AGIS6 数据集。
+description: 帮助用户做方差分析、回归建模与功效分析。Use when needing 单因素 / 双因素 / 重复测量 ANOVA / ANCOVA（连续协变量必须加 c. 前缀，否则按分类处理）/ 多元回归诊断（VIF / Cook's D / 异方差稳健 SE / 中心化后再放二次项）/ 交互与非线性（margins + marginsplot 解读，不直接读主效应）/ 加权回归 [pweight=] / 逻辑回归（odds ratio 与 pseudo-R² 不是解释方差）/ margins 边际效应 / 嵌套模型 nestreg / 功效分析（power oneway / twoway / rsquared）/ 高维固定效应 reghdfe（2+ 层 FE / 面板双向 FE / 固定斜率 i.fe##c.var / 多向聚类 vce(cluster fe1 fe2) / Driscoll-Kraay vce(dkraay #) / IV-GMM 吸收 FE / 自动剔除单点组）/ IV 内生变量 ivreghdfe（IV / 2SLS / LIML / GMM2S + 多层 FE / 两向聚类 cluster(fe1 fe2)，注意 vce 只支持 cluster/robust/unadjusted）/ staggered DiD 偏差修正 fect（method(ife) 交互固定效应 / method(mc) 矩阵补全 / placeboTest / 解决 TWFE 负权重偏误）。配套 38 个 AGIS6 数据集。
 ---
 
 # Stata 方差分析与回归建模（本书第 9–11 章）
@@ -126,7 +126,22 @@ regress smday97 age97 male psmoke97 i.race, beta          // i. 前缀自动生�
 regress smday97 age97 male psmoke97 ib3.race, beta        // ib3. 改参照组
 ```
 - k 个类别需 k−1 个 dummy；二分类变量的回归系数 = 控制其他变量后两组均值差；β 对 dummy 无意义。
-- 检验一组系数（分类变量整体）：`test aa hispanic other`（F 检验）。
+- 书的 `aa hispanic other` 三个 race/ethnicity 哑变量不在 `nlsy97_chapter11.dta` 中，需先用
+  `race97` 和 `ethnic97` 生成（书 10.5 节；`codebook race97 ethnic97` 可查编码）：
+  ```stata
+  use nlsy97_chapter11, clear
+  generate race = race97
+  replace race = 1 if race97 == 1 & ethnic97 == 0
+  replace race = 2 if race97 == 2 & ethnic97 == 0
+  replace race = 3 if ethnic97 == 1
+  replace race = 4 if (race97 == 4 | race97 == 5) & ethnic97 == 0
+  tab2 race race97 ethnic97
+  recode race (2 = 1 African_American) (1 3/4 = 0 Other), generate(aa)
+  recode race (3 = 1 Hispanic) (1/2 4 = 0 Other), generate(hispanic)
+  recode race (4 = 1 Other_race) (1/3 = 0 W_AA_H), generate(other)
+  tab1 aa hispanic other
+  ```
+- 检验一组系数（分类变量整体）：`test aa hispanic other`（F 检验；用上面刚生成的哑变量）。
 - 嵌套回归（分层）：`nestreg: regress smday97 (age97 male) (psmoke97) (aa hispanic other), beta`；块用括号，输出各块增量 R²。**nestreg 不支持因子变量记法**。
 
 ### 交互作用
@@ -165,7 +180,7 @@ Stata 社区包，实现 Correia (2017) 的估计器。它是 `areg` / `xtreg` �
 
 ### 版本（2026-08 调研自 GitHub）
 - **SSC 当前稳定版**：`6.12.3 (20aug2023)`（注意不是某些文档说的 5.x）
-- **最新开发版**：`6.13.0 (09Jan2026)`（GitHub `master` 分支；实验性 `vce(dkraay #)`）
+- **最新开发版**：`6.13.1 (10Jan2026)`（GitHub `master` 分支；实验性 `vce(dkraay #)`）
 - 旧版 5.x 与 6.x 并存：用 `version(5)` 切回 5.x 行为
 
 ### 安装（必须先 compile ftools）
@@ -194,7 +209,7 @@ ssc install reghdfe
 ```
 - **配套依赖**：`ftools`（高级 Mata，**必须 compile**）；`parallel`（仅当用 `parallel()` 选项）
 - **离线/防火墙**：手工下 `ftools/reghdfe/ivreghdfe` 三个 zip 释放到本地，用 `net install, from(本地路径)`
-- **查版本**：`reghdfe, version` 看首行注释；或 `which reghdfe`
+- **查版本**：`which reghdfe`（首行注释含版本号，如 `*! version 6.13.1 10Jan2026`）
 
 ### Things to be aware of（来自官方 README）
 - 依赖 `ftools`（Stata 12 及更老还需 `boottest`，现已罕用）
@@ -211,7 +226,7 @@ ssc install reghdfe
 | v5.6 | 2019-01-26 | 数值精度改进（不解标准化再解）；首次调用 +2s 提速 |
 | v5.6.8 | 2019-03-03 | 同期发布 `ppmlhdfe`（Poisson + FE） |
 | v6.12.0 | 2021-06-26 | 加 `indiv()` / `group()` / `aggregation()` 个体 FE |
-| v6.13.0 | 2026-01-09 | 加实验性 `vce(dkraay #)` Driscoll-Kraay SE |
+| v6.13.1 | 2026-01-10 | 加实验性 `vce(dkraay #)` Driscoll-Kraay SE |
 
 ### 何时用 `reghdfe` 而非 `regress` / `areg` / `xtreg`
 - 回归里有 2 个及以上固定效应层（如「州 × 年」双向 FE）
@@ -234,13 +249,15 @@ reghdfe depvar indepvars, absorb(fe1 fe2) vce(cluster clustervar)
 reghdfe depvar indepvars, absorb(fe1 fe2) vce(cluster fe1 fe2)    // 两向聚类
 
 * Driscoll-Kraay SE（v6.13+，面板数据；数字 = 滞后期数）
+* 前提：先 xtset panelvar timevar（或 tsset），否则报 r(9)
+xtset panelvar timevar
 reghdfe depvar indepvars, absorb(panelvar timevar) vce(dkraay 2)
 
-* 固定斜率（per-group slope）
-reghdfe depvar indepvars, absorb(fe1) feslope(indepvar fe1)      // fe1 内 in depvar 的斜率不同
+* 固定斜率（per-group slope）：用因子变量交互，不是 feslope() 选项
+reghdfe depvar i.fe1##c.indepvar, absorb(fe1)                    // fe1 内 indepvar 的斜率不同
 
 * 个体固定效应（Constantine & Correia 2021；区别于固定斜率）
-reghdfe depvar indepvars, absorb(fe1) indiv(firm) group(occ) aggregation(sum)
+reghdfe depvar indepvars, absorb(fe1) individual(firm) group(occ) aggregation(sum)
 
 * 内存优化（大 N 救命，5 – 10x 节省）
 reghdfe depvar indepvars, absorb(fe1 fe2) compact poolsize(1000)
@@ -251,10 +268,10 @@ reghdfe depvar indepvars, absorb(fe1 fe2) compact poolsize(1000)
 |---|---|---|
 | `absorb(fe1 fe2 …)` | 多维 FE | 始终需要 |
 | `vce(cluster ...)` | 聚类稳健 SE | 始终推荐（比 robust 更准） |
-| `vce(dkraay #)` | Driscoll-Kraay SE（v6.13+） | 面板数据跨相关+自相关 |
+| `vce(dkraay #)` | Driscoll-Kraay SE（v6.13+，需 xtset/tsset） | 面板数据跨相关+自相关 |
 | `vce(robust)` | 异方差稳健 SE | 简单场景 |
-| `feslope(var fe)` | fe 内 var 的斜率不同 | 固定斜率模型 |
-| `indiv() group() aggregation()` | 个体 FE | Constantine & Correia 2021 |
+| `i.fe##c.var`（因子交互） | fe 内 var 的斜率不同 | 固定斜率模型 |
+| `individual() group() aggregation()` | 个体 FE | Constantine & Correia 2021 |
 | `compact` + `poolsize(#)` | 内存优化 | 大 N + 内存吃紧 |
 | `version(3)` / `version(5)` | 旧版行为 | 兼容性 |
 | `residuals(varname)` | 保存残差 | 必须 estimate 时加，不能事后 `predict, resid` |
@@ -263,10 +280,19 @@ reghdfe depvar indepvars, absorb(fe1 fe2) compact poolsize(1000)
 ### `vce(dkraay)` 示例（v6.13+，面板数据）
 ```stata
 * Driscoll-Kraay 标准误：面板数据跨相关 + 自相关稳健
-* 数字是滞后阶数（按面板 T 期长度与自相关跨度选）
-sysuse auto, clear
-* auto.dta 不是真 panel；演示语法（实际需要 id + time 变量）
-reghdfe price weight length, absorb(rep78) vce(dkraay 2)
+* 数字是滞后阶数（按面板 T 期长度与自相关跨度选）。
+* 必须先 xtset（或 tsset），否则报 r(9)；auto.dta 是横截面不能直接做。
+use longitudinal_mixed, clear
+clonevar drink0 = drink98
+clonevar drink2 = drink00
+clonevar drink4 = drink02
+clonevar drink6 = drink04
+clonevar drink8 = drink06
+clonevar drink10 = drink08
+drop drink98 drink00 drink02 drink04 drink06 drink08
+reshape long drink, i(id) j(wave)
+xtset id wave
+reghdfe drink c.wave, absorb(id) vce(dkraay 2)
 ```
 - 何时用：面板数据 T 期较长、个体间可能跨相关（如某国 shock 影响所有国）
 - Driscoll-Kraay 比 `vce(cluster panelvar)` 更稳健，因为它对跨个体相关也调整
@@ -298,7 +324,7 @@ reghdfe price weight length, absorb(turn trunk) vce(cluster turn)
 |---|---|---|
 | FE 数量上限 | 上万（用迭代求解） | 受 Stata 矩阵维度限制（Stata/MP 11 万） |
 | 多层 FE | ✅ 天然支持（多个变量） | 需手动 `i.fe1##i.fe2`（笛卡尔积爆炸） |
-| 固定斜率 | ✅ `feslope()` | ❌（需手工 demean） |
+| 固定斜率 | ✅ `i.fe##c.var`（因子交互） | ❌（需手工 demean） |
 | 单点组处理 | 自动迭代剔除 | 不处理，会吃掉 DoF |
 | 输出 | HDFE 标记 + Within R² + 吸收表 | 标准 OLS |
 
@@ -348,7 +374,7 @@ DOI: 10.5281/zenodo.27755549（Zenodo 自动归档每个 release）
 |---|---|
 | OLS + 多层 FE | `reghdfe`（更快） |
 | IV / 2SLS / LIML / GMM2S + 多层 FE | **`ivreghdfe`** |
-| 高级 SE（HAC / Kiefer / Driscoll-Kraay）+ 多层 FE | **`ivreghdfe`** |
+| Driscoll-Kraay SE + 多层 FE | **`reghdfe`**（v6.13+，先 xtset；ivreghdfe 1.1.4 的 vce 不支持） |
 | 两向聚类 + 多层 FE | `ivreghdfe` 或 `reghdfe` 都行 |
 
 ### 版本（2026-08 调研自 GitHub）
@@ -388,8 +414,8 @@ ivreghdfe depvar indepvars (endog = iv_vars), absorb(fe1 fe2 …)
 * 两向聚类稳健 SE
 ivreghdfe depvar indepvars (endog = iv), absorb(fe1 fe2) cluster(fe1 fe2)
 
-* 高级 SE（Driscoll-Kraay 面板）
-ivreghdfe depvar indepvars (endog = iv), absorb(panelvar timevar) vce(dkraay 2)
+* 注意：ivreghdfe 1.1.4 的 vce() 只支持 cluster / robust / unadjusted，
+* 不支持 Driscoll-Kraay；需要 DK 时用上面的 reghdfe（v6.13+）
 
 * 保存残差（必须 estimate 时加，不能事后 predict）
 ivreghdfe depvar indepvars, absorb(fe1) resid(myresidname)
@@ -416,7 +442,7 @@ ivreghdfe price weight (length = gear_ratio), absorb(turn trunk) cluster(turn tr
 
 ### 何时用 `ivreghdfe` 而非 `reghdfe`
 - **内生变量**：需要 `ivreghdfe`（reghdfe 仅 OLS）
-- **高级 SE**（HAC / Kiefer / Driscoll-Kraay）：`ivreghdfe`（通过 ivreg2 集成）
+- **高级 SE**（Driscoll-Kraay）：用 `reghdfe`（v6.13+ 支持 `vce(dkraay #)`）；`ivreghdfe` 1.1.4 的 `vce()` 只支持 cluster / robust / unadjusted
 - **CUE 估计**：`ivreg2` 才有，`ivreghdfe` **不支持** CUE
 - **GMM / LIML**：`ivreghdfe` 通过 ivreg2 的 `gmm2s` / `liml` 选项
 - 否则优先 `reghdfe`（更快；纯 OLS 没必要走 ivreghdfe）

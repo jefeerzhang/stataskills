@@ -420,22 +420,31 @@ file output/02_scatter_price_mpg.png written in PNG format
 . if _rc == 0 {
 .     * 用 longitudinal_mixed.dta（5,474 obs × 1,554 人 × 6 波，1998-2008）
 .     use "../data/agis6/longitudinal_mixed.dta", clear
-.     keep id drink98 drink00 drink02 drink04 drink06 drink08
+.     * 先统一重命名，再 reshape：直接 reshape drink98/drink00/... 会被
+.     * Stata 解析为 j=0 2 4 6 8 98 并报 variable drink0 not found。
+.     clonevar drink0 = drink98
+(1,237 missing values generated)
+.     clonevar drink2 = drink00
+(1,018 missing values generated)
+.     clonevar drink4 = drink02
+(814 missing values generated)
+.     clonevar drink6 = drink04
+(795 missing values generated)
+.     clonevar drink8 = drink06
+(634 missing values generated)
+.     clonevar drink10 = drink08
+(654 missing values generated)
+.     drop drink98 drink00 drink02 drink04 drink06 drink08
 .     reshape long drink, i(id) j(wave)
-(j = 0 2 4 6 8 98)
-(variable drink0 not found)
-(variable drink2 not found)
-(variable drink4 not found)
-(variable drink6 not found)
-(variable drink8 not found)
+(j = 0 2 4 6 8 10)
 
 Data                               Wide   ->   Long
 -----------------------------------------------------------------------------
 Number of observations            1,771   ->   10,626      
-Number of variables                   7   ->   8           
+Number of variables                   8   ->   4           
 j variable (6 values)                     ->   wave
 xij variables:
-              drink0 drink2 ... drink98   ->   drink
+              drink0 drink2 ... drink10   ->   drink
 -----------------------------------------------------------------------------
 .     replace drink = . if drink < 0   // -9 表示缺失
 (0 real changes made)
@@ -445,45 +454,45 @@ xij variables:
 
    #  Variable        # Missing   % Missing
 --------------------------------------------
-   1  drink             10092        95.0
+   1  drink              5152        48.5
 
 Missing for |
    how many |
  variables? |      Freq.     Percent        Cum.
 ------------+-----------------------------------
-          0 |        534        5.03        5.03
-          1 |     10,092       94.97      100.00
+          0 |      5,474       51.52       51.52
+          1 |      5,152       48.48      100.00
 ------------+-----------------------------------
       Total |     10,626      100.00
 If the number of units is more than 500, we randomly select 500 units to presen
 > t. You can use displayall option to show all units
+Time is not evenly distributed (possibly due to missing data). 
 Note: White cells represent missing values/observations in data.
 .     graph export "output/02_panelview_missing.png", replace
-(file output/02_panelview_missing.png not found)
 file output/02_panelview_missing.png written in PNG format
 . 
 .     * 处理状态（drink>=2 当 treat）
 .     gen treat = (drink >= 2) if drink != .
-(10,092 missing values generated)
+(5,152 missing values generated)
 .     panelview treat, type(treat) i(id) t(wave)
 
    #  Variable        # Missing   % Missing
 --------------------------------------------
-   1  treat             10092        95.0
+   1  treat              5152        48.5
 
 Missing for |
    how many |
  variables? |      Freq.     Percent        Cum.
 ------------+-----------------------------------
-          0 |        534        5.03        5.03
-          1 |     10,092       94.97      100.00
+          0 |      5,474       51.52       51.52
+          1 |      5,152       48.48      100.00
 ------------+-----------------------------------
       Total |     10,626      100.00
 If the number of units is more than 500, we randomly select 500 units to presen
 > t. You can use displayall option to show all units
+Time is not evenly distributed (possibly due to missing data). 
 Note: White cells represent missing values/observations in data.
 .     graph export "output/02_panelview_treat.png", replace
-(file output/02_panelview_treat.png not found)
 file output/02_panelview_treat.png written in PNG format
 . }
 
