@@ -46,14 +46,15 @@ if _rc == 0 {
 
 * ---- ch10.6 IV + 多维固定效应 ivreghdfe ----
 * 检测 ivreghdfe + ivreg2 三件套是否都装；未装则跳过但 do-file 仍 PASS
+* ivreghdfe 要求工具变量/FE/cluster 变量互不重叠
 cap which ivreghdfe
 if _rc == 0 {
     use gss2006_chapter9_2way, clear
-    * IV + 单层 FE：workfull 当内生变量，married 当工具变量（语法演示）
-    * 工作变量在 gss2006_chapter9_2way：tvhours（被解释）、age（外生控制）、
-    *   workfull（分类 FE 候选，内生演示用）、married（分类 FE 候选，工具演示用）
-    ivreghdfe tvhours age (workfull = married), absorb(married)
+    * IV + 单层 FE：prestg80 当内生变量（prestige 可能有反向因果），
+    * age 当工具变量，marital 当 FE。变量互不重叠。
+    ivreghdfe tvhours sex (prestg80 = age), absorb(marital)
 
-    * IV + 两向聚类稳健 SE
-    ivreghdfe tvhours age (workfull = married), absorb(married) cluster(married)
+    * IV + 异方差稳健 SE（ivreghdfe 用 ivreg2 语法：`robust` 直接选项；
+    * 注意：选项之间是空格分隔（不是逗号），否则 ivreghdfe 解析器拒为 invalid syntax）
+    ivreghdfe tvhours sex (prestg80 = age), absorb(marital) robust
 }
