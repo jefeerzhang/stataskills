@@ -55,6 +55,19 @@ graph bar (mean) hrs1, over(sex)
 - 用户命令 `fre`（`ssc install fre`）比 tab1 详细：显示数值+标签、Percent/Valid/Cum 列，处理缺失极有用。
 - 值标签加数值前缀：`numlabel _all, add`；移除：`numlabel _all, remove`。
 
+### 大样本下抽子样本检查分布（preserve / sample / restore）
+```stata
+preserve                                // 保存当前数据快照
+set seed 111                            // 固定随机数种子，保证可复现
+sample 10, count                        // 无放回抽 10 个观测
+summarize educ, detail
+sktest educ
+histogram educ
+restore                                 // 恢复完整数据
+```
+- `preserve` / `restore` 成对使用：中间怎么抽样、删改都不影响原数据。
+- `sample #, count` 按观测数抽样；`sample #` 按百分比抽样。大样本下全量画图/检验可能失真或过慢。
+
 ## 第 6 章 两个分类变量的统计与图形
 
 ### 交叉表与卡方
@@ -86,6 +99,21 @@ tabulate sex abany, chi2 row V        // V 必须大写！Cramér's V
 ## 第 7 章 单/双均值检验
 
 - 报告惯例：Stata 输出 0.0000 时报告 `p < 0.001`，绝不写 p=0.000。
+
+### 随机化与随机抽样（推断的基础）
+- **随机样本（random sample）**：怎么从总体中抽人；**随机化（randomization）**：样本抽好后怎么把人分到处理组/对照组。两者不要混淆。
+- **无放回抽样**是实务最常用：`sample 10, count` 从 20 人中无放回抽 10 人；有放回用 `bsample`。
+- Stata 实操（书 7.2 节）：
+  ```stata
+  clear
+  set obs 20                              // 生成 20 个空观测
+  generate id = _n                        // _n 是观测号，生成 id 变量
+  list
+  set seed 220                            // 固定种子，保证可复现
+  sample 10, count                        // 无放回随机抽 10 个观测
+  list
+  ```
+- 随机抽样同理：`set seed 3` + `sample 500, count`。建议多抽一个备用样本，应对拒答/失访。
 
 ### 比例检验（要求 0/1 变量）
 ```stata

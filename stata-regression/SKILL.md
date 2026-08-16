@@ -31,9 +31,14 @@ estat esize                                      // η²（eta-squared）
 - 非参数替代：`kwallis stemcell, by(partyid)`（比较中位数）。
 
 ### ANCOVA（协方差分析）
-- **关键：连续协变量必须加 `c.` 前缀**，否则被当作分类变量（每个取值一个 dummy，浪费自由度）。数据集 `gss2006_chapter9`：
+- **建模前先探索分类变量 × 连续变量的关系**，用 `tabulate 分类变量, summarize(连续变量)`：
   ```stata
   use gss2006_chapter9, clear
+  tabulate mobile16 if age > 29 & age < 60 & wrkstat==1, summarize(prestg80)
+  tabulate age if age > 29 & age < 60 & wrkstat==1, summarize(prestg80)
+  ```
+- **关键：连续协变量必须加 `c.` 前缀**，否则被当作分类变量（每个取值一个 dummy，浪费自由度）。数据集 `gss2006_chapter9`：
+  ```stata
   anova prestg80 mobile16 c.age if age > 29 & age < 60 & wrkstat==1
   margins mobile16, atmeans            // 调整均值（固定协变量在均值处）
   margins mobile16#sex, atmeans        // 分组×类别
@@ -93,6 +98,15 @@ regress env_con educat inc com3 hlthprob epht3, beta
 pcorr env_con educat inc com3 hlthprob epht3   // 看 Semipartial Corr.² 列
 ```
 
+### 因变量正态性
+- OLS 假设关注的是**残差**正态，但先看因变量分布能提前发现偏态/离群值。
+  ```stata
+  histogram env_con, frequency normal kdensity   // 直方图 + 正态曲线 + 密度
+  summarize env_con, detail                       // 偏度/峰度/分位数
+  sktest env_con                                  // 正态性检验
+  ```
+- 严重偏态时考虑对因变量做变换（如 `ln_wage`）或换稳健方法；大样本下 `sktest` 容易显著，要结合图形判断。
+
 ### 残差诊断
 ```stata
 regress env_con educat inc com3 hlthprob epht3
@@ -142,6 +156,12 @@ regress smday97 age97 male psmoke97 ib3.race, beta        // ib3. 改参照组
   tab1 aa hispanic other
   ```
 - 检验一组系数（分类变量整体）：`test aa hispanic other`（F 检验；用上面刚生成的哑变量）。
+- **分层回归前统一样本**：不同模型的观测数不能忽多忽少。`missing()` 是 Stata 函数，变量间用逗号；
+  `!missing(...)` 表示"所有变量都非缺失"（`!` 是"非"）：
+  ```stata
+  pcorr smday97 age97 male psmoke97 ///
+      if !missing(smday97, age97, male, psmoke97, aa, hispanic, other)
+  ```
 - 嵌套回归（分层）：`nestreg: regress smday97 (age97 male) (psmoke97) (aa hispanic other), beta`；块用括号，输出各块增量 R²。**nestreg 不支持因子变量记法**。
 
 ### 交互作用
