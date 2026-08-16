@@ -1,0 +1,25 @@
+# CI 只跑 Stata-free 的静态验证层：GitHub-hosted runner 没有（也装不了）
+# 商业软件 StataNow。执行层（真实跑 do-file）仍由本机
+# `bash verify/run-verify.sh` 承担，见 docs/run-stata.md。
+name: verify
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  static-verify:
+    name: Static verify (Stata-free)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # harness 自身质量门：判定脚本必须过 shellcheck
+      - name: Shellcheck harness
+        run: shellcheck verify/run-verify.sh verify/test-harness.sh
+
+      # 静态层：version 政策 + 数据集存在 + manifest 登记 + manifest 双向一致性
+      - name: Run static verify
+        run: bash verify/run-verify.sh --static
