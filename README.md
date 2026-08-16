@@ -122,6 +122,8 @@ stataskills/
 │   └── agents/                     ← Agent 工作流
 ├── verify/                         ← 验证 harness
 │   ├── run-verify.sh               ← 6/6 PASS 判定
+│   ├── check-claims.sh             ← 文档断言检查（facts vs 计数）
+│   ├── test-harness.sh             ← 判定逻辑回归测试
 │   ├── stata.conf                  ← 平台路径（单一来源）
 │   └── verify-{basics,descriptives,regression,advanced,coefplot,did}.{do,log}
 └── demo/                           ← 端到端示例
@@ -140,7 +142,9 @@ bash verify/run-verify.sh --static  # 静态层（无需 Stata，与 CI 同款�
 ```
 
 GitHub Actions（`.github/workflows/verify.yml`）在 push/PR 自动跑静态层：
-version 政策 + 数据集存在 + manifest 登记/双向一致性 + shellcheck。
+version 政策 + 数据集存在 + manifest 登记/双向一致性 + shellcheck，
+另跑文档断言检查（`verify/check-claims.sh`：文件系统 facts 比对
+skill/数据/demo 计数，抓声明漂移）。
 执行层（真实跑 do-file）需本机 Stata，由 `bash verify/run-verify.sh` 承担。
 
 **判定标准**：日志恰好一次 `end of do-file` 且无 `r(错误码)` → PASS。

@@ -4,6 +4,11 @@
 > 以 Stata 自带 `auto.dta` 为主数据，结合各 skill 完整走一遍「调用 → 写 do-file → 本机 Stata 执行 → 读 log 解读」全流程。
 > 本报告可作为该 skills 可用性、可复现性的佐证材料。
 
+> **快照范围声明（2026-08-16）**：本报告是快照，覆盖 demo 演示的前 5 个 skill
+> （basics / descriptives / regression / advanced / coefplot）；正文的「5 个」均指
+> demo 范围。新增的 `stata-did`（第 6 个）未设 demo do-file，其验证见
+> `verify/verify-did.do` / `verify-did.log`。
+
 ---
 
 ## 0. 摘要

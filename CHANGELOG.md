@@ -8,6 +8,10 @@ versioned by Stata compatibility).
 ## [Unreleased]
 
 ### Added
+- feat(verify): 新增 `verify/check-claims.sh` 文档断言检查器（架构评审
+  candidate 1）：从文件系统数出 facts（skill 数 / .dta 数 / manifest 条数 /
+  demo dofiles、logs、PNG）与结构断言比对，接入 CI；顺手修复两处已实证
+  漂移（docs/run-stata.md「5 份」→6、demo/REPORT.md 加快照范围声明）。
 - feat(skills): 新增 `stata-did` skill，覆盖 Stata 官方 DID 命令族
   （didregress 重复截面/DDD、xtdidregress 面板、hdidregress/xthdidregress
   异质性稳健错时处理，及 trendplot/ptrends/granger/aggregation/atetplot/
