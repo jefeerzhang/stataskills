@@ -26,7 +26,7 @@ Notes:
 
 . *==========================================================*
 . * DEMO 3/5 : stata-regression —— 方差分析与回归建模（书第 9–11 章）
-. * 技能源   : skills/stata-regression/SKILL.md
+. * 技能源   : stata-regression/SKILL.md
 . * 数据     : auto.dta
 . *==========================================================*
 . version 19.5
@@ -170,7 +170,6 @@ Skewness and kurtosis tests for normality
 . rvfplot, yline(0) title("Residuals vs Fitted") scheme(s1mono)
 
 . graph export "output/03_rvfplot.png", replace
-(file output/03_rvfplot.png not found)
 file output/03_rvfplot.png written in PNG format
 
 . 
@@ -284,7 +283,6 @@ Expression: Linear prediction, predict()
 Variables that uniquely identify margins: weight foreign
 
 . graph export "output/03_margins_interaction.png", replace
-(file output/03_margins_interaction.png not found)
 file output/03_margins_interaction.png written in PNG format
 
 . 
@@ -340,7 +338,6 @@ Expression: Linear prediction, predict()
 Variables that uniquely identify margins: weight
 
 . graph export "output/03_margins_quadratic.png", replace
-(file output/03_margins_quadratic.png not found)
 file output/03_margins_quadratic.png written in PNG format
 
 . 
@@ -469,8 +466,139 @@ Expression: Pr(foreign), predict()
 Variables that uniquely identify margins: mpg
 
 . graph export "output/03_logit_margins.png", replace
-(file output/03_logit_margins.png not found)
 file output/03_logit_margins.png written in PNG format
+
+. 
+. *---- 第 10.5 章：高维固定效应 reghdfe -----------------------
+. * 检测 reghdfe 是否安装（与 verify 同款设计：未装则跳过）
+. cap which reghdfe
+
+. if _rc == 0 {
+.     * 多维 FE：auto.dta 的 foreign × rep78 两层
+.     * rep78 有 5 缺失，reghdfe 会自动剔除单点组
+.     reghdfe price mpg weight length, absorb(foreign rep78)
+(MWFE estimator converged in 3 iterations)
+
+HDFE Linear regression                            Number of obs   =         69
+Absorbing 2 HDFE groups                           F(   3,     60) =      25.08
+                                                  Prob > F        =     0.0000
+                                                  R-squared       =     0.5628
+                                                  Adj R-squared   =     0.5045
+                                                  Within R-sq.    =     0.5563
+                                                  Root MSE        =  2050.1975
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -37.70139   79.68181    -0.47   0.638    -197.0887     121.686
+      weight |   6.045295   1.073279     5.63   0.000     3.898417    8.192172
+      length |  -105.5752   36.48828    -2.89   0.005    -178.5627    -32.5878
+       _cons |   8497.937   5779.272     1.47   0.147    -3062.328     20058.2
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     foreign |         2           0           2     |
+       rep78 |         5           1           4     |
+-----------------------------------------------------+
+. 
+.     * 多向聚类稳健 SE（cluster 到 foreign + rep78 两向）
+.     reghdfe price mpg weight length, absorb(foreign rep78) vce(cluster foreig
+> n rep78)
+(MWFE estimator converged in 3 iterations)
+Warning: VCV matrix was non-positive semi-definite; adjustment from Cameron, Ge
+> lbach & Miller applied.
+warning: missing F statistic; dropped variables due to collinearity or too few 
+> clusters
+
+HDFE Linear regression                            Number of obs   =         69
+Absorbing 2 HDFE groups                           F(   3,      1) =          .
+Statistics robust to heteroskedasticity           Prob > F        =          .
+                                                  R-squared       =     0.5628
+                                                  Adj R-squared   =     0.4961
+Number of clusters (foreign) =          2         Within R-sq.    =     0.5563
+Number of clusters (rep78)   =          5         Root MSE        =  2067.4990
+
+                          (Std. err. adjusted for 2 clusters in foreign rep78)
+------------------------------------------------------------------------------
+             |               Robust
+       price | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -37.70139   49.51001    -0.76   0.586    -666.7857    591.3829
+      weight |   6.045295    1.18517     5.10   0.123    -9.013723    21.10431
+      length |  -105.5752    54.0031    -1.95   0.301    -791.7496    580.5992
+       _cons |   8497.937    7002.67     1.21   0.439    -80479.42    97475.29
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     foreign |         2           2           0    *|
+       rep78 |         5           5           0    *|
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+. 
+.     * 残差对比：reghdfe vs regress i.foreign 在相同设定下应几乎完全相同
+.     * 注意：reghdfe 不能事后 predict, resid——必须在估计时加 residuals 选项保
+> 存
+.     reghdfe price mpg weight length, absorb(foreign) residuals(hdfe_resid)
+(MWFE estimator converged in 1 iterations)
+
+HDFE Linear regression                            Number of obs   =         74
+Absorbing 1 HDFE group                            F(   3,     69) =      27.89
+                                                  Prob > F        =     0.0000
+                                                  R-squared       =     0.5491
+                                                  Adj R-squared   =     0.5230
+                                                  Within R-sq.    =     0.5480
+                                                  Root MSE        =  2037.1778
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -13.40719   72.10761    -0.19   0.853    -157.2579    130.4436
+      weight |   5.716181   1.016095     5.63   0.000     3.689127    7.743235
+      length |  -92.48018    33.5912    -2.75   0.008    -159.4928   -25.46758
+       _cons |   6571.043   5183.281     1.27   0.209    -3769.319    16911.41
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     foreign |         2           0           2     |
+-----------------------------------------------------+
+.     regress price mpg weight length i.foreign
+
+      Source |       SS           df       MS      Number of obs   =        74
+-------------+----------------------------------   F(4, 69)        =     21.01
+       Model |   348708940         4    87177235   Prob > F        =    0.0000
+    Residual |   286356456        69  4150093.57   R-squared       =    0.5491
+-------------+----------------------------------   Adj R-squared   =    0.5230
+       Total |   635065396        73  8699525.97   Root MSE        =    2037.2
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -13.40719   72.10761    -0.19   0.853    -157.2579    130.4436
+      weight |   5.716181   1.016095     5.63   0.000     3.689127    7.743235
+      length |  -92.48018    33.5912    -2.75   0.008    -159.4928   -25.46758
+             |
+     foreign |
+    Foreign  |   3550.194   655.4564     5.42   0.000     2242.594    4857.793
+       _cons |    5515.58   5241.941     1.05   0.296    -4941.807    15972.97
+------------------------------------------------------------------------------
+.     predict ols_resid, resid
+.     twoway (scatter hdfe_resid ols_resid) (function y = x, range(-5 5)), ///
+>         title("reghdfe resid vs regress i.fe resid (should lie on y=x)") ///
+>         legend(off) scheme(s1mono) ///
+>         xtitle("reghdfe residual") ytitle("regress residual")
+.     graph export "output/03_reghdfe_resid_compare.png", replace
+(file output/03_reghdfe_resid_compare.png not found)
+file output/03_reghdfe_resid_compare.png written in PNG format
+. }
 
 . 
 end of do-file

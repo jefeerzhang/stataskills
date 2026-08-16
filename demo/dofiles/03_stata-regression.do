@@ -52,3 +52,26 @@ margins, dydx(mpg) atmeans
 margins, at(mpg=(15(5)40)) atmeans
 marginsplot, title("Predicted P(foreign) by MPG") scheme(s1mono)
 graph export "output/03_logit_margins.png", replace
+
+*---- 第 10.5 章：高维固定效应 reghdfe -----------------------
+* 检测 reghdfe 是否安装（与 verify 同款设计：未装则跳过）
+cap which reghdfe
+if _rc == 0 {
+    * 多维 FE：auto.dta 的 foreign × rep78 两层
+    * rep78 有 5 缺失，reghdfe 会自动剔除单点组
+    reghdfe price mpg weight length, absorb(foreign rep78)
+
+    * 多向聚类稳健 SE（cluster 到 foreign + rep78 两向）
+    reghdfe price mpg weight length, absorb(foreign rep78) vce(cluster foreign rep78)
+
+    * 残差对比：reghdfe vs regress i.foreign 在相同设定下应几乎完全相同
+    * 注意：reghdfe 不能事后 predict, resid——必须在估计时加 residuals 选项保存
+    reghdfe price mpg weight length, absorb(foreign) residuals(hdfe_resid)
+    regress price mpg weight length i.foreign
+    predict ols_resid, resid
+    twoway (scatter hdfe_resid ols_resid) (function y = x, range(-5 5)), ///
+        title("reghdfe resid vs regress i.fe resid (should lie on y=x)") ///
+        legend(off) scheme(s1mono) ///
+        xtitle("reghdfe residual") ytitle("regress residual")
+    graph export "output/03_reghdfe_resid_compare.png", replace
+}
