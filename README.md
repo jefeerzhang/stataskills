@@ -7,6 +7,11 @@
 [![Verify](https://img.shields.io/badge/verify-4%2F4%20PASS-brightgreen.svg)](verify/)
 [![GitHub](https://img.shields.io/badge/GitHub-jefeerzhang%2Fstataskills-181717)](https://github.com/jefeerzhang/stataskills)
 
+[![skills.sh: stata-basics](https://skills.sh/b/jefeerzhang/stataskills/stata-basics)](https://skills.sh/jefeerzhang/stataskills/stata-basics)
+[![skills.sh: stata-descriptives](https://skills.sh/b/jefeerzhang/stataskills/stata-descriptives)](https://skills.sh/jefeerzhang/stataskills/stata-descriptives)
+[![skills.sh: stata-regression](https://skills.sh/b/jefeerzhang/stataskills/stata-regression)](https://skills.sh/jefeerzhang/stataskills/stata-regression)
+[![skills.sh: stata-advanced](https://skills.sh/b/jefeerzhang/stataskills/stata-advanced)](https://skills.sh/jefeerzhang/stataskills/stata-advanced)
+
 ## 你什么时候需要它？
 
 - 你是实证研究者（社科 / 经济 / 公共卫生），想用 Stata 但不想读完整本教材
