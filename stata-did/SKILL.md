@@ -130,7 +130,7 @@ estat bdecomp                          // DID / ATT / 选择项分解
 | `estat atetplot` | hdidregress / xthdidregress | 各 cohort ATET 图 |
 | `estat bdecomp` | didregress（错时 + 强平衡） | 效应分解 |
 
-## 常见陷阱
+## 关键陷阱速查
 
 1. **处理变量放错括号**：`(结局 协变量) (处理变量)`——把协变量放进第二对括号会报 `invalid treatment variable`。
 2. **`estat trends` 不存在**：事前趋势检验命令是 `estat ptrends`。

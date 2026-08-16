@@ -35,6 +35,8 @@ fi
 # ---- 平台二进制路径（唯一来源：verify/stata.conf）----
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/stata.conf"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/report.sh"
 
 # ---- 解析 Stata 可执行文件（macOS：PATH 优先；Windows：config 直取）----
 # 静态模式不执行 do-file，无需 Stata（CI runner 上也没有）
@@ -68,15 +70,18 @@ fi
 DATA_DIR="$(cd "$VERIFY_DIR/../data/agis6" && pwd)"
 MANIFEST="$VERIFY_DIR/../data/manifest.txt"
 
-# ---- 目标：全部或指定一个 ----
+# ---- 目标：全部或指定一个（glob 枚举，新增 skill 只需放入 verify-*.do）----
 if [ $# -ge 1 ]; then
   TARGETS=("verify-$1")
 else
-  TARGETS=(verify-basics verify-descriptives verify-regression verify-advanced verify-coefplot verify-did)
+  TARGETS=()
+  for d in "$VERIFY_DIR"/verify-*.do; do
+    [ -e "$d" ] || continue
+    b="$(basename "$d" .do)"
+    case "$b" in verify-zz*) continue ;; esac
+    TARGETS+=("$b")
+  done
 fi
-
-pass=0
-fail=0
 
 # ---- 全局：manifest 与实际 .dta 双向一致性（静态模式前置检查）----
 if [ "$STATIC_ONLY" -eq 1 ]; then
@@ -90,11 +95,9 @@ if [ "$STATIC_ONLY" -eq 1 ]; then
     grep -qE "^${ds}[[:space:]]*$" "$MANIFEST" || manifest_drift="${manifest_drift} 文件有但清单缺: ${ds}.dta; "
   done
   if [ -n "$manifest_drift" ]; then
-    echo "FAIL  manifest 一致性（${manifest_drift}）"
-    fail=$((fail+1))
+    bad "manifest 一致性（${manifest_drift}）"
   else
-    echo "PASS  manifest 一致性（清单与 data/agis6/*.dta 双向吻合）"
-    pass=$((pass+1))
+    ok "manifest 一致性（清单与 data/agis6/*.dta 双向吻合）"
   fi
 fi
 
@@ -102,16 +105,14 @@ for name in "${TARGETS[@]}"; do
   dofile="$VERIFY_DIR/$name.do"
 
   if [ ! -f "$dofile" ]; then
-    echo "FAIL  ${name}（找不到 ${dofile}）"
-    fail=$((fail+1))
+    bad "${name}（找不到 ${dofile}）"
     continue
   fi
 
   # 版本政策：每份叶子首行必须是 version 19.5（Stata 的 version 是 session 内指令，
   # 只能逐 do-file 声明；harness 在此校验它以钉住 policy）
   if [ "$(head -n 1 "$dofile")" != "version 19.5" ]; then
-    echo "FAIL  ${name}（首行缺 version 19.5，版本政策未钉住）"
-    fail=$((fail+1))
+    bad "${name}（首行缺 version 19.5，版本政策未钉住）"
     continue
   fi
 
@@ -128,20 +129,17 @@ for name in "${TARGETS[@]}"; do
     fi
   done
   if [ -n "$missing_data" ]; then
-    echo "FAIL  ${name}（缺数据集：${missing_data}，见 data/manifest.txt）"
-    fail=$((fail+1))
+    bad "${name}（缺数据集：${missing_data}，见 data/manifest.txt）"
     continue
   fi
   if [ -n "$unlisted_data" ]; then
-    echo "FAIL  ${name}（数据集未登记入 data/manifest.txt：${unlisted_data}）"
-    fail=$((fail+1))
+    bad "${name}（数据集未登记入 data/manifest.txt：${unlisted_data}）"
     continue
   fi
 
   # 静态模式到 data readiness 为止；执行层需要本机 Stata（见 stata.conf）
   if [ "$STATIC_ONLY" -eq 1 ]; then
-    echo "PASS  ${name}（static：version 政策 + data readiness）"
-    pass=$((pass+1))
+    ok "${name}（static：version 政策 + data readiness）"
     continue
   fi
 
@@ -151,8 +149,7 @@ for name in "${TARGETS[@]}"; do
 
   log="$DATA_DIR/$name.log"
   if [ ! -f "$log" ]; then
-    echo "FAIL  ${name}（无 log 生成，批处理未执行）"
-    fail=$((fail+1))
+    bad "${name}（无 log 生成，批处理未执行）"
     continue
   fi
 
@@ -162,11 +159,9 @@ for name in "${TARGETS[@]}"; do
   # 避免只靠 end of do-file + r(NN) 漏掉 data-integrity 问题。
   silent=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
   if [ "$ends" -eq 1 ] && [ "$errs" -eq 0 ] && [ "$silent" -eq 0 ]; then
-    echo "PASS  ${name}（end of do-file x1，无错误码，无静默错误）"
-    pass=$((pass+1))
+    ok "${name}（end of do-file x1，无错误码，无静默错误）"
   else
-    echo "FAIL  ${name}（end of do-file x${ends}，r(错误 x${errs}，静默错误 x${silent}）→ 见 ${log}"
-    fail=$((fail+1))
+    bad "${name}（end of do-file x${ends}，r(错误 x${errs}，静默错误 x${silent}）→ 见 ${log}"
   fi
   # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
   cp "$log" "$VERIFY_DIR/$name.log"
@@ -174,6 +169,4 @@ for name in "${TARGETS[@]}"; do
   rm -f "$log"
 done
 
-echo
-echo "结果：${pass} 通过，${fail} 失败"
-[ "$fail" -eq 0 ]
+summary

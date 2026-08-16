@@ -8,7 +8,7 @@
 2. 编写代码或文档改动
 3. **本地验证**（必须）：
    ```bash
-   bash verify/run-verify.sh        # 全部 5 个 skill 通过
+   bash verify/run-verify.sh        # 全部 6 个 skill 通过
    cd demo && for f in dofiles/*.do; do
        stata-mp -b do "$f"
    done                              # 全部 ends=1, 无错误码
@@ -27,7 +27,7 @@
 | 改动类型 | 必改文件 |
 |---|---|
 | 修改命令语法 / 选项 / 陷阱 | `*/SKILL.md`（教学围栏） |
-|                       | `verify/verify-{basics,descriptives,regression,advanced}.do`（可执行验证） |
+|                       | `verify/verify-{basics,descriptives,regression,advanced,coefplot,did}.do`（可执行验证） |
 |                       | `data/agis6/chapter*.do`（教材原文 primary source） |
 | 新增数据集 | `data/manifest.txt`（**单一来源**）+ `verify/` 检查 |
 | 新增社区包扩展节 | `*/SKILL.md` 加新节 + frontmatter description 加触发词 + `verify/` 加用例 + `demo/` 加段 + README 致谢段 |
@@ -74,11 +74,11 @@
 ## 测试要求（提交前必做）
 
 ```bash
-# 1. 验证（5 个 skill 必须全 PASS）
+# 1. 验证（6 个 skill 必须全 PASS）
 bash verify/run-verify.sh
-# 预期：4 通过，0 失败
+# 预期：6 通过，0 失败
 
-# 2. Demo（5 个 do-file 必须全部 ends=1, 无错误码）
+# 2. Demo（6 个 do-file 必须全部 ends=1, 无错误码）
 cd demo
 STATA=$(which stata-mp)
 for f in dofiles/*.do; do
@@ -88,7 +88,7 @@ done
 
 # 3. Demo 产物
 ls demo/output/ | grep png | wc -l
-# 预期 15（每次新增 PNG 需同步 README PNG 计数）
+# 预期 19（每次新增 PNG 需同步 README PNG 计数）
 ```
 
 ## commit message 模板
@@ -120,7 +120,7 @@ TWFE 估计 ATT 的负权重偏误。
 - 4 种 method：ife / mc / both / 默认
 
 影响范围：SKILL.md 10.7 节新增
-测试：bash verify/run-verify.sh 5/5 PASS + demo 03 ends=1
+测试：bash verify/run-verify.sh 6/6 PASS + demo 03 ends=1
 
 Refs: Liu et al. (2020) SSRN 3555463
 ```

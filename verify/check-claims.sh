@@ -15,6 +15,12 @@
 #   3. data/agis6/*.dta 数量与 manifest 登记条数一致
 #   4. demo/dofiles 与 demo/logs 数量一致且同名配对
 #   5. 每份 SKILL.md 含「运行 Stata 的方式」章节标题（独立分发约束）
+#   6. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
+#   7. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
+#
+# facts（供人工比对，不自动断言）：
+#   - 各 skill 陷阱条目数
+#   - demo↔verify 覆盖矩阵（ADR-0002）
 #
 # 不检查 README/CITATION 散文里的措辞性计数（散文措辞多变，误报风险高）；
 # 散文数字靠本脚本输出的 facts 供人工比对。
@@ -24,11 +30,8 @@ set -u
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$VERIFY_DIR/.." && pwd)"
 
-pass=0
-fail=0
-
-ok()   { echo "PASS  $1"; pass=$((pass+1)); }
-bad()  { echo "FAIL  $1"; fail=$((fail+1)); }
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/report.sh"
 
 count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
   local n=0 f
@@ -105,6 +108,76 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   fi
 done
 
-echo
-echo "结果：${pass} 通过，${fail} 失败"
-[ "$fail" -eq 0 ]
+# ---- 6. 扩展节触发词完整性：「（扩展，教材未覆盖）」的关键词须出现在 frontmatter ----
+for s in "$REPO_ROOT"/stata-*/SKILL.md; do
+  [ -e "$s" ] || continue
+  skill_name="$(basename "$(dirname "$s")")"
+  desc=$(sed -n '1,/^---$/p' "$s" | grep '^description:')
+  while IFS= read -r line; do
+    # 从标题中提取关键词：去掉编号和修饰语，取反引号包裹的词或冒号后的首词
+    kw=$(echo "$line" | sed 's/^##[[:space:]]*[0-9.]*[[:space:]]*//' | sed 's/（.*//')
+    # 优先取反引号包裹的词
+    kw_backtick=$(echo "$kw" | grep -oE '`[^`]+`' | head -1 | tr -d '`')
+    if [ -n "$kw_backtick" ]; then
+      kw_clean="$kw_backtick"
+    else
+      kw_clean=$(echo "$kw" | sed 's/.*：//' | sed 's/^[[:space:]]*//' | awk '{print $1}')
+    fi
+    [ -z "$kw_clean" ] && continue
+    if echo "$desc" | grep -qi "$kw_clean"; then
+      ok "${skill_name} 扩展节关键词「${kw_clean}」已录入 frontmatter"
+    else
+      bad "${skill_name} 扩展节「${kw_clean}」未出现在 frontmatter description"
+    fi
+  done < <(grep '（扩展，教材未覆盖）' "$s" 2>/dev/null)
+done
+
+# ---- 7. 陷阱节标题统一：所有 SKILL.md 必须用「## 关键陷阱速查」----
+for s in "$REPO_ROOT"/stata-*/SKILL.md; do
+  [ -e "$s" ] || continue
+  skill_name="$(basename "$(dirname "$s")")"
+  if grep -q '^## 关键陷阱速查' "$s"; then
+    ok "${skill_name} 陷阱节标题统一（## 关键陷阱速查）"
+  else
+    bad "${skill_name}/SKILL.md 陷阱节标题不统一（期望「## 关键陷阱速查」）"
+  fi
+done
+
+# ---- facts（供人工比对）：各 skill 陷阱条目数 ----
+echo "facts: 各 skill 陷阱条目数"
+for s in "$REPO_ROOT"/stata-*/SKILL.md; do
+  [ -e "$s" ] || continue
+  skill_name="$(basename "$(dirname "$s")")"
+  # 计数陷阱节下的条目：以 "- " 或数字编号开头的行
+  pitfall_count=$(sed -n '/^## 关键陷阱速查/,/^## /p' "$s" | grep -cE '^[[:space:]]*(-|\*|[0-9]+\.)[[:space:]]')
+  echo "  ${skill_name}: ${pitfall_count} 条"
+done
+
+# ---- facts（ADR-0002 覆盖矩阵）：demo↔verify 覆盖情况 ----
+echo "facts: demo↔verify 覆盖矩阵"
+demo_skills=()
+for d in "$REPO_ROOT"/demo/dofiles/*.do; do
+  [ -e "$d" ] || continue
+  ds=$(grep '技能源' "$d" | head -1 | sed 's/.*stata-//;s/\/.*//')
+  [ -z "$ds" ] && continue
+  demo_skills+=("$ds")
+done
+has_gap=0
+for s in "$REPO_ROOT"/stata-*/SKILL.md; do
+  [ -e "$s" ] || continue
+  name="$(basename "$(dirname "$s")")"
+  name="${name#stata-}"
+  if ! printf '%s\n' "${demo_skills[@]}" | grep -qx "$name"; then
+    echo "  ${name}: 有 verify 无 demo"
+    has_gap=1
+  fi
+done
+for ds in "${demo_skills[@]}"; do
+  if [ ! -f "$VERIFY_DIR/verify-${ds}.do" ]; then
+    echo "  ${ds}: 有 demo 无 verify"
+    has_gap=1
+  fi
+done
+[ "$has_gap" -eq 0 ] && echo "  完全覆盖（每个 skill 均有 verify + demo）"
+
+summary
