@@ -46,3 +46,23 @@ graph export "output/02_scatter_price_mpg.png", replace
 
 regress price mpg
 regress price weight, beta
+
+*---- 第 8.5 章：面板数据可视化 panelview -----------------------
+* 检测 panelview 是否安装；未装则跳过但 do-file 仍 PASS（与 verify 同款）
+cap which panelview
+if _rc == 0 {
+    * 用 longitudinal_mixed.dta（5,474 obs × 1,554 人 × 6 波，1998-2008）
+    use "../data/agis6/longitudinal_mixed.dta", clear
+    keep id drink98 drink00 drink02 drink04 drink06 drink08
+    reshape long drink, i(id) j(wave)
+    replace drink = . if drink < 0   // -9 表示缺失
+
+    * 缺失模式
+    panelview drink, type(missing) i(id) t(wave)
+    graph export "output/02_panelview_missing.png", replace
+
+    * 处理状态（drink>=2 当 treat）
+    gen treat = (drink >= 2) if drink != .
+    panelview treat, type(treat) i(id) t(wave)
+    graph export "output/02_panelview_treat.png", replace
+}

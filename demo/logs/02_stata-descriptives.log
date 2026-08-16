@@ -26,7 +26,7 @@ Notes:
 
 . *==========================================================*
 . * DEMO 2/5 : stata-descriptives —— 描述统计/图形/检验（书第 5–8 章）
-. * 技能源   : skills/stata-descriptives/SKILL.md
+. * 技能源   : stata-descriptives/SKILL.md
 . * 数据     : auto.dta
 . *==========================================================*
 . version 19.5
@@ -175,20 +175,17 @@ Skewness and kurtosis tests for normality
 (bin=8, start=3291, width=1576.875)
 
 . graph export "output/02_hist_price.png", replace
-(file output/02_hist_price.png not found)
 file output/02_hist_price.png written in PNG format
 
 . histogram mpg, freq title("Distribution of MPG") scheme(s1mono)
 (bin=8, start=12, width=3.625)
 
 . graph export "output/02_hist_mpg.png", replace
-(file output/02_hist_mpg.png not found)
 file output/02_hist_mpg.png written in PNG format
 
 . graph hbox mpg, over(foreign) title("MPG by Car Origin") scheme(s1mono)
 
 . graph export "output/02_hbox_mpg_by_foreign.png", replace
-(file output/02_hbox_mpg_by_foreign.png not found)
 file output/02_hbox_mpg_by_foreign.png written in PNG format
 
 . 
@@ -380,7 +377,6 @@ displacement |   0.4949  -0.7056   0.8949   0.8351   1.0000
 >        title("Price vs MPG") legend(off) scheme(s1mono)
 
 . graph export "output/02_scatter_price_mpg.png", replace
-(file output/02_scatter_price_mpg.png not found)
 file output/02_scatter_price_mpg.png written in PNG format
 
 . 
@@ -415,6 +411,81 @@ file output/02_scatter_price_mpg.png written in PNG format
       weight |   2.044063   .3768341     5.42   0.000                 .5386115
        _cons |  -6.707353    1174.43    -0.01   0.995                        .
 ------------------------------------------------------------------------------
+
+. 
+. *---- 第 8.5 章：面板数据可视化 panelview -----------------------
+. * 检测 panelview 是否安装；未装则跳过但 do-file 仍 PASS（与 verify 同款）
+. cap which panelview
+
+. if _rc == 0 {
+.     * 用 longitudinal_mixed.dta（5,474 obs × 1,554 人 × 6 波，1998-2008）
+.     use "../data/agis6/longitudinal_mixed.dta", clear
+.     keep id drink98 drink00 drink02 drink04 drink06 drink08
+.     reshape long drink, i(id) j(wave)
+(j = 0 2 4 6 8 98)
+(variable drink0 not found)
+(variable drink2 not found)
+(variable drink4 not found)
+(variable drink6 not found)
+(variable drink8 not found)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations            1,771   ->   10,626      
+Number of variables                   7   ->   8           
+j variable (6 values)                     ->   wave
+xij variables:
+              drink0 drink2 ... drink98   ->   drink
+-----------------------------------------------------------------------------
+.     replace drink = . if drink < 0   // -9 表示缺失
+(0 real changes made)
+. 
+.     * 缺失模式
+.     panelview drink, type(missing) i(id) t(wave)
+
+   #  Variable        # Missing   % Missing
+--------------------------------------------
+   1  drink             10092        95.0
+
+Missing for |
+   how many |
+ variables? |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        534        5.03        5.03
+          1 |     10,092       94.97      100.00
+------------+-----------------------------------
+      Total |     10,626      100.00
+If the number of units is more than 500, we randomly select 500 units to presen
+> t. You can use displayall option to show all units
+Note: White cells represent missing values/observations in data.
+.     graph export "output/02_panelview_missing.png", replace
+(file output/02_panelview_missing.png not found)
+file output/02_panelview_missing.png written in PNG format
+. 
+.     * 处理状态（drink>=2 当 treat）
+.     gen treat = (drink >= 2) if drink != .
+(10,092 missing values generated)
+.     panelview treat, type(treat) i(id) t(wave)
+
+   #  Variable        # Missing   % Missing
+--------------------------------------------
+   1  treat             10092        95.0
+
+Missing for |
+   how many |
+ variables? |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        534        5.03        5.03
+          1 |     10,092       94.97      100.00
+------------+-----------------------------------
+      Total |     10,626      100.00
+If the number of units is more than 500, we randomly select 500 units to presen
+> t. You can use displayall option to show all units
+Note: White cells represent missing values/observations in data.
+.     graph export "output/02_panelview_treat.png", replace
+(file output/02_panelview_treat.png not found)
+file output/02_panelview_treat.png written in PNG format
+. }
 
 . 
 end of do-file
