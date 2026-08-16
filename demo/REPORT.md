@@ -1,6 +1,6 @@
 # stataskills 技能演示报告（ Demo & 佐证材料）
 
-> 基于 [jefeerzhang/stataskills](https://github.com/jefeerzhang/stataskills) 的 4 个 Stata skill ，
+> 基于 [jefeerzhang/stataskills](https://github.com/jefeerzhang/stataskills) 的 5 个 Stata skill ，
 > 以 Stata 自带 `auto.dta` 为主数据，结合各 skill 完整走一遍「调用 → 写 do-file → 本机 Stata 执行 → 读 log 解读」全流程。
 > 本报告可作为该 skills 可用性、可复现性的佐证材料。
 
@@ -8,7 +8,7 @@
 
 ## 0. 摘要
 
-本 demo 在一个本地项目中完成了对 **stataskills 仓库 4 个技能** 的端到端验证：
+本 demo 在一个本地项目中完成了对 **stataskills 仓库 5 个技能** 的端到端验证：
 
 | 技能 | 覆盖章节 | 演示内容 | 运行结果 |
 |---|---|---|---|
@@ -16,8 +16,9 @@
 | `stata-descriptives` | 第 5–8 章 | 描述统计、正态性检验、直方图/箱线图、交叉表卡方、 t 检验、相关、双变量回归、功效 | ✅ 4 张图 + 全部检验 |
 | `stata-regression` | 第 9–11 章 | ANOVA/ANCOVA 、多元回归、诊断、稳健 SE 、交互/二次项、逻辑回归、功效 | ✅ 4 张图 + 全部模型 |
 | `stata-advanced` | 第 12–16 章 + 附录 A | 因子分析、 SEM/GSEM 、多重插补，补充多层模型(mixed)与 IRT | ✅ 2 张图 + 全部模型 |
+| `stata-coefplot` | 扩展（Ben Jann coefplot） | 系数图/森林图：多模型对比、条形图、连续轴预测概率、按系数分面 | ✅ 4 张图 |
 
-**结论**： 4 个技能的命令均可在本机 **StataNow 19.5 （ MP 版）** 上直接运行， 5 个 do-file 全部以 `exit=0` 结束、日志无致命错误（`end of do-file`，无 `r(错误码)`）。
+**结论**： 5 个技能的命令均可在本机 **StataNow 19.5 （ MP 版）** 上直接运行， 6 个 do-file 全部以 `exit=0` 结束、日志无致命错误（`end of do-file`，无 `r(错误码)`）。
 
 ---
 
@@ -40,7 +41,7 @@
 | 可执行文件 | `/Applications/StataNow/StataMP.app/Contents/MacOS/stata-mp` |
 | 批处理方式 | `stata-mp -b do 脚本.do`（结束在同名 `.log` 记录全部输出） |
 | 演示数据 | `auto.dta`（ Stata 自带 1978 Automobile Data ， N=74 ） |
-| 技能来源 | 仓库自带的 4 个 `stata-*/SKILL.md`（`stata-basics` / `stata-descriptives` / `stata-regression` / `stata-advanced`） |
+| 技能来源 | 仓库自带的 5 个 `stata-*/SKILL.md`（`stata-basics` / `stata-descriptives` / `stata-regression` / `stata-advanced` / `stata-coefplot`） |
 
 > 说明：仓库的平台二进制路径现收在 `docs/run-stata.md`（macOS / Windows 双平台对照）；
 > 本机以 macOS 方式执行（`stata-mp -b do ...`），命令本体完全一致。
@@ -61,7 +62,7 @@ flowchart LR
 
 文字版流程：
 
-1. **需求路由**：按分析主题（数据管理 / 描述统计 / 回归 / 进阶方法）选中 4 个 skill 之一。
+1. **需求路由**：按分析主题（数据管理 / 描述统计 / 回归 / 进阶方法 / 系数图）选中 5 个 skill 之一。
 2. **加载 skill**：读取该 skill 的 `SKILL.md`——内含「完整命令语法 + 结果解读逻辑 + 菜单路径线索 + 陷阱清单（ boxed tips ）」。
 3. **落地脚本**：把 skill 里的命令按 demo 数据改写成自包含的 do-file 。
 4. **执行**：用本机 Stata 批处理运行，命令原样执行。
@@ -72,12 +73,12 @@ flowchart LR
 
 | 环节 | 工具 | 在本 demo 中的作用 |
 |---|---|---|
-| 获取技能 | `gh` CLI + `git clone` | 拉取仓库、读取 4 个 SKILL.md |
-| 技能本体 | 4 个 `SKILL.md` | 提供命令语法、解读逻辑、陷阱清单 |
-| 脚本载体 | 5 个 do-file （`.do`） | 按 skill 命令写成的可执行脚本 |
+| 获取技能 | `gh` CLI + `git clone` | 拉取仓库、读取 5 个 SKILL.md |
+| 技能本体 | 5 个 `SKILL.md` | 提供命令语法、解读逻辑、陷阱清单 |
+| 脚本载体 | 6 个 do-file （`.do`） | 按 skill 命令写成的可执行脚本 |
 | 执行引擎 | StataNow 19.5 MP | `-b` 批处理执行 |
-| 运行记录 | 5 个 `.log` | 全量输出，可审计 |
-| 图形产物 | `graph export` PNG （ 15 张） | 可视化 |
+| 运行记录 | 6 个 `.log` | 全量输出，可审计 |
+| 图形产物 | `graph export` PNG （ 19 张） | 可视化 |
 | 数据 | `auto.dta` + 仓库 `data/agis6/` | 演示数据 |
 
 ---
@@ -90,17 +91,18 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
 ├── stata-descriptives/SKILL.md     # skill 2（描述统计 / 图形 / 检验）
 ├── stata-regression/SKILL.md       # skill 3（方差分析 / 回归）
 ├── stata-advanced/SKILL.md         # skill 4（因子 / SEM / 插补 / 多层 / IRT）
+├── stata-coefplot/SKILL.md         # skill 5（系数图 / 森林图）
 ├── data/agis6/                     # 书配套数据（longitudinal_mixed.dta、attitude.dta 等）
 ├── ...（README.md / CLAUDE.md / docs/ / verify/ / book/ / download_data.do 等原有内容）
 └── demo/                           # ← 本 demo，作为 skills 的端到端示例
-    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、15 张 PNG（11 张嵌入））
-    ├── dofiles/                    # 5 个 do-file
+    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、19 张 PNG（11 张嵌入））
+    ├── dofiles/                    # 6 个 do-file
     │   ├── 01_stata-basics.do
     │   ├── 02_stata-descriptives.do
     │   ├── 03_stata-regression.do
     │   ├── 04_stata-advanced.do
     │   └── 05_stata-advanced-extra.do
-    ├── logs/                       # 5 个 Stata 运行日志（全量输出，exit=0）
+    ├── logs/                       # 6 个 Stata 运行日志（全量输出，exit=0）
     │   ├── 01_stata-basics.log
     │   ├── 02_stata-descriptives.log
     │   ├── 03_stata-regression.log
@@ -108,7 +110,7 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
     │   └── 05_stata-advanced-extra.log
     ├── data/
     │   └── auto_clean.dta          # basics 技能清洗后的数据
-    └── output/                     # 15 张图（PNG，其中 11 张嵌入在 REPORT.md 各章节）
+    └── output/                     # 19 张图（PNG，其中 11 张嵌入在 REPORT.md 各章节）
         ├── 02_hist_price.png / 02_hist_mpg.png / 02_hbox_mpg_by_foreign.png
         ├── 02_scatter_price_mpg.png
         ├── 02_panelview_missing.png / 02_panelview_treat.png
@@ -117,7 +119,8 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
         ├── 03_reghdfe_resid_compare.png
         ├── 03_fect_ife.png
         ├── 04_screeplot.png
-        └── 05_mixed_margins.png / 05_irt_icc.png
+        ├── 05_mixed_margins.png / 05_irt_icc.png
+        └── 06_coefplot_basic.png / 06_coefplot_bar.png / 06_coefplot_at.png / 06_coefplot_bycoefs.png
 ```
 
 ---
@@ -341,11 +344,52 @@ irtgraph icc dn4, blocation              // 条目特征曲线
 
 ---
 
+### 5.6 `stata-coefplot` —— 系数图 / 森林图（Ben Jann coefplot）
+
+**技能定位**：把回归系数、边际效应、矩阵结果画成发表级系数图。
+
+**演示命令（节选，见 `dofiles/06_stata-coefplot.do`）**：
+
+```stata
+sysuse auto, clear
+regress price mpg trunk length turn if foreign==0
+estimates store Domestic
+regress price mpg trunk length turn if foreign==1
+estimates store Foreign
+coefplot (Domestic, label(Domestic Cars)) (Foreign, label(Foreign Cars)) ///
+    , drop(_cons) xline(0) recast(bar) ciopts(recast(rcap)) citop barwidth(0.3)
+```
+
+```stata
+logit foreign mpg
+margins, at(mpg=(10(2)40)) post
+estimates store bivariate
+logit foreign mpg turn price
+margins, at(mpg=(10(2)40)) post
+estimates store multivariate
+coefplot bivariate multivariate, at recast(line) lwidth(*2) ///
+    ciopts(recast(rline) lpattern(dash))
+```
+
+**图表**：
+
+![coefplot 多模型系数对比](output/06_coefplot_basic.png)
+
+![coefplot 条形图 + CI](output/06_coefplot_bar.png)
+
+![coefplot 连续轴预测概率](output/06_coefplot_at.png)
+
+![coefplot 按系数分面](output/06_coefplot_bycoefs.png)
+
+**产物**：`logs/06_stata-coefplot.log` + `06_coefplot_*.png`（4 张）
+
+---
+
 ## 6. 结论与佐证价值
 
-1. **可执行**： 4 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
-2. **可复现**： 5 个 do-file + 5 个 log + 15 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
-3. **覆盖完整**： 4 个技能覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
+1. **可执行**： 5 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
+2. **可复现**： 6 个 do-file + 6 个 log + 19 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
+3. **覆盖完整**： 5 个技能覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
    （数据管理 → 描述统计 → 回归建模 → 因子/SEM/插补/多层/IRT ）。
 4. **陷阱有效**： skill 中的"陷阱清单"在 demo 中真实发挥作用（如值标签重复定义 r(110)、因子只保留 1 个导致 `predict f2` 失败），
    证明这些 boxed tips 不是空谈，而是来自真实运行经验的可用护栏。

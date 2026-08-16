@@ -7,6 +7,12 @@ versioned by Stata compatibility).
 
 ## [Unreleased]
 
+### Added
+- feat(skills): 新增 `stata-coefplot` skill，完整整合 Ben Jann coefplot 官方
+  getting-started + estimates / confidence-intervals / labelling / markers /
+  varia 六大页面的系数图方法；配套 `verify/verify-coefplot.do`、
+  `demo/dofiles/06_stata-coefplot.do`（4 张 PNG）与 README 更新。
+
 ### Planned
 - Add `meta/METHODOLOGY.md` documenting the textbook → skill distillation
   process (so other developers can adapt this pattern to their own textbook).

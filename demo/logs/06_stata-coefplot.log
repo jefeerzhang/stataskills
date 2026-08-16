@@ -1,0 +1,326 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do dofiles/06_stata-coefplot.do 
+
+. *==========================================================*
+. * DEMO 6/6 : stata-coefplot —— 系数图（森林图）示例
+. * 技能源   : stata-coefplot/SKILL.md
+. * 数据     : auto.dta / nlsw88（Stata 自带）
+. * 运行     : stata-mp -b do dofiles/06_stata-coefplot.do
+. *==========================================================*
+. version 19.5
+
+. set more off
+
+. clear all
+
+. 
+. *---- 图 1：多模型系数对比（基础森林图） --------------------
+. sysuse auto, clear
+(1978 automobile data)
+
+. regress price mpg trunk length turn if foreign==0
+
+      Source |       SS           df       MS      Number of obs   =        52
+-------------+----------------------------------   F(4, 47)        =      4.46
+       Model |   134498637         4  33624659.2   Prob > F        =    0.0039
+    Residual |   354696164        47  7546726.89   R-squared       =    0.2749
+-------------+----------------------------------   Adj R-squared   =    0.2132
+       Total |   489194801        51  9592054.92   Root MSE        =    2747.1
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -186.1083    161.561    -1.15   0.255    -511.1271    138.9104
+       trunk |  -60.83919   153.2709    -0.40   0.693    -369.1805    247.5021
+      length |   52.68785   53.74091     0.98   0.332    -55.42491    160.8006
+        turn |  -15.89922   183.7335    -0.09   0.931    -385.5233    353.7249
+       _cons |   984.7459   10995.08     0.09   0.929     -21134.5    23103.99
+------------------------------------------------------------------------------
+
+. estimates store Domestic
+
+. regress price mpg trunk length turn if foreign==1
+
+      Source |       SS           df       MS      Number of obs   =        22
+-------------+----------------------------------   F(4, 17)        =     11.08
+       Model |   104341804         4    26085451   Prob > F        =    0.0001
+    Residual |  40021408.7        17  2354200.51   R-squared       =    0.7228
+-------------+----------------------------------   Adj R-squared   =    0.6575
+       Total |   144363213        21   6874438.7   Root MSE        =    1534.3
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -55.72135   70.93618    -0.79   0.443    -205.3836    93.94092
+       trunk |   160.2078   115.4879     1.39   0.183    -83.45041     403.866
+      length |   137.5743   35.85164     3.84   0.001     61.93393    213.2146
+        turn |   -54.3835   339.5595    -0.16   0.875    -770.7914    662.0244
+       _cons |  -15324.62   11573.58    -1.32   0.203    -39742.73    9093.486
+------------------------------------------------------------------------------
+
+. estimates store Foreign
+
+. coefplot (Domestic, label(Domestic Cars) pstyle(p3)) ///
+>         (Foreign, label(Foreign Cars) pstyle(p4)) ///
+>         , drop(_cons) xline(0) msymbol(S) ///
+>         title("Regression coefficients by car origin") ///
+>         scheme(s1mono)
+
+. graph export "output/06_coefplot_basic.png", replace
+(file output/06_coefplot_basic.png not found)
+file output/06_coefplot_basic.png written in PNG format
+
+. 
+. *---- 图 2：条形图 + 置信区间（recast bar） -----------------
+. sysuse auto, clear
+(1978 automobile data)
+
+. regress price mpg trunk length if foreign==0
+
+      Source |       SS           df       MS      Number of obs   =        52
+-------------+----------------------------------   F(3, 48)        =      6.06
+       Model |   134442126         3  44814041.9   Prob > F        =    0.0014
+    Residual |   354752675        48  7390680.73   R-squared       =    0.2748
+-------------+----------------------------------   Adj R-squared   =    0.2295
+       Total |   489194801        51  9592054.92   Root MSE        =    2718.6
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -182.5065   154.4849    -1.18   0.243    -493.1193    128.1062
+       trunk |  -56.81199    144.517    -0.39   0.696    -347.3828    233.7588
+      length |   50.15231   44.58214     1.12   0.266     -39.4861    139.7907
+       _cons |   692.3394   10354.22     0.07   0.947    -20126.22     21510.9
+------------------------------------------------------------------------------
+
+. estimates store Domestic
+
+. regress price mpg trunk length if foreign==1
+
+      Source |       SS           df       MS      Number of obs   =        22
+-------------+----------------------------------   F(3, 18)        =     15.61
+       Model |   104281417         3  34760472.2   Prob > F        =    0.0000
+    Residual |    40081796        18  2226766.45   R-squared       =    0.7224
+-------------+----------------------------------   Adj R-squared   =    0.6761
+       Total |   144363213        21   6874438.7   Root MSE        =    1492.2
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -52.21265   65.61705    -0.80   0.437     -190.069    85.64366
+       trunk |   153.2133   103.9783     1.47   0.158    -65.23703    371.6637
+      length |   135.0291    31.2554     4.32   0.000     69.36399    200.6943
+       _cons |  -16828.44   6580.723    -2.56   0.020    -30654.03   -3002.855
+------------------------------------------------------------------------------
+
+. estimates store Foreign
+
+. coefplot (Domestic, label(Domestic Cars)) (Foreign, label(Foreign Cars)) ///
+>         , drop(_cons) xline(0) recast(bar) ciopts(recast(rcap)) citop barwidt
+> h(0.3) ///
+>         title("Coefficient bars with capped CIs") ///
+>         scheme(s1mono)
+
+. graph export "output/06_coefplot_bar.png", replace
+(file output/06_coefplot_bar.png not found)
+file output/06_coefplot_bar.png written in PNG format
+
+. 
+. *---- 图 3：连续轴上的边际预测（margins + at） ---------------
+. sysuse auto, clear
+(1978 automobile data)
+
+. logit foreign mpg
+
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -39.380959  
+Iteration 2:  Log likelihood = -39.288802  
+Iteration 3:  Log likelihood =  -39.28864  
+Iteration 4:  Log likelihood =  -39.28864  
+
+Logistic regression                                     Number of obs =     74
+                                                        LR chi2(1)    =  11.49
+                                                        Prob > chi2   = 0.0007
+Log likelihood = -39.28864                              Pseudo R2     = 0.1276
+
+------------------------------------------------------------------------------
+     foreign | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |   .1597621   .0525876     3.04   0.002     .0566922     .262832
+       _cons |  -4.378866   1.211295    -3.62   0.000    -6.752961   -2.004771
+------------------------------------------------------------------------------
+
+. margins, at(mpg=(10(2)40)) post
+
+Adjusted predictions                                        Number of obs = 74
+Model VCE: OIM
+
+Expression: Pr(foreign), predict()
+1._at:  mpg = 10
+2._at:  mpg = 12
+3._at:  mpg = 14
+4._at:  mpg = 16
+5._at:  mpg = 18
+6._at:  mpg = 20
+7._at:  mpg = 22
+8._at:  mpg = 24
+9._at:  mpg = 26
+10._at: mpg = 28
+11._at: mpg = 30
+12._at: mpg = 32
+13._at: mpg = 34
+14._at: mpg = 36
+15._at: mpg = 38
+16._at: mpg = 40
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   .0583461   .0389888     1.50   0.135    -.0180704    .1347627
+          2  |   .0785857   .0444732     1.77   0.077    -.0085802    .1657516
+          3  |   .1050627   .0491263     2.14   0.032     .0087769    .2013485
+          4  |   .1391136    .052323     2.66   0.008     .0365624    .2416648
+          5  |   .1819565   .0538513     3.38   0.001       .07641    .2875031
+          6  |   .2344013   .0547344     4.28   0.000      .127124    .3416787
+          7  |   .2964837   .0579854     5.11   0.000     .1828343     .410133
+          8  |    .367124   .0672058     5.46   0.000      .235403    .4988451
+          9  |   .4439736   .0826793     5.37   0.000     .2819253     .606022
+         10  |   .5236009   .1006474     5.20   0.000     .3263356    .7208662
+         11  |   .6020462   .1162814     5.18   0.000     .3741387    .8299536
+         12  |   .6755777   .1259878     5.36   0.000     .4286461    .9225094
+         13  |   .7413595   .1282598     5.78   0.000     .4899749    .9927441
+         14  |   .7977952    .123549     6.46   0.000     .5556436    1.039947
+         15  |   .8444995   .1135603     7.44   0.000     .6219254    1.067074
+         16  |   .8820117   .1004224     8.78   0.000     .6851874    1.078836
+------------------------------------------------------------------------------
+
+. estimates store bivariate
+
+. logit foreign mpg turn price
+
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -25.518236  
+Iteration 2:  Log likelihood = -22.064705  
+Iteration 3:  Log likelihood = -21.628424  
+Iteration 4:  Log likelihood = -21.619852  
+Iteration 5:  Log likelihood = -21.619829  
+Iteration 6:  Log likelihood = -21.619829  
+
+Logistic regression                                     Number of obs =     74
+                                                        LR chi2(3)    =  46.83
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -21.619829                             Pseudo R2     = 0.5199
+
+------------------------------------------------------------------------------
+     foreign | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |   .0336536   .0829686     0.41   0.685    -.1289618     .196269
+        turn |  -.7569358   .2122381    -3.57   0.000    -1.172915   -.3409567
+       price |   .0005015   .0002034     2.47   0.014     .0001028    .0009003
+       _cons |   23.74962   7.707673     3.08   0.002     8.642855    38.85638
+------------------------------------------------------------------------------
+
+. margins, at(mpg=(10(2)40)) post
+
+Predictive margins                                          Number of obs = 74
+Model VCE: OIM
+
+Expression: Pr(foreign), predict()
+1._at:  mpg = 10
+2._at:  mpg = 12
+3._at:  mpg = 14
+4._at:  mpg = 16
+5._at:  mpg = 18
+6._at:  mpg = 20
+7._at:  mpg = 22
+8._at:  mpg = 24
+9._at:  mpg = 26
+10._at: mpg = 28
+11._at: mpg = 30
+12._at: mpg = 32
+13._at: mpg = 34
+14._at: mpg = 36
+15._at: mpg = 38
+16._at: mpg = 40
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |   .2509614   .1203841     2.08   0.037     .0150128    .4869099
+          2  |   .2574498   .1054385     2.44   0.015     .0507941    .4641055
+          3  |   .2639554   .0906012     2.91   0.004     .0863803    .4415305
+          4  |   .2704719    .076101     3.55   0.000     .1213166    .4196272
+          5  |   .2769931    .062328     4.44   0.000     .1548324    .3991538
+          6  |    .283513   .0500184     5.67   0.000     .1854787    .3815473
+          7  |   .2900257   .0406139     7.14   0.000      .210424    .3696275
+          8  |   .2965257   .0364529     8.13   0.000     .2250793     .367972
+          9  |   .3030074   .0391835     7.73   0.000      .226209    .3798057
+         10  |   .3094658   .0475346     6.51   0.000     .2162998    .4026318
+         11  |    .315896   .0590528     5.35   0.000     .2001546    .4316374
+         12  |   .3222937   .0721138     4.47   0.000     .1809533    .4636342
+         13  |   .3286547   .0858939     3.83   0.000     .1603059    .4970036
+         14  |   .3349754   .0999778     3.35   0.001     .1390225    .5309282
+         15  |   .3412523   .1141419     2.99   0.003     .1175384    .5649662
+         16  |   .3474827    .128257     2.71   0.007     .0961037    .5988618
+------------------------------------------------------------------------------
+
+. estimates store multivariate
+
+. coefplot bivariate multivariate, ytitle(Pr(foreign=1)) xtitle(Miles per Gallo
+> n) ///
+>         at recast(line) lwidth(*2) ciopts(recast(rline) lpattern(dash)) ///
+>         title("Predicted probability of foreign car by MPG") ///
+>         scheme(s1mono)
+
+. graph export "output/06_coefplot_at.png", replace
+(file output/06_coefplot_at.png not found)
+file output/06_coefplot_at.png written in PNG format
+
+. 
+. *---- 图 4：按系数分面（bycoefs） ---------------------------
+. sysuse auto, clear
+(1978 automobile data)
+
+. forvalues i = 3/5 {
+  2.     quietly regress price mpg headroom weight turn if rep78==`i'
+  3.     estimates store rep78_`i'
+  4. }
+
+. coefplot rep78_3 || rep78_4 || rep78_5, drop(_cons) xline(0) ///
+>         bycoefs byopts(xrescale) ///
+>         title("Coefficients by repair record (bycoefs)") ///
+>         scheme(s1mono)
+
+. graph export "output/06_coefplot_bycoefs.png", replace
+(file output/06_coefplot_bycoefs.png not found)
+file output/06_coefplot_bycoefs.png written in PNG format
+
+. 
+end of do-file

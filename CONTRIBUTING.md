@@ -8,7 +8,7 @@
 2. 编写代码或文档改动
 3. **本地验证**（必须）：
    ```bash
-   bash verify/run-verify.sh        # 全部 4 个 skill 通过
+   bash verify/run-verify.sh        # 全部 5 个 skill 通过
    cd demo && for f in dofiles/*.do; do
        stata-mp -b do "$f"
    done                              # 全部 ends=1, 无错误码
@@ -74,7 +74,7 @@
 ## 测试要求（提交前必做）
 
 ```bash
-# 1. 验证（4 个 skill 必须全 PASS）
+# 1. 验证（5 个 skill 必须全 PASS）
 bash verify/run-verify.sh
 # 预期：4 通过，0 失败
 
@@ -120,7 +120,7 @@ TWFE 估计 ATT 的负权重偏误。
 - 4 种 method：ife / mc / both / 默认
 
 影响范围：SKILL.md 10.7 节新增
-测试：bash verify/run-verify.sh 4/4 PASS + demo 03 ends=1
+测试：bash verify/run-verify.sh 5/5 PASS + demo 03 ends=1
 
 Refs: Liu et al. (2020) SSRN 3555463
 ```

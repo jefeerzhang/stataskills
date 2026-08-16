@@ -56,7 +56,7 @@ DATA_DIR="$(cd "$VERIFY_DIR/../data/agis6" && pwd)"
 if [ $# -ge 1 ]; then
   TARGETS=("verify-$1")
 else
-  TARGETS=(verify-basics verify-descriptives verify-regression verify-advanced)
+  TARGETS=(verify-basics verify-descriptives verify-regression verify-advanced verify-coefplot)
 fi
 
 pass=0
@@ -105,7 +105,7 @@ for name in "${TARGETS[@]}"; do
   errs=$(grep -cE "r\([0-9]{2,}\)" "$log")
   # 捕获 cap 掩盖不住的静默错误（reshape 错位、变量不存在等），
   # 避免只靠 end of do-file + r(NN) 漏掉 data-integrity 问题。
-  silent=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|0 observations|insufficient observations|not sorted" "$log")
+  silent=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
   if [ "$ends" -eq 1 ] && [ "$errs" -eq 0 ] && [ "$silent" -eq 0 ]; then
     echo "PASS  ${name}（end of do-file x1，无错误码，无静默错误）"
     pass=$((pass+1))
