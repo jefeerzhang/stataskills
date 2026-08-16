@@ -12,13 +12,29 @@ versioned by Stata compatibility).
   getting-started + estimates / confidence-intervals / labelling / markers /
   varia 六大页面的系数图方法；配套 `verify/verify-coefplot.do`、
   `demo/dofiles/06_stata-coefplot.do`（4 张 PNG）与 README 更新。
+- feat(verify): `verify/test-harness.sh` 回归测试——探针 do-file 故意触发
+  错误，断言 harness 必须判 FAIL，锁住判定逻辑本身。
+- feat(ci): GitHub Actions（`.github/workflows/verify.yml`）在 push/PR 自动
+  跑 Stata-free 静态层；配套 `run-verify.sh --static`：version 政策 +
+  数据集存在 + manifest 登记 + manifest 与 `data/agis6/*.dta` 双向一致性，
+  另加 shellcheck 质量门（runner 无商业 Stata，执行层仍由本机承担）。
+
+### Fixed
+- fix(verify): 错误码正则改为整行锚定 `^[[:space:]]*r\([0-9]+\);`，捕获
+  个位数错误码（如 assert 失败的 `r(9)` 旧版被判 PASS 的假阳性），同时
+  仍不误吃 `power(0.90)` / `star(5)` 等合法参数；版本政策校验钉到
+  do-file 首行；data readiness 额外校验引用数据集已登记入
+  `data/manifest.txt`。
+- docs: 修正 README/CITATION 中 coefplot 加入后的声明漂移（badge 4/4→5/5、
+  英文摘要 4→5 skills、对比表 demo 规模 5 do-file + 15 PNG→6 + 19、
+  SKILL.md 行数范围）。
+- chore(data): 移除 `data/agis6/` 下 20 个误入库的运行日志（`chapter*.log`、
+  `_*.log`）——可再生产物，非 provenance；`.gitignore` 扩为
+  `data/agis6/*.log` 防复发，落实「数据目录只放数据」。
 
 ### Planned
 - Add `meta/METHODOLOGY.md` documenting the textbook → skill distillation
   process (so other developers can adapt this pattern to their own textbook).
-- Refine `verify/run-verify.sh` PASS regex so it does not falsely match
-  legitimate commands like `sd(6)`, `n(100)`, `r(6)`.
-- Add GitHub Actions workflow to auto-run `bash verify/run-verify.sh` on PR.
 - PR entries into `ComposioHQ/awesome-claude-skills` and
   `hanlulong/awesome-ai-for-economists` (long-tail discovery).
 - Submit to skills.sh / clawhub.ai once the README overhaul lands.

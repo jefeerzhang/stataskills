@@ -23,11 +23,11 @@ Notes:
           see help set_maxvar.
 
 . do /Users/jefeerzhang/Downloads/stataskills-demo/stataskills-repo/verify/veri
-> fy-coefplot.do
+> fy-coefplot.do 
 
 . version 19.5
 
-.
+. 
 . * ============================================================
 . * stata-coefplot 验证脚本
 . * 覆盖 SKILL.md 核心可执行路径：基本图 / 多模型 / 子图 /
@@ -37,7 +37,7 @@ Notes:
 . * ============================================================
 . set more off
 
-.
+. 
 . * ---- 1. 基本用法 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -63,7 +63,7 @@ Notes:
 
 . coefplot, drop(_cons) xline(0)
 
-.
+. 
 . * ---- 2. keep/drop 与多方程 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -72,12 +72,12 @@ Notes:
 
 . mlogit rep78 mpp i.foreign if rep78>=3
 
-Iteration 0:  Log likelihood = -60.135248
-Iteration 1:  Log likelihood = -47.749317
-Iteration 2:  Log likelihood = -46.606958
-Iteration 3:  Log likelihood = -46.565476
-Iteration 4:  Log likelihood = -46.565356
-Iteration 5:  Log likelihood = -46.565356
+Iteration 0:  Log likelihood = -60.135248  
+Iteration 1:  Log likelihood = -47.749317  
+Iteration 2:  Log likelihood = -46.606958  
+Iteration 3:  Log likelihood = -46.565476  
+Iteration 4:  Log likelihood = -46.565356  
+Iteration 5:  Log likelihood = -46.565356  
 
 Multinomial logistic regression                         Number of obs =     59
                                                         LR chi2(4)    =  27.14
@@ -108,7 +108,7 @@ Log likelihood = -46.565356                             Pseudo R2     = 0.2257
 
 . coefplot, nolabel keep(3:*.foreign 4:mpp 5:mpp _cons) omitted baselevels
 
-.
+. 
 . * ---- 3. 多模型多系列 + 偏移 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -159,7 +159,7 @@ Log likelihood = -46.565356                             Pseudo R2     = 0.2257
 >     (F, label(Foreign Cars) offset(-0.05)) ///
 >     , drop(_cons) xline(0) msymbol(S)
 
-.
+. 
 . * ---- 4. 子图与 bycoefs ----
 . forvalues i = 3/5 {
   2.     quietly regress price mpg headroom weight turn if rep78==`i'
@@ -169,7 +169,7 @@ Log likelihood = -46.565356                             Pseudo R2     = 0.2257
 . coefplot rep78_3 || rep78_4 || rep78_5, drop(_cons) xline(0) ///
 >     bycoefs byopts(xrescale)
 
-.
+. 
 . * ---- 5. 排序 ----
 . sysuse nlsw88, clear
 (NLSW, 1988 extract)
@@ -199,7 +199,7 @@ Public ad..  |   9.148407   .4191131    21.83   0.000     8.326512    9.970302
 
 . coefplot, sort(, descending)
 
-.
+. 
 . * ---- 6. 矩阵绘图 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -226,7 +226,7 @@ Public ad..  |   9.148407   .4191131    21.83   0.000     8.326512    9.970302
 
 . coefplot matrix(median), ci(CI)
 
-.
+. 
 . * ---- 7. recast 条形图 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -275,18 +275,18 @@ Public ad..  |   9.148407   .4191131    21.83   0.000     8.326512    9.970302
 >     , drop(_cons) xline(0) recast(bar) ciopts(recast(rcap)) citop barwidth(0.
 > 3)
 
-.
+. 
 . * ---- 8. 连续轴 at（margins） ----
 . sysuse auto, clear
 (1978 automobile data)
 
 . logit foreign mpg
 
-Iteration 0:  Log likelihood =  -45.03321
-Iteration 1:  Log likelihood = -39.380959
-Iteration 2:  Log likelihood = -39.288802
-Iteration 3:  Log likelihood =  -39.28864
-Iteration 4:  Log likelihood =  -39.28864
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -39.380959  
+Iteration 2:  Log likelihood = -39.288802  
+Iteration 3:  Log likelihood =  -39.28864  
+Iteration 4:  Log likelihood =  -39.28864  
 
 Logistic regression                                     Number of obs =     74
                                                         LR chi2(1)    =  11.49
@@ -350,13 +350,13 @@ Expression: Pr(foreign), predict()
 
 . logit foreign mpg turn price
 
-Iteration 0:  Log likelihood =  -45.03321
-Iteration 1:  Log likelihood = -25.518236
-Iteration 2:  Log likelihood = -22.064705
-Iteration 3:  Log likelihood = -21.628424
-Iteration 4:  Log likelihood = -21.619852
-Iteration 5:  Log likelihood = -21.619829
-Iteration 6:  Log likelihood = -21.619829
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -25.518236  
+Iteration 2:  Log likelihood = -22.064705  
+Iteration 3:  Log likelihood = -21.628424  
+Iteration 4:  Log likelihood = -21.619852  
+Iteration 5:  Log likelihood = -21.619829  
+Iteration 6:  Log likelihood = -21.619829  
 
 Logistic regression                                     Number of obs =     74
                                                         LR chi2(3)    =  46.83
@@ -424,19 +424,19 @@ Expression: Pr(foreign), predict()
 > n) ///
 >     at recast(line) lwidth(*2) ciopts(recast(rline) lpattern(dash))
 
-.
+. 
 . * ---- 9. eform ----
 . sysuse auto, clear
 (1978 automobile data)
 
 . logit foreign mpg trunk length turn
 
-Iteration 0:  Log likelihood =  -45.03321
-Iteration 1:  Log likelihood = -27.669278
-Iteration 2:  Log likelihood = -25.257138
-Iteration 3:  Log likelihood = -25.074055
-Iteration 4:  Log likelihood = -25.073487
-Iteration 5:  Log likelihood = -25.073487
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -27.669278  
+Iteration 2:  Log likelihood = -25.257138  
+Iteration 3:  Log likelihood = -25.074055  
+Iteration 4:  Log likelihood = -25.073487  
+Iteration 5:  Log likelihood = -25.073487  
 
 Logistic regression                                     Number of obs =     74
                                                         LR chi2(4)    =  39.92
@@ -455,7 +455,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 
 . coefplot, drop(_cons) xline(1) eform xtitle(Odds ratio)
 
-.
+. 
 . * ---- 10. 标签：headings/groups/eqlabels ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -499,7 +499,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 
 . coefplot, xline(0) coeflabels(1.foreign = "Foreign Car" _cons = "Constant")
 
-.
+. 
 . * ---- 11. markers：noci/cionly/mlabel/weight ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -531,7 +531,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 
 . coefplot, weight(1/@se) ms(oh) drop(_cons) xline(0)
 
-.
+. 
 . * ---- 12. 模型名作为系数名（asequation + swapnames） ----
 . sysuse nlsw88, clear
 (NLSW, 1988 extract)
@@ -544,8 +544,8 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 . coefplot (industry_*), keep(grade) asequation swapnames ///
 >     title("Effect of grade on wages by industry")
 
-.
-.
+. 
+. 
 . * ---- 13. p1/p2 按位置设置系列选项 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -596,7 +596,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 >     p1(label(Domestic Cars) pstyle(p3)) ///
 >     p2(label(Foreign Cars)  pstyle(p4))
 
-.
+. 
 . * ---- 14. 多模型子图 / _skip / byopts / subtitle ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -701,7 +701,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 >     subtitle(, size(vlarge) margin(medium) justification(left) ///
 >         color(white) bcolor(black) bmargin(top_bottom))
 
-.
+. 
 . * ---- 15. bycoefs + plotlabels ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -720,7 +720,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 >     || , bycoefs byopts(xrescale) ///
 >          plotlabels("Domestic cars" "Foreign cars")
 
-.
+. 
 . * ---- 16. 通配符：asequation / 展开为多个系列 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -732,11 +732,11 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
   5.     estimates store f_`var'
   6. }
 
-. coefplot (d*, asequation(Domestic) \ f*, asequation(Foreign) \ , pstyle(p4))
+. coefplot (d*, asequation(Domestic) \ f*, asequation(Foreign) \ , pstyle(p4)) 
 > ///
 >     , drop(_cons) xline(0) title("Bivariate effects on price by car type")
 
-.
+. 
 . sysuse nlsw88, clear
 (NLSW, 1988 extract)
 
@@ -753,7 +753,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 . coefplot est0* || est1*, drop(_cons) xline(0) ///
 >     plotlabels("White" "Black") bylabels("North" "South")
 
-.
+. 
 . sysuse auto, clear
 (1978 automobile data)
 
@@ -767,7 +767,7 @@ Log likelihood = -25.073487                             Pseudo R2     = 0.4432
 >     p2(pstyle(p4) label("Rep=4")) ///
 >     p3(pstyle(p5) label("Rep=5"))
 
-.
+. 
 . * ---- 17. 系数匹配：eqstrict / asequation / noeqlabels / rename ----
 . webuse laborsub, clear
 
@@ -800,11 +800,11 @@ Grid node 0:  Log likelihood = -1402.6764
 
 Fitting full model:
 
-Iteration 0:  Log likelihood = -1402.6764
-Iteration 1:  Log likelihood = -1371.1868
-Iteration 2:  Log likelihood = -1367.1258
-Iteration 3:  Log likelihood = -1367.0904
-Iteration 4:  Log likelihood = -1367.0903
+Iteration 0:  Log likelihood = -1402.6764  
+Iteration 1:  Log likelihood = -1371.1868  
+Iteration 2:  Log likelihood = -1367.1258  
+Iteration 3:  Log likelihood = -1367.0904  
+Iteration 4:  Log likelihood = -1367.0903  
 
 Tobit regression                                    Number of obs     =    250
                                                            Uncensored =    150
@@ -844,7 +844,7 @@ Log likelihood = -1367.0903                         Pseudo R2         = 0.0084
 >         rename(var(e.whrs) = Sigma)) ///
 >     , xline(0) noeqlabels
 
-.
+. 
 . drop _all
 
 . matrix C = ( 1, .5, 0 \ .5, 1, .3 \ 0, .3, 1 )
@@ -900,7 +900,7 @@ Log likelihood = -1367.0903                         Pseudo R2         = 0.0084
 >     (m2, label(With error)) ///
 >     , xline(1) rename(x1err = x1)
 
-.
+. 
 . * ---- 18. 排序：自动 / order 通配符 / 多方程 / 多系列 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -977,7 +977,7 @@ Log likelihood = -1367.0903                         Pseudo R2         = 0.0084
 
 . coefplot m1 || m2 || m3, xline(0) drop(_cons) byopts(row(1)) orderby(3:)
 
-. coefplot m1 || m2 || m3, xline(0) drop(_cons) byopts(row(1)) order(mpg trunk
+. coefplot m1 || m2 || m3, xline(0) drop(_cons) byopts(row(1)) order(mpg trunk 
 > length)
 
 . label variable mpg
@@ -991,7 +991,7 @@ Log likelihood = -1367.0903                         Pseudo R2         = 0.0084
 . coefplot m1 || m2 || m3, xline(0) drop(_cons) byopts(row(1)) ///
 >     order(. mpg . t* . length .)
 
-.
+. 
 . sysuse auto, clear
 (1978 automobile data)
 
@@ -999,11 +999,11 @@ Log likelihood = -1367.0903                         Pseudo R2         = 0.0084
 
 . mlogit rep78 mpp if rep>=3
 
-Iteration 0:  Log likelihood = -60.135248
-Iteration 1:  Log likelihood = -53.823342
-Iteration 2:  Log likelihood = -53.279627
-Iteration 3:  Log likelihood =  -53.27225
-Iteration 4:  Log likelihood = -53.272247
+Iteration 0:  Log likelihood = -60.135248  
+Iteration 1:  Log likelihood = -53.823342  
+Iteration 2:  Log likelihood = -53.279627  
+Iteration 3:  Log likelihood =  -53.27225  
+Iteration 4:  Log likelihood = -53.272247  
 
 Multinomial logistic regression                         Number of obs =     59
                                                         LR chi2(2)    =  13.73
@@ -1028,12 +1028,12 @@ Log likelihood = -53.272247                             Pseudo R2     = 0.1141
 
 . mlogit rep78 mpp i.foreign if rep>=3
 
-Iteration 0:  Log likelihood = -60.135248
-Iteration 1:  Log likelihood = -47.749317
-Iteration 2:  Log likelihood = -46.606958
-Iteration 3:  Log likelihood = -46.565476
-Iteration 4:  Log likelihood = -46.565356
-Iteration 5:  Log likelihood = -46.565356
+Iteration 0:  Log likelihood = -60.135248  
+Iteration 1:  Log likelihood = -47.749317  
+Iteration 2:  Log likelihood = -46.606958  
+Iteration 3:  Log likelihood = -46.565476  
+Iteration 4:  Log likelihood = -46.565356  
+Iteration 5:  Log likelihood = -46.565356  
 
 Multinomial logistic regression                         Number of obs =     59
                                                         LR chi2(4)    =  27.14
@@ -1069,7 +1069,7 @@ Log likelihood = -46.565356                             Pseudo R2     = 0.2257
 . coefplot m1 || m2, xline(0) nolabel keep(*:) ///
 >     order(4:1.foreign 5:1.foreign 4:_cons mpp)
 
-.
+. 
 . sysuse nlsw88, clear
 (NLSW, 1988 extract)
 
@@ -1160,7 +1160,7 @@ Public ad..  |   10.22218   .5312797    19.24   0.000     9.178063     11.2663
 >     || nonunion union, bylabel(by union status) ///
 >     || , norecycle byopts(legend(position(5))) sort(3, descending)
 
-.
+. 
 . sysuse nlsw88, clear
 (NLSW, 1988 extract)
 
@@ -1271,7 +1271,7 @@ Public ad..  |   10.14895   1.080804     9.39   0.000     8.009906      12.288
 >     || nonunionsouth unionsouth, bylabel(South) ///
 >     || , plotlabels("nonunion" "union") sort(2:1, descending)
 
-.
+. 
 . * ---- 19. 矩阵 + 估计结果混合 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -1306,7 +1306,7 @@ c.price@rep78 |
 >     (matrix(R[,1]), ci((2 3)) label(median)) ///
 >     , ytitle(Repair Record 1978) xtitle(Price)
 
-.
+. 
 . * ---- 20. recast：proportion 柱 + mean 连线双轴 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -1353,7 +1353,7 @@ c.price@rep78 |
 > //
 >       rename(^.*([0-9])\..+$ = \1, regex)
 
-.
+. 
 . * ---- 21. rescale：指定系数 / SD 半标准化 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -1381,7 +1381,7 @@ c.price@rep78 |
 . coefplot, drop(_cons) xline(0) rescale(weight = 100 gpm = .01) ///
 >     coeflabels(weight = "Weight (in 100 lbs.)" gpm = "Gallon per 100 miles")
 
-.
+. 
 . sysuse auto, clear
 (1978 automobile data)
 
@@ -1415,7 +1415,7 @@ c.price@rep78 |
 >             length = `sd_length'         ///
 >             turn   = `sd_turn')
 
-.
+. 
 . * ---- 22. transform：用 @b 给 CI 上下半段分色 ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -1445,7 +1445,7 @@ c.price@rep78 |
 >     (., noci pstyle(p1)) ///
 >     , nooffsets ciopts(lwidth(*10) lcolor(*.5)) legend(off)
 
-.
+. 
 . * ---- 23. center 标准化（未安装 center 则跳过） ----
 . cap which center
 
@@ -1463,18 +1463,18 @@ c.price@rep78 |
 note: center not installed; skip standardized-center example
 . }
 
-.
+. 
 . * ---- 24. mlogit margins 老版本循环 ----
 . webuse sysdsn1, clear
 (Health insurance data)
 
 . mlogit insure i.male i.nonwhite i.site
 
-Iteration 0:  Log likelihood = -556.59502
-Iteration 1:  Log likelihood = -537.19618
-Iteration 2:  Log likelihood = -536.86954
-Iteration 3:  Log likelihood = -536.86825
-Iteration 4:  Log likelihood = -536.86825
+Iteration 0:  Log likelihood = -556.59502  
+Iteration 1:  Log likelihood = -537.19618  
+Iteration 2:  Log likelihood = -536.86954  
+Iteration 3:  Log likelihood = -536.86825  
+Iteration 4:  Log likelihood = -536.86825  
 
 Multinomial logistic regression                         Number of obs =    616
                                                         LR chi2(8)    =  39.45
@@ -1518,7 +1518,7 @@ Uninsure     |
 
 . coefplot Indemnity Prepaid Uninsure, xline(0) legend(rows(1))
 
-.
+. 
 . * ---- 25. levels：lwidth / Harrell / Cleveland ----
 . sysuse auto, clear
 (1978 automobile data)
@@ -1551,7 +1551,7 @@ Uninsure     |
 > /
 >     legend(order(1 "99" 2 "95" 3 "90" 4 "80" 5 "70") rows(1))
 
-.
+. 
 . sysuse auto, clear
 (1978 automobile data)
 
@@ -1600,7 +1600,7 @@ Uninsure     |
 . coefplot domestic foreign, drop(_cons) xline(0) levels(95 50) ciopts(recast(.
 >  rcap))
 
-.
+. 
 . * ---- 26. svy：V_srs 未修正/修正 df ----
 . webuse nhanes2f, clear
 
@@ -1648,7 +1648,7 @@ Number of PSUs   = 62                            Population size = 104,176,071
 > //
 >     , keep(female black orace rural) xlabel(,grid)
 
-.
+. 
 . * ---- 27. 截断 CI：灰色绘图区 / if + pcarrow ----
 . sysuse nlsw88, clear
 (NLSW, 1988 extract)
@@ -1690,5 +1690,5 @@ Household..  |   6.388888    3.79379     1.68   0.092    -1.050853    13.82863
 >     (., pstyle(p1) if(@ll<=2&@ul>=12) ciopts(recast(pcbarrow))) ///
 >     , nooffset transform(* = min(max(@,2),12)) legend(off)
 
-.
+. 
 end of do-file

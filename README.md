@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
-[![Verify](https://img.shields.io/badge/verify-4%2F4%20PASS-brightgreen.svg)](verify/)
+[![Verify](https://img.shields.io/badge/verify-5%2F5%20PASS-brightgreen.svg)](verify/)
 [![GitHub](https://img.shields.io/badge/GitHub-jefeerzhang%2Fstataskills-181717)](https://github.com/jefeerzhang/stataskills)
 
 [![skills.sh: stata-basics](https://img.shields.io/badge/skills.sh-stata--basics-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-basics)
@@ -18,7 +18,7 @@
 ## 特性
 
 - **5 个分章节 Skill**：basics / descriptives / regression / advanced 严格对应教材第 1–16 章 + 附录 A；coefplot 独立覆盖系数图（森林图）
-- **完整命令 + 解读逻辑 + 报告惯例 + 8 条 boxed tips**，每个 SKILL.md 200 – 270 行
+- **完整命令 + 解读逻辑 + 报告惯例 + 8 条 boxed tips**，SKILL.md 行数 144（basics）至 1077（coefplot）
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 5/5 PASS
 - **真实 demo** 报告：6 个 do-file + 19 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图）
@@ -81,7 +81,7 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令 + 5/5 PASS 实测 | ❌ | ⚠️ log 验证 |
-| Demo 报告 | ✅ 5 do-file + 15 PNG + REPORT.md | ❌ | ❌ |
+| Demo 报告 | ✅ 6 do-file + 19 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 | ❌ | ❌ |
 | 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
 
@@ -131,9 +131,14 @@ stataskills/
 ## 验证与测试
 
 ```bash
-bash verify/run-verify.sh           # 全量（5 个 skill）
+bash verify/run-verify.sh           # 全量（5 个 skill，需本机 Stata）
 bash verify/run-verify.sh advanced  # 单个 skill
+bash verify/run-verify.sh --static  # 静态层（无需 Stata，与 CI 同款）
 ```
+
+GitHub Actions（`.github/workflows/verify.yml`）在 push/PR 自动跑静态层：
+version 政策 + 数据集存在 + manifest 登记/双向一致性 + shellcheck。
+执行层（真实跑 do-file）需本机 Stata，由 `bash verify/run-verify.sh` 承担。
 
 **判定标准**：日志恰好一次 `end of do-file` 且无 `r(错误码)` → PASS。
 当前实测：**5/5 PASS**（`verify/verify-basics.log` 等 5 个 log 均为 `end_of_dofile=1, r_err=0`）。
@@ -176,7 +181,7 @@ bash verify/run-verify.sh
 
 ## English Summary
 
-`stataskills` is a collection of 4 Stata skills distilled from Alan C. Acock's *A Gentle Introduction to Stata* (6th edition, Stata Press, 2018):
+`stataskills` is a collection of 5 Stata skills distilled from Alan C. Acock's *A Gentle Introduction to Stata* (6th edition, Stata Press, 2018):
 
 | Skill | Chapters | Topics |
 |---|---|---|
