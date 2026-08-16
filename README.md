@@ -1,112 +1,154 @@
 # Stata Skills（基于《A Gentle Introduction to Stata》第 6 版）
 
-4 个 Stata skill，内容浓缩自 Alan C. Acock《A Gentle Introduction to Stata》第六版（Stata Press, 2018），
-面向真实执行场景：中文说明 + 英文 Stata 命令，可直接调用本机 Stata 运行。
+> 把 800 页英文 Stata 教材压成 4 个可被 Agent 调用的中文教学 Skill：basics / descriptives / regression / advanced。
 
-## 包含的 skills
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
+[![Verify](https://img.shields.io/badge/verify-4%2F4%20PASS-brightgreen.svg)](verify/)
+[![GitHub](https://img.shields.io/badge/GitHub-jefeerzhang%2Fstataskills-181717)](https://github.com/jefeerzhang/stataskills)
 
-| Skill | 覆盖章节 | 主题 |
-|---|---|---|
-| `stata-basics` | 第 1–4 章 | 界面起步、数据录入与标签、数据准备（反向编码/量表构建/缺失值）、do-file 与结果管理 |
-| `stata-descriptives` | 第 5–8 章 | 单变量描述统计与图形、双分类变量交叉表与卡方、均值/比例检验、相关与双变量回归、功效分析 |
-| `stata-regression` | 第 9–11 章 | ANOVA/ANCOVA/双因素/重复测量、多元回归（诊断/交互/非线性/加权）、逻辑回归（OR/margins/嵌套）、功效分析 |
-| `stata-advanced` | 第 12–16 章 + 附录 A | 信效度与因子分析、SEM/GSEM、多重插补（mi）、多水平模型（mixed）、项目反应理论（irt） |
+## 你什么时候需要它？
 
-每个 skill 均为单文件 `SKILL.md`，包含：完整命令语法与选项、结果解读逻辑、菜单路径线索、陷阱清单（boxed tips）。
+- 你是实证研究者（社科 / 经济 / 公共卫生），想用 Stata 但不想读完整本教材
+- 你已经会基础 Stata，想做 ANOVA / 多元回归诊断 / 逻辑回归 / SEM / 多层 / IRT 等进阶分析
+- 你在 Claude Code / Codex / OpenClaw 里跑 Agent，需要让 Agent 自己会写 do-file
 
-## 目录结构
+## 它会交付什么？
+
+- **4 个独立 SKILL.md**（200–270 行）：完整命令 + 解读逻辑 + 报告惯例 + 8 条 boxed tips
+- **38 个 `.dta` 配套数据集**（AGIS6 完整版，含每章 do-file）
+- **可一行复现的 verify harness**：`bash verify/run-verify.sh` → 当前实测 **4/4 PASS**
+- **5 个 demo do-file + 11 张真实 PNG + 一份完整 REPORT.md**
+
+![因子分析碎石图](demo/output/04_screeplot.png)
+![逻辑回归边际效应](demo/output/03_logit_margins.png)
+![MPG 按产地箱线图](demo/output/02_hbox_mpg_by_foreign.png)
+
+## 快速开始
+
+```bash
+# 1. 克隆到 Claude Code / Codex / OpenClaw 的 skills 目录
+git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
+
+# 2. （可选）验证：需要本机 StataNow 19.5（macOS / Windows 路径见 docs/run-stata.md）
+bash verify/run-verify.sh
+# 预期：4/4 PASS
+```
+
+## 触发方式
+
+- **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced`
+- **自然语言**："用 Stata 帮我做多元回归诊断" / "演示 factor analysis" / "怎么做 IRT"
+- **路由表**：
+
+| 用户问题 | 路由到 |
+|---|---|
+| 录入 / 标签 / 反向编码 / 构建量表 | `stata-basics` |
+| 描述统计 / 交叉表 / t 检验 / 相关 | `stata-descriptives` |
+| ANOVA / 多元回归 / 逻辑回归 / 功效 | `stata-regression` |
+| 因子 / SEM / 多重插补 / 多层 / IRT | `stata-advanced` |
+
+## 示例
+
+来自 `demo/REPORT.md` 的真实运行结果（macOS StataNow 19.5 MP）：
+
+| Skill | 关键结果 |
+|---|---|
+| basics | 清洗 auto.dta → 74 obs × 12 vars，`rep78` 5 缺失，保存为 `data/auto_clean.dta` |
+| descriptives | `rep78 × foreign` χ²(4)=27.26, p<0.001, Cramér's V=0.63 |
+| regression | `price ~ weight + foreign` ANCOVA F=35.35, p<0.001, R²=0.499 |
+| advanced | `factor ... , pcf` 保留 1 因子解释 74.3% 方差 |
+
+完整命令 + 全部结果见 [demo/REPORT.md](demo/REPORT.md)。
+
+## 它和同类有什么不同？
+
+| 维度 | stataskills（本仓库） | [dylantmoore/stata-skill](https://github.com/dylantmoore/stata-skill) (276⭐) | [codex-stata-for-economists](https://github.com/maxwell2732/codex-stata-for-economists) |
+|---|---|---|---|
+| 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
+| 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
+| 验证 harness | ✅ 一行命令 + 4/4 PASS 实测 | ❌ | ⚠️ log 验证 |
+| Demo 报告 | ✅ 5 do-file + 11 PNG + REPORT.md | ❌ | ❌ |
+| ADR / 架构决策 | ✅ ADR-0001 | ❌ | ❌ |
+| 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
+
+我们不是"又一个 Stata skill"——是**唯一带完整数据 + verify + ADR + demo 的工程化外壳**。
+
+## 安全边界
+
+- **默认英文标签作图**：Stata 图形 PostScript 字体不支持中文，会渲染为乱码；需要中文图表时先与用户确认（详见 `docs/run-stata.md`）。
+- **不会自动运行你的数据**：所有命令都在 do-file 里，由你控制何时 `do file.do`。
+- **已下线 UCLA 包标注**：`chitable` / `chi2power` / `powerreg` / `powerlog` 随 UCLA 服务器下线无法联网安装；各 SKILL.md 已标注等价命令（`power twoproportions`、`power rsquared` 等）。
+- **教材原文版权**：`book/` 包含 Alan C. Acock《A Gentle Introduction to Stata》(6th ed.) 原文，仅供教学参考，版权归 Stata Press；详见 [LICENSE](LICENSE) 的附加声明段。
+
+## 文件结构
 
 ```
 stataskills/
-├── README.md
-├── CLAUDE.md
-├── download_data.do          # 一键下载全部配套数据（按 data/manifest.txt）
-├── stata-basics/SKILL.md     # skill 1
-├── stata-descriptives/SKILL.md
-├── stata-regression/SKILL.md
-├── stata-advanced/SKILL.md
-├── data/                     # 数据集清单与配套数据
-│   ├── manifest.txt          # 38 个 .dta 数据集清单（单一来源）
-│   └── agis6/                # 书配套数据集（.dta + relate.cdb + 每章 do/log）
-├── docs/                     # 平台命令与架构决策
-│   ├── run-stata.md          # 平台二进制路径与批处理命令（单一来源）
-│   └── adr/                  # 架构决策记录（ADR）
-├── verify/                   # 验证 harness 与四个 skill 的验证脚本/日志
-│   ├── run-verify.sh         # 验证 harness（执行 + 判定 + 汇总）
-│   ├── verify-basics.do / .log
-│   ├── verify-descriptives.do / .log
-│   ├── verify-regression.do / .log
-│   └── verify-advanced.do / .log
-├── demo/                     # 技能演示（REPORT.md + dofiles + logs + output）
-└── book/                     # 教材原文 Markdown 与图片
+├── README.md                       ← 本文件
+├── CLAUDE.md                       ← Agent 工作约定
+├── LICENSE                         ← MIT（含教材版权声明）
+├── CHANGELOG.md                    ← 变更历史
+├── CITATION.cff                    ← 学术引用
+├── download_data.do                ← 一键下载全部数据
+├── stata-basics/SKILL.md           ← skill 1（数据管理 / 清洗）
+├── stata-descriptives/SKILL.md     ← skill 2（描述 / 检验）
+├── stata-regression/SKILL.md       ← skill 3（回归）
+├── stata-advanced/SKILL.md         ← skill 4（因子 / SEM / 多层 / IRT）
+├── book/                           ← 教材原文 Markdown（教学使用）
+├── data/
+│   ├── manifest.txt                ← 38 个 .dta 清单（单一来源）
+│   └── agis6/                      ← 完整 AGIS6 数据集
+├── docs/
+│   ├── run-stata.md                ← 平台命令速查（单一来源）
+│   ├── adr/0001-do-not-execute-skill-code-fences.md
+│   └── agents/                     ← Agent 工作流
+├── verify/                         ← 验证 harness
+│   ├── run-verify.sh               ← 4/4 PASS 判定
+│   ├── stata.conf                  ← 平台路径（单一来源）
+│   └── verify-{basics,descriptives,regression,advanced}.{do,log}
+└── demo/                           ← 端到端示例
+    ├── REPORT.md                   ← 完整报告
+    ├── dofiles/                    ← 5 个 do-file
+    ├── logs/                       ← 5 个 Stata log（exit=0）
+    └── output/                     ← 11 张真实 PNG
 ```
 
-## 安装
+## 验证与测试
 
-1. 将需要的一个或多个 skill 目录复制到 skills 目录（例如 `C:\Users\<用户名>\.agents\skills\` 或 `.zcode\skills\`）。
-2. 在 skill 内使用 `/stata-basics` 等斜杠命令或直接说明引用。
-
-## 数据准备
-
-数据来自 Stata Press 官网（`http://www.stata-press.com/data/agis6/`），已下载在本仓库 `data/agis6/`。
-若重新克隆后需要重下数据，在 Stata 中运行：
-
-```stata
-do download_data.do
+```bash
+bash verify/run-verify.sh           # 全量（4 个 skill）
+bash verify/run-verify.sh advanced  # 单个 skill
 ```
 
-运行示例命令时，先 `cd` 到数据目录（或把 `use 文件名, clear` 改为完整路径）：
+**判定标准**：日志恰好一次 `end of do-file` 且无 `r(错误码)` → PASS。
+当前实测：**4/4 PASS**（`verify/verify-basics.log` 等 4 个 log 均为 `end_of_dofile=1, r_err=0`）。
 
-```stata
-cd "路径/stataskills/data/agis6"
-use firstsurvey, clear
+## 引用本 Skill
+
+见 [CITATION.cff](CITATION.cff)（含 APA / BibTeX）。
+
+同时请引用原教材：
+
+> Acock, A. C. (2018). *A Gentle Introduction to Stata* (6th ed.). Stata Press.
+
+---
+
+## English Summary
+
+`stataskills` is a collection of 4 Stata skills distilled from Alan C. Acock's *A Gentle Introduction to Stata* (6th edition, Stata Press, 2018):
+
+| Skill | Chapters | Topics |
+|---|---|---|
+| `stata-basics` | 1–4 | interface, data entry & labels, data prep (reverse coding, scales, missing), do-files |
+| `stata-descriptives` | 5–8 | univariate descriptives, crosstabs/χ², mean/proportion tests, correlation & bivariate regression |
+| `stata-regression` | 9–11 | ANOVA/ANCOVA, multiple regression, logistic regression, power analysis |
+| `stata-advanced` | 12–16 + App. A | reliability/validity, factor, SEM/GSEM, multiple imputation (mi), multilevel (mixed), IRT |
+
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and an 8-item pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (5 do-files + 11 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **4/4 PASS** on StataNow 19.5 MP.
+
+```bash
+git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
 ```
 
-## 运行 Stata
-
-本仓库 skill 面向 StataNow 19（兼容 Stata 15 及以后版本，书基于 Stata 15 编写）。
-无界面批处理运行方式（本仓库验证环境为 macOS）：
-
-```
-stata-mp -b do "脚本.do"
-```
-
-运行结束后在当前目录生成同名 `.log` 文件（含全部输出）。
-平台二进制路径与 Windows 等价命令见 `docs/run-stata.md`。
-
-## 验证
-
-`verify/` 下的 do 文件覆盖四个 skill 的关键命令，已用 StataNow 19 实际运行通过，
-`.log` 为运行记录（含错误检查）。修改 skill 内容后可重跑验证：
-
-```
-bash verify/run-verify.sh            # 全量（四个 skill）
-bash verify/run-verify.sh advanced   # 单个 skill（basics/descriptives/regression/advanced）
-```
-
-runner 依次在每个 skill 的数据目录下以批处理方式执行 do 文件，判定标准与 demo 一致：
-日志恰好一次 `end of do-file` 且无 `r(错误码)` → 通过；任一失败以非零退出码结束。
-平台二进制路径见 `docs/run-stata.md`。
-
-### 全书 16 章逐命令实测结果（StataNow 19.5）
-
-教材官方 `chapter1.do`–`chapter16.do` 全部逐章实跑（见 `data/agis6/chapter*.log`）：
-
-| 章节 | 结果 |
-|---|---|
-| ch1–5, 7–9, 12–16 | ✅ 全部命令通过 |
-| ch6 | ⚠️ 仅 `chitable`、`chi2power`（UCLA 社区包，已下线）无法运行，其余通过；`table` 需用 Stata 17+ 新语法 |
-| ch10 | ⚠️ 仅 `powerreg`（UCLA 包，已下线）无法运行，其余通过；已用官方 `power rsquared` 验证等价 |
-| ch11 | ⚠️ 仅 `powerlog`（UCLA 包，已下线）无法运行，其余通过 |
-| ch13 | ✅ 手动安装 `mibeta` 后通过 |
-
-**结论**：本书全部**官方命令**在 StataNow 19 中可运行；唯一的问题是 4 个 UCLA 社区辅助包
-（`chitable`、`chi2power`、`powerreg`、`powerlog`）随 UCLA 服务器下线无法联网安装。
-书正文已标注这些是"需 search 联网安装"的外部命令，不影响核心分析流程。
-
-## 与书/版本的差异说明
-
-- 书基于 **Stata 15**，本机为 **StataNow 19**（MP 版）。绝大多数命令与选项在 19 中完全兼容。
-- **Stata 17+ 语法变化**：`table` 命令的 `contents()` 与 `row` 选项自 Stata 17 起被 `statistic()` 取代，新旧写法对照见 `stata-descriptives/SKILL.md` 第 6 章。
-- **社区命令安装**：各 skill 的正文与「关键陷阱速查」已说明直接 `ssc install` 可装的命令（`fre`、`binscatter`、`lrdrop1`）与需从 GitHub 镜像手动安装的包（`listcoef` 见 `stata-regression/SKILL.md`，`mibeta` 见 `stata-advanced/SKILL.md`）。
-- 中文作图规矩与字体乱码的技术说明见 `docs/run-stata.md`。
+See [demo/REPORT.md](demo/REPORT.md) for the full walkthrough.

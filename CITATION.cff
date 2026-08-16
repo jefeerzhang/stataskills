@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: |-
+  If you use stataskills in academic work, please cite both this skill
+  collection and the underlying textbook (see `references` below).
+type: software
+title: "stataskills: 4 Stata Skills distilled from A Gentle Introduction to Stata (6th edition)"
+abstract: |-
+  Four Agent skills (stata-basics, stata-descriptives, stata-regression,
+  stata-advanced) that distill Alan C. Acock's "A Gentle Introduction to
+  Stata" (6th edition) into a form callable from Claude Code, Codex,
+  OpenClaw and other skill-compatible runtimes. Each skill ships with the
+  full chapter-to-command mapping, interpretation logic, reporting
+  conventions, and an 8-item pitfalls checklist, plus the 38 .dta datasets
+  needed to reproduce every example.
+version: 0.1.0
+date-released: 2026-08-14
+license: MIT
+repository-code: "https://github.com/jefeerzhang/stataskills"
+keywords:
+  - Stata
+  - statistics
+  - data analysis
+  - agent skills
+  - Claude Code
+  - Codex
+  - OpenClaw
+authors:
+  - family-names: Zhang
+    given-names: Jefeer
+    affiliation: Sichuan Agricultural University
+references:
+  - type: book
+    title: "A Gentle Introduction to Stata"
+    edition: "6th"
+    authors:
+      - family-names: Acock
+        given-names: Alan C.
+    publisher: Stata Press
+    year: 2018
+    isbn: "978-1-59718-269-7"
