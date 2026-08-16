@@ -9,10 +9,10 @@
 [![Verify](https://img.shields.io/badge/verify-4%2F4%20PASS-brightgreen.svg)](verify/)
 [![GitHub](https://img.shields.io/badge/GitHub-jefeerzhang%2Fstataskills-181717)](https://github.com/jefeerzhang/stataskills)
 
-[![skills.sh: stata-basics](https://skills.sh/b/jefeerzhang/stataskills/stata-basics)](https://skills.sh/jefeerzhang/stataskills/stata-basics)
-[![skills.sh: stata-descriptives](https://skills.sh/b/jefeerzhang/stataskills/stata-descriptives)](https://skills.sh/jefeerzhang/stataskills/stata-descriptives)
-[![skills.sh: stata-regression](https://skills.sh/b/jefeerzhang/stataskills/stata-regression)](https://skills.sh/jefeerzhang/stataskills/stata-regression)
-[![skills.sh: stata-advanced](https://skills.sh/b/jefeerzhang/stataskills/stata-advanced)](https://skills.sh/jefeerzhang/stataskills/stata-advanced)
+[![skills.sh: stata-basics](https://img.shields.io/badge/skills.sh-stata--basics-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-basics)
+[![skills.sh: stata-descriptives](https://img.shields.io/badge/skills.sh-stata--descriptives-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-descriptives)
+[![skills.sh: stata-regression](https://img.shields.io/badge/skills.sh-stata--regression-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-regression)
+[![skills.sh: stata-advanced](https://img.shields.io/badge/skills.sh-stata--advanced-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-advanced)
 
 ## 特性
 
