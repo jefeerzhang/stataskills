@@ -1,0 +1,695 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Single-user 16-core  perpetual
+Serial number: 3851871377
+  Licensed to: jefeerzhang
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do /Users/jefeerzhang/Downloads/stataskills-demo/stataskills-repo/verify/veri
+> fy-did.do 
+
+. version 19.5
+
+. 
+. * ============================================================
+. * stata-did 验证脚本
+. * 覆盖 SKILL.md 核心可执行路径：didregress（重复截面 DID/DDD、
+. * Donald–Lang 聚合、wild bootstrap）/ xtdidregress（面板 DID）/
+. * hdidregress + xthdidregress（异质性 DID、错时处理 cohort）/
+. * estat trendplot / ptrends / granger / bdecomp / atetplot /
+. * aggregation 事后诊断。数据全部本地模拟（set seed 固定），不依赖网络与
+. * 额外 .dta。所有图形命令在批处理模式下静默执行，不导出文件。
+. * ============================================================
+. set more off
+
+. set seed 20260816
+
+. 
+. * ---- 1. 重复截面 DID：didregress（flyer 医院满意度例的结构）----
+. clear
+
+. set obs 24000                          // 2 组 × 12 期 × 1000 人
+Number of observations (_N) was 0, now 24,000.
+
+. gen month    = ceil(_n/2000)           // 1–12
+
+. gen hospital = mod(_n, 2)              // 0/1 两组医院
+
+. gen treat    = (hospital==1 & month>=7)
+
+. gen satis    = 50 + 3*hospital + 0.5*month + 2*treat + rnormal(0, 3)
+
+. 
+. didregress (satis) (treat), group(hospital) time(month)
+
+Treatment and time information
+
+Time variable: month
+Control:       treat = 0
+Treatment:     treat = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+    hospital |         1          1
+-------------+---------------------
+Time         |
+     Minimum |         1          7
+     Maximum |         1          7
+-----------------------------------
+
+Difference-in-differences regression                    Number of obs = 24,000
+Data type: Repeated cross-sectional
+
+                               (Std. err. adjusted for 2 clusters in hospital)
+------------------------------------------------------------------------------
+             |               Robust
+       satis | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   2.010488          .        .       .            .           .
+------------------------------------------------------------------------------
+Note: ATET estimate adjusted for group effects and time effects.
+
+. estat trendplot                        // 平行趋势图（事后）
+
+. 
+. * ---- 2. 三重差分 DDD：group() 放两个组变量 ----
+. * 政策只作用于（处理医院 × 参保患者），处理在两维度组合上变化
+. gen insured = (runiform() < 0.5)       // 第三维度：是否参保
+
+. gen post    = (month >= 7)
+
+. gen treat3  = (hospital==1 & post & insured==1)
+
+. * 重建结局：医院级政策效应 1.0 + 参保者额外效应 1.5
+. gen satis3 = 50 + 3*hospital + 0.5*month + 1*insured ///
+>              + 1.0*(hospital==1 & post) + 1.5*treat3 + rnormal(0, 3)
+
+. 
+. didregress (satis3) (treat3), group(hospital insured) time(month)
+note: 2.month#1.hospital omitted because of collinearity.
+note: 3.month#1.hospital omitted because of collinearity.
+note: 4.month#1.hospital omitted because of collinearity.
+note: 5.month#1.hospital omitted because of collinearity.
+note: 6.month#1.hospital omitted because of collinearity.
+note: 7.month#1.hospital omitted because of collinearity.
+note: 8.month#1.hospital omitted because of collinearity.
+note: 9.month#1.hospital omitted because of collinearity.
+note: 10.month#1.hospital omitted because of collinearity.
+note: 11.month#1.hospital omitted because of collinearity.
+note: 12.month#0b.hospital omitted because of collinearity.
+note: 12.month#1.hospital omitted because of collinearity.
+note: 1.hospital#0b.insured omitted because of collinearity.
+note: 1.hospital#1.insured omitted because of collinearity.
+
+Treatment and time information
+
+Time variable: month
+Control:       treat3 = 0
+Treatment:     treat3 = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+    hospital |         1          1
+     insured |         1          1
+-------------+---------------------
+Time         |
+     Minimum |         1          7
+     Maximum |         1          7
+-----------------------------------
+
+Triple-differences regression                           Number of obs = 24,000
+Data type: Repeated cross-sectional
+
+                               (Std. err. adjusted for 2 clusters in hospital)
+------------------------------------------------------------------------------
+             |               Robust
+      satis3 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+      treat3 |
+   (1 vs 0)  |   1.815303   .0001074  1.7e+04   0.000     1.813939    1.816667
+------------------------------------------------------------------------------
+Note: ATET estimate adjusted for group effects, time effects, and group- and
+      time-effects interactions.
+
+. 
+. * ---- 3. Donald–Lang 聚合：aggregate(dlang) ----
+. didregress (satis) (treat), group(hospital) time(month) aggregate(dlang)
+
+Treatment and time information
+
+Time variable: month
+Control:       treat = 0
+Treatment:     treat = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+    hospital |         1          1
+-------------+---------------------
+Time         |
+     Minimum |         1          7
+     Maximum |         1          7
+-----------------------------------
+
+Difference-in-differences regression                        Number of obs = 24
+Data type:   Repeated cross-sectional
+Aggregation: Donald–Lang
+
+------------------------------------------------------------------------------
+       satis | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   2.010488   .0635454    31.64   0.000     1.870626     2.15035
+------------------------------------------------------------------------------
+Note: ATET estimate adjusted for group effects and time effects.
+
+. 
+. * ---- 4. Wild bootstrap 推断：wildbootstrap ----
+. didregress (satis) (treat), group(hospital) time(month) ///
+>     wildbootstrap(reps(99) rseed(20260816))
+note: for equal-tailed 95% CI, better performance is obtained when
+      .025*reps() is an integer.
+note: setting repetitions to 120.
+
+Performing 120 replications for p-value for constraint
+  treat = 0 ...
+Computing confidence interval for treat
+  Lower bound: .........10.........20.........30.........40.........50.........
+> 60.........70.........80.........90.........100 done (100)
+lower confidence bound not found
+  Upper bound: .........10.........20.........30.........40.........50.........
+> 60.........70.........80.........90.........100 done (100)
+upper confidence bound not found
+Treatment and time information
+
+Time variable: month
+Control:       treat = 0
+Treatment:     treat = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+    hospital |         1          1
+-------------+---------------------
+Time         |
+     Minimum |         1          7
+     Maximum |         1          7
+-----------------------------------
+
+DID with wild-cluster bootstrap inference               Number of obs = 24,000
+                                                        Replications  =    120
+Data type:    Repeated cross-sectional
+Error weight: rademacher
+
+------------------------------------------------------------------
+       satis | Coefficient     t    P>|t|      [.% conf. interval]
+-------------+----------------------------------------------------
+ATET         |
+       treat |
+    (1 vs 0) |   2.010488  2.5e+12  0.000            .           .
+------------------------------------------------------------------
+Note:    .% confidence interval is wider than requested.
+Note: ATET estimate adjusted for group effects and time effects.
+
+. 
+. * ---- 5. 面板 DID：xtdidregress ----
+. clear
+
+. set obs 6000                           // 500 个体 × 12 期
+Number of observations (_N) was 0, now 6,000.
+
+. gen id    = ceil(_n/12)
+
+. gen month = mod(_n-1, 12) + 1
+
+. xtset id month
+
+Panel variable: id (strongly balanced)
+ Time variable: month, 1 to 12
+         Delta: 1 unit
+
+. gen grp   = mod(id, 2)
+
+. gen treat = (grp==1 & month>=7)
+
+. gen x1    = rnormal()
+
+. gen satis = 50 + 3*grp + 0.5*month + 2*treat + 0.8*x1 + rnormal(0, 3)
+
+. 
+. xtdidregress (satis x1) (treat), group(grp) time(month)
+
+Treatment and time information
+
+Time variable: month
+Control:       treat = 0
+Treatment:     treat = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+         grp |         1          1
+-------------+---------------------
+Time         |
+     Minimum |         1          7
+     Maximum |         1          7
+-----------------------------------
+
+Difference-in-differences regression                     Number of obs = 6,000
+Data type: Longitudinal
+
+                                    (Std. err. adjusted for 2 clusters in grp)
+------------------------------------------------------------------------------
+             |               Robust
+       satis | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   1.840188   .0009305  1977.56   0.000     1.828365    1.852012
+------------------------------------------------------------------------------
+Note: ATET estimate adjusted for covariates, panel effects, and time effects.
+
+. estat trendplot                        // 平行趋势图
+
+. estat ptrends                          // 事前平行趋势检验
+
+Parallel-trends test (pretreatment time period)
+H0: Linear trends are parallel
+
+ F(1, 1) = 8.60e+06
+Prob > F =   0.0002
+
+. estat granger                          // Granger 型事前趋势检验
+
+Granger causality test
+H0: No effect in anticipation of treatment
+
+ F(1, 1) = 22395.17
+Prob > F =   0.0043
+
+. 
+. * ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort）----
+. clear
+
+. set obs 7200                           // 600 个体 × 12 期
+Number of observations (_N) was 0, now 7,200.
+
+. gen id     = ceil(_n/12)
+
+. gen month  = mod(_n-1, 12) + 1
+
+. xtset id month
+
+Panel variable: id (strongly balanced)
+ Time variable: month, 1 to 12
+         Delta: 1 unit
+
+. gen cohort = mod(id, 3)                // 0=从未处理，1=第5期起，2=第8期起
+
+. gen treat  = (cohort==1 & month>=5) | (cohort==2 & month>=8)
+
+. gen u      = rnormal(0, 1) if month==1
+(6,600 missing values generated)
+
+. bysort id: replace u = u[1]
+(6600 real changes made)
+
+. gen y      = 10 + month*0.3 + u + ///
+>              (cohort==1)*(month>=5)*(1 + 0.2*(month-5)) + ///
+>              (cohort==2)*(month>=8)*(1.5 + 0.1*(month-8)) + rnormal(0, 1)
+
+. 
+. hdidregress twfe (y) (treat), group(id) time(month)
+note: variable _did_cohort, containing cohort indicators formed by treatment
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
+
+Treatment and time information
+
+Time variable: month
+Time interval: 1 to 12
+Control:       _did_cohort = 0
+Treatment:     _did_cohort > 0
+-------------------------------
+                  | _did_cohort
+------------------+------------
+Number of cohorts |           3
+------------------+------------
+Number of obs     |
+    Never treated |        2400
+                5 |        2400
+                8 |        2400
+-------------------------------
+
+Heterogeneous treatment-effects regression               Number of obs = 7,200
+Data type:       Repeated cross-sectional
+Estimator:       Two-way fixed effects
+Treatment level: id
+Control group:   Never treated
+Heterogeneity:   Cohort and time
+Over:            Cohort
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+Cohort       |       ATET   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+5            |
+       month |
+          5  |    .975033   .0979334     9.96   0.000     .7826984    1.167368
+          6  |   1.145941   .0995778    11.51   0.000     .9503769    1.341505
+          7  |   1.455174   .0912312    15.95   0.000     1.276002    1.634346
+          8  |   1.605519   .1104325    14.54   0.000     1.388637    1.822401
+          9  |   1.751051   .1189045    14.73   0.000     1.517531    1.984572
+         10  |   2.165505   .1073535    20.17   0.000      1.95467     2.37634
+         11  |   2.264172    .105342    21.49   0.000     2.057287    2.471056
+         12  |   2.249852   .1134185    19.84   0.000     2.027106    2.472599
+-------------+----------------------------------------------------------------
+8            |
+       month |
+          8  |   1.510789   .1019827    14.81   0.000     1.310501    1.711076
+          9  |   1.566917   .1113038    14.08   0.000     1.348324     1.78551
+         10  |   1.695169    .098591    17.19   0.000     1.501544    1.888795
+         11  |   1.724633   .1091345    15.80   0.000       1.5103    1.938966
+         12  |   1.764032    .107627    16.39   0.000      1.55266    1.975404
+------------------------------------------------------------------------------
+
+. estat atetplot                         // 各 cohort 的 ATET 图
+
+. estat aggregation                      // 总体聚合（默认 overall）
+
+Overall ATET                                             Number of obs = 7,200
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |       ATET   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       treat |
+   (1 vs 0)  |   1.682599   .0458867    36.67   0.000     1.592481    1.772717
+------------------------------------------------------------------------------
+
+. estat aggregation, cohort              // 按 cohort 聚合
+
+ATET over cohort                                         Number of obs = 7,200
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+      Cohort |       ATET   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           5 |   1.701531    .054374    31.29   0.000     1.594744    1.808318
+           8 |   1.652308   .0570663    28.95   0.000     1.540234    1.764382
+------------------------------------------------------------------------------
+
+. estat aggregation, dynamic             // 按处理暴露期聚合（事件研究）
+
+Duration of exposure ATET                                Number of obs = 7,200
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+    Exposure |       ATET   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           0 |   1.242911    .071386    17.41   0.000     1.102713    1.383108
+           1 |   1.356429   .0758967    17.87   0.000     1.207373    1.505485
+           2 |   1.575172   .0688419    22.88   0.000     1.439971    1.710373
+           3 |   1.665076   .0800677    20.80   0.000     1.507829    1.822324
+           4 |   1.757542   .0844326    20.82   0.000     1.591722    1.923362
+           5 |   2.165505   .1073535    20.17   0.000      1.95467     2.37634
+           6 |   2.264172    .105342    21.49   0.000     2.057287    2.471056
+           7 |   2.249852   .1134185    19.84   0.000     2.027106    2.472599
+------------------------------------------------------------------------------
+Note: Exposure is the number of periods since the first treatment time.
+
+. 
+. * ---- 8. 回归调整估计量：hdidregress ra ----
+. hdidregress ra (y) (treat), group(id) time(month)
+note: variable _did_cohort, containing cohort indicators formed by treatment
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
+
+Computing ATET for each cohort and time:
+Cohort 5 (11): ..........10. done
+Cohort 8 (11): ..........10. done
+
+Treatment and time information
+
+Time variable: month
+Time interval: 1 to 12
+Control:       _did_cohort = 0
+Treatment:     _did_cohort > 0
+-------------------------------
+                  | _did_cohort
+------------------+------------
+Number of cohorts |           3
+------------------+------------
+Number of obs     |
+    Never treated |        2400
+                5 |        2400
+                8 |        2400
+-------------------------------
+
+Heterogeneous treatment-effects regression               Number of obs = 7,200
+Estimator:       Regression adjustment
+Treatment level: id
+Control group:   Never treated
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+Cohort       |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+5            |
+       month |
+          2  |   .0268123    .128306     0.21   0.834    -.2246628    .2782874
+          3  |  -.0321752   .1348555    -0.24   0.811    -.2964872    .2321368
+          4  |   .2112041   .1370069     1.54   0.123    -.0573244    .4797326
+          5  |    .749756   .1403596     5.34   0.000     .4746561    1.024856
+          6  |   .9517562   .1423227     6.69   0.000     .6728089    1.230704
+          7  |   1.309855   .1352956     9.68   0.000     1.044681     1.57503
+          8  |   1.439683   .1364123    10.55   0.000      1.17232    1.707046
+          9  |   1.585215   .1441687    11.00   0.000      1.30265     1.86778
+         10  |   1.999668   .1366798    14.63   0.000     1.731781    2.267556
+         11  |   2.098335   .1282776    16.36   0.000     1.846916    2.349755
+         12  |   2.084016   .1425628    14.62   0.000     1.804598    2.363434
+-------------+----------------------------------------------------------------
+8            |
+       month |
+          2  |  -.1603461   .1406778    -1.14   0.254    -.4360696    .1153774
+          3  |  -.1167079   .1413894    -0.83   0.409     -.393826    .1604102
+          4  |     .06364   .1355704     0.47   0.639    -.2020731    .3293531
+          5  |  -.1018065   .1344534    -0.76   0.449    -.3653303    .1617173
+          6  |   .0621845   .1418774     0.44   0.661    -.2158902    .3402591
+          7  |   .0977322    .147866     0.66   0.509    -.1920798    .3875443
+          8  |   1.469753    .138326    10.63   0.000     1.198639    1.740867
+          9  |   1.525881   .1463403    10.43   0.000      1.23906    1.812703
+         10  |   1.654134   .1371688    12.06   0.000     1.385288     1.92298
+         11  |   1.683598   .1448659    11.62   0.000     1.399666     1.96753
+         12  |   1.722997   .1365368    12.62   0.000     1.455389    1.990604
+------------------------------------------------------------------------------
+Note: Base time for pretreatment ATETs is the previous period.
+
+. estat aggregation, overall
+
+Overall ATET                                             Number of obs = 7,200
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       treat |
+   (1 vs 0)  |   1.559588   .0741828    21.02   0.000     1.414193    1.704984
+------------------------------------------------------------------------------
+Note: Aggregation weights vary across times and cohorts.
+
+. 
+. * ---- 9. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据）----
+. xtset id month
+
+Panel variable: id (strongly balanced)
+ Time variable: month, 1 to 12
+         Delta: 1 unit
+
+. xthdidregress twfe (y) (treat), group(id)
+note: variable _did_cohort, containing cohort indicators formed by treatment
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
+
+Treatment and time information
+
+Time variable: month
+Time interval: 1 to 12
+Control:       _did_cohort = 0
+Treatment:     _did_cohort > 0
+-------------------------------
+                  | _did_cohort
+------------------+------------
+Number of cohorts |           3
+------------------+------------
+Number of obs     |
+    Never treated |        2400
+                5 |        2400
+                8 |        2400
+-------------------------------
+
+Heterogeneous-treatment-effects regression            Number of obs    = 7,200
+                                                      Number of panels =   600
+Estimator:       Two-way fixed effects
+Panel variable:  id
+Treatment level: id
+Control group:   Never treated
+Heterogeneity:   Cohort and time
+Over:            Cohort
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+Cohort       |       ATET   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+5            |
+       month |
+          5  |    .975033   .0979334     9.96   0.000     .7826984    1.167368
+          6  |   1.145941   .0995778    11.51   0.000     .9503769    1.341505
+          7  |   1.455174   .0912312    15.95   0.000     1.276002    1.634346
+          8  |   1.605519   .1104325    14.54   0.000     1.388637    1.822401
+          9  |   1.751051   .1189045    14.73   0.000     1.517531    1.984572
+         10  |   2.165505   .1073535    20.17   0.000      1.95467     2.37634
+         11  |   2.264172    .105342    21.49   0.000     2.057287    2.471056
+         12  |   2.249852   .1134185    19.84   0.000     2.027106    2.472599
+-------------+----------------------------------------------------------------
+8            |
+       month |
+          8  |   1.510789   .1019827    14.81   0.000     1.310501    1.711076
+          9  |   1.566917   .1113038    14.08   0.000     1.348324     1.78551
+         10  |   1.695169    .098591    17.19   0.000     1.501544    1.888795
+         11  |   1.724633   .1091345    15.80   0.000       1.5103    1.938966
+         12  |   1.764032    .107627    16.39   0.000      1.55266    1.975404
+------------------------------------------------------------------------------
+
+. estat atetplot
+
+. estat aggregation, cohort
+
+ATET over cohort                                         Number of obs = 7,200
+
+                                   (Std. err. adjusted for 600 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+      Cohort |       ATET   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           5 |   1.701531    .054374    31.29   0.000     1.594744    1.808318
+           8 |   1.652308   .0570663    28.95   0.000     1.540234    1.764382
+------------------------------------------------------------------------------
+
+. 
+. * ---- 10. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据）----
+. clear
+
+. set obs 4800                           // 4 组医院 × 12 期 × 100 人
+Number of observations (_N) was 0, now 4,800.
+
+. gen month    = ceil(_n/400)
+
+. gen hospital = mod(_n-1, 4)            // 0/1 对照，2 第5期处理，3 第8期处理
+
+. gen treat    = (hospital==2 & month>=5) | (hospital==3 & month>=8)
+
+. gen satis2   = 50 + 3*hospital + 0.5*month + 2*treat + rnormal(0, 3)
+
+. * bdecomp 要求强平衡：收缩到组×期均值（每格一观测）
+. collapse (mean) satis2 treat, by(hospital month)
+
+. 
+. didregress (satis2) (treat), group(hospital) time(month)
+
+Treatment and time information
+
+Time variable: month
+Control:       treat = 0
+Treatment:     treat = 1
+-----------------------------------
+             |   Control  Treatment
+-------------+---------------------
+Group        |
+    hospital |         2          2
+-------------+---------------------
+Time         |
+     Minimum |         1          5
+     Maximum |         1          8
+-----------------------------------
+
+Difference-in-differences regression                        Number of obs = 48
+Data type: Repeated cross-sectional
+
+                               (Std. err. adjusted for 4 clusters in hospital)
+------------------------------------------------------------------------------
+             |               Robust
+      satis2 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   1.819312   .0624403    29.14   0.000     1.620599    2.018025
+------------------------------------------------------------------------------
+Note: ATET estimate adjusted for group effects and time effects.
+Note: Treatment occurs at different times.
+
+. estat bdecomp                          // 处理效应分解（DID/ATT/选择项）
+
+DID treatment-effect decomposition
+
+ATET = 1.819312                                         Number of obs     = 48
+                                                        Number of groups  =  4
+                                                        Number of cohorts =  3
+
+ATET decomposition summary                ATET component                Weight
+------------------------------------------------------------------------------
+Treated vs never treated                       1.8074566              0.832298
+Treated earlier vs later                       1.8306408              0.074534
+Treated later vs earlier                       1.9161552              0.093168
+------------------------------------------------------------------------------
+
+Full ATET decomposition                  2x2 coefficient                Weight
+------------------------------------------------------------------------------
+Treated vs never treated
+  5 vs never treated                           1.7295434              0.397516
+  8 vs never treated                           1.8786915              0.434783
+
+Treated earlier vs later
+  5 vs 8                                       1.8306408              0.074534
+
+Treated later vs earlier
+  8 vs 5                                       1.9161552              0.093168
+------------------------------------------------------------------------------
+Note: Number of cohorts includes never treated.
+Note: The ATET reported by didregress is a weighted average of the ATET
+      components. If any component is substantially different from the ATET
+      reported by didregress and the weight is large, consider accounting for
+      treatment-effect heterogeneity by using hdidregress.
+
+. 
+end of do-file

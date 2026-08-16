@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-# 验证 harness：为 5 个 skill 的验证脚本统一提供
+# 验证 harness：为 6 个 skill 的验证脚本统一提供
 # cd / 版本政策校验 / 批处理执行 / 结果判定 / 汇总。
 #
 # 用法：
-#   bash verify/run-verify.sh            # 全量（五个 skill）
-#   bash verify/run-verify.sh advanced   # 单个（basics/descriptives/regression/advanced/coefplot）
+#   bash verify/run-verify.sh            # 全量（六个 skill）
+#   bash verify/run-verify.sh advanced   # 单个（basics/descriptives/regression/advanced/coefplot/did）
 #   bash verify/run-verify.sh --static   # 静态层（无需 Stata，供 CI 使用）：
 #                                        # 版本政策 + 数据集存在 + manifest 登记
 #                                        # + manifest 与实际 .dta 双向一致性
@@ -72,7 +72,7 @@ MANIFEST="$VERIFY_DIR/../data/manifest.txt"
 if [ $# -ge 1 ]; then
   TARGETS=("verify-$1")
 else
-  TARGETS=(verify-basics verify-descriptives verify-regression verify-advanced verify-coefplot)
+  TARGETS=(verify-basics verify-descriptives verify-regression verify-advanced verify-coefplot verify-did)
 fi
 
 pass=0

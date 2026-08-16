@@ -8,6 +8,12 @@ versioned by Stata compatibility).
 ## [Unreleased]
 
 ### Added
+- feat(skills): 新增 `stata-did` skill，覆盖 Stata 官方 DID 命令族
+  （didregress 重复截面/DDD、xtdidregress 面板、hdidregress/xthdidregress
+  异质性稳健错时处理，及 trendplot/ptrends/granger/aggregation/atetplot/
+  bdecomp 事后诊断），素材源自 Stata 19 官方 DID 宣传单，全部语法经
+  Stata 19.5 实测；配套 `verify/verify-did.do`（全模拟数据，无网络依赖）
+  接入 harness（5/5→6/6）与 README/CITATION 同步。
 - feat(skills): 新增 `stata-coefplot` skill，完整整合 Ben Jann coefplot 官方
   getting-started + estimates / confidence-intervals / labelling / markers /
   varia 六大页面的系数图方法；配套 `verify/verify-coefplot.do`、
