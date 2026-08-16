@@ -78,12 +78,16 @@ if _rc == 0 {
 
 *---- 第 10.6 章：IV + 多维固定效应 ivreghdfe -----------------------
 * 检测 ivreghdfe 三件套是否都装；未装则跳过但 do-file 仍 PASS（与 verify 同款）
+* ivreghdfe 要求工具变量 / FE / cluster 变量互不重叠
 cap which ivreghdfe
 if _rc == 0 {
-    * IV + 单层 FE：mpg 当内生变量，displacement 当工具变量（语法演示；
-    * 经济学上 mpg 与 displacement 高度相关，可作工具）
-    ivreghdfe price weight length (mpg = displacement), absorb(foreign)
+    sysuse auto, clear
+    * IV + 单层 FE：mpg 当内生变量（燃油经济性可能有反向因果），
+    * gear_ratio 当工具变量，foreign 当 FE。auto.dta 上 mpg 与 gear_ratio
+    * 高度相关（语法演示用）
+    ivreghdfe price weight length (mpg = gear_ratio), absorb(foreign)
 
-    * IV + 两向聚类稳健 SE
-    ivreghdfe price weight length (mpg = displacement), absorb(foreign) cluster(foreign)
+    * IV + 异方差稳健 SE（ivreghdfe 用 ivreg2 语法：`robust` 直接选项；
+    * 选项之间是空格分隔，不是逗号）
+    ivreghdfe price weight length (mpg = gear_ratio), absorb(foreign) robust
 }

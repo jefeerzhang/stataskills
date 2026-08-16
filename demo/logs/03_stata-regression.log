@@ -603,16 +603,123 @@ file output/03_reghdfe_resid_compare.png written in PNG format
 . *---- 第 10.6 章：IV + 多维固定效应 ivreghdfe -----------------------
 . * 检测 ivreghdfe 三件套是否都装；未装则跳过但 do-file 仍 PASS（与 verify 同款
 > ）
+. * ivreghdfe 要求工具变量 / FE / cluster 变量互不重叠
 . cap which ivreghdfe
 
 . if _rc == 0 {
-.     * IV + 单层 FE：mpg 当内生变量，displacement 当工具变量（语法演示；
-.     * 经济学上 mpg 与 displacement 高度相关，可作工具）
-.     ivreghdfe price weight length (mpg = displacement), absorb(foreign)
+.     sysuse auto, clear
+(1978 automobile data)
+.     * IV + 单层 FE：mpg 当内生变量（燃油经济性可能有反向因果），
+.     * gear_ratio 当工具变量，foreign 当 FE。auto.dta 上 mpg 与 gear_ratio
+.     * 高度相关（语法演示用）
+.     ivreghdfe price weight length (mpg = gear_ratio), absorb(foreign)
+(MWFE estimator converged in 1 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                                      Number of obs =       74
+                                                      F(  3,    69) =    20.74
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  633558013.5                Centered R2   =   0.3887
+Total (uncentered) SS   =  633558013.5                Uncentered R2 =   0.3887
+Residual SS             =  387280112.3                Root MSE      =     2369
+
+------------------------------------------------------------------------------
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -368.9965   596.4549    -0.62   0.538    -1558.891    820.8986
+      weight |   4.163811   2.835948     1.47   0.147     -1.49375    9.821372
+      length |  -121.9028   62.55864    -1.95   0.055    -246.7038    2.898312
+------------------------------------------------------------------------------
+Underidentification test (Anderson canon. corr. LM statistic):           1.463
+                                                   Chi-sq(1) P-val =    0.2265
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                1.391
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+------------------------------------------------------------------------------
+Sargan statistic (overidentification test of all instruments):           0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         mpg
+Included instruments: weight length
+Excluded instruments: gear_ratio
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     foreign |         2           0           2     |
+-----------------------------------------------------+
 . 
-.     * IV + 两向聚类稳健 SE
-.     ivreghdfe price weight length (mpg = displacement), absorb(foreign) clust
-> er(foreign)
+.     * IV + 异方差稳健 SE（ivreghdfe 用 ivreg2 语法：`robust` 直接选项；
+.     * 选项之间是空格分隔，不是逗号）
+.     ivreghdfe price weight length (mpg = gear_ratio), absorb(foreign) robust
+(MWFE estimator converged in 1 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity
+
+                                                      Number of obs =       74
+                                                      F(  3,    69) =    13.13
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  633558013.5                Centered R2   =   0.3887
+Total (uncentered) SS   =  633558013.5                Uncentered R2 =   0.3887
+Residual SS             =  387280112.3                Root MSE      =     2369
+
+------------------------------------------------------------------------------
+             |               Robust
+       price | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         mpg |  -368.9965   614.7678    -0.60   0.550    -1595.425    857.4317
+      weight |   4.163811   2.706146     1.54   0.128    -1.234803    9.562424
+      length |  -121.9028   87.69318    -1.39   0.169    -296.8459    53.04035
+------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              1.639
+                                                   Chi-sq(1) P-val =    0.2005
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                1.391
+                         (Kleibergen-Paap rk Wald F statistic):          1.555
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         mpg
+Included instruments: weight length
+Excluded instruments: gear_ratio
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     foreign |         2           0           2     |
+-----------------------------------------------------+
 . }
 
 . 
