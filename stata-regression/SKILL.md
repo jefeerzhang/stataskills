@@ -158,6 +158,93 @@ power rsquared 0.30 0.40, power(0.9) ntested(2) ncontrol(3)  // 新增子集
 - 注：书的 `powerreg`（UCLA 包）已随 UCLA 服务器下线；其 `r2f()/r2r()` 参数对应官方
   `power rsquared` 的 delta = R²/(1−R²) 形式（如 r2f(.2) → `power rsquared 0.25, ntested(3) power(0.90)`，实测 N=47）。
 
+## 10.5 高维固定效应：`reghdfe`（扩展，教材未覆盖）
+
+`reghdfe`（Sergio Correia，里士满联储）是处理多维固定效应的 Stata 社区包，
+实现 Correia (2017) 的估计器。它是 `areg` / `xtreg` 的一般化。
+
+### 安装
+```stata
+* 稳定版（5.x，要求 Stata 13.1+）
+ssc install reghdfe
+
+* 开发版（6.x，含最新改进）
+cap ado uninstall reghdfe
+net install reghdfe, from("https://raw.githubusercontent.com/sergiocorreia/reghdfe/master/src/")
+```
+*  配套依赖：`ftools`（高级 Mata 函数）；`parallel`（仅当使用 `parallel()` 选项时）；
+*  IV/GMM 版：`ivreghdfe`（需先装 `ivreg2`）。
+
+### 何时用 `reghdfe` 而非 `regress` / `areg` / `xtreg`
+- 回归里有 2 个及以上固定效应层（如「州 × 年」双向 FE）
+- 固定效应数量多（如几千个企业 × 几十个年份）
+- 需要在 IV / GMM 框架下吸收 FE
+- 需要多向聚类稳健 SE（两向及以上）
+- 即使单层 FE，`reghdfe` 也比 `areg` / `xtreg` 更快
+
+### 基本语法
+```stata
+* OLS + 多个 FE（替代 areg）
+reghdfe depvar indepvars, absorb(fe1 fe2 …)
+
+* IV / GMM（ivregress / ivreg2 语法皆可）
+reghdfe depvar indepvars (endog = iv_vars), absorb(fe1 fe2 …)
+
+* 聚类稳健 SE
+reghdfe depvar indepvars, absorb(fe1 fe2) vce(cluster clustervar)
+reghdfe depvar indepvars, absorb(fe1 fe2) vce(cluster fe1 fe2)    // 两向聚类
+
+* 固定斜率（per-group slope）
+reghdfe depvar indepvars, absorb(fe1) feslope(indepvar fe1)      // fe1 内 in depvar 的斜率不同
+
+* 复用变换缓存（多被解释变量快很多）
+reghdfe depvar1 indepvars, absorb(fe1 fe2) cache
+reghdfe depvar2 indepvars, absorb(fe1 fe2) cache
+```
+
+### 快速示例（auto.dta）
+```stata
+sysuse auto, clear
+* 两层 FE（turn + trunk）+ 聚类到 turn
+reghdfe price weight length, absorb(turn trunk) vce(cluster turn)
+```
+输出关键项：
+- `HDFE Linear regression`（区别于 `regress` 的 `OLS`）
+- `Number of obs`（吸收单点组后）
+- `Absorbing N HDFE groups`（被吸收的 FE 组数）
+- `Within R-sq.`（组内 R²，对组间变异被吸收更可信）
+- `Absorbed degrees of freedom`（被吸收 FE 的 DoF 与冗余数）
+
+### 与 `regress i.fe`（因子变量记法）的选择
+| 维度 | `reghdfe` | `regress i.fe`（因子变量） |
+|---|---|---|
+| FE 数量上限 | 上万（用迭代求解） | 受 Stata 矩阵维度限制（Stata/MP 11 万） |
+| 多层 FE | ✅ 天然支持（多个变量） | 需手动 `i.fe1##i.fe2`（笛卡尔积爆炸） |
+| 固定斜率 | ✅ `feslope()` | ❌（需手工 demean） |
+| 单点组处理 | 自动迭代剔除 | 不处理，会吃掉 DoF |
+| 输出 | HDFE 标记 + Within R² + 吸收表 | 标准 OLS |
+
+### 关键 FAQ（来自 scorreia.com/software/reghdfe）
+- **「fixed effect nested within cluster」自动检测**：当 `vce(cluster)` 的变量是 `absorb()`
+  变量的粗化（如 state–clustered SE + county–level FE），reghdfe 在 DoF 计算中**不再双罚**，
+  不把 county 算进被吸收 DoF。输出会标注 `* fixed effect nested within cluster; treated
+  as redundant for DoF computation`。可用 `dof(none)` / `dof(full)` 关闭。
+- **四个 R²**：报告 `R-sq.`（总）、`Adj R-sq.`（调整总）、`Within R-sq.`（组内，最常报告）。
+  Within R-sq. = 1 − SSR_within / SST_within，剔除 FE 后的解释力。
+- **内存不够**：`compact` 选项让数据更省内存；或用 `keep()` 子样本回归。
+- **跟 `esttab` / `estout` 组合**：`reghdfe` 兼容（`est sto` + `esttab` 直接用）。
+- **观测数随 FE 变化**：reghdfe 处理不了每个 obs FE 数不同时的情况，需先 `egen group = group(...)`。
+
+### 何时不用 reghdfe
+- 只有 1 层 FE 且数量少（< 100）→ `regress i.fe` 或 `areg` 足够
+- 因变量是 0/1 → 用 `xtlogit` / `logit i.fe`（reghdfe 是线性 IV/OLS/GMM）
+- 没有 Stata 网络（reghdfe 需 `ssc install` 联网；离线需手工装）
+
+### 引用
+> Correia, S. (2017). *Linear Models with High-Dimensional Fixed Effects: An Efficient
+> and Feasible Estimator*. Working Paper.
+> http://scorreia.com/research/hdfe.pdf
+
 ## 第 11 章 逻辑回归
 
 ### 为什么用 logistic
