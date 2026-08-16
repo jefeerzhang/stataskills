@@ -8,7 +8,9 @@
 #   bash verify/run-verify.sh advanced   # 单个（basics/descriptives/regression/advanced）
 #
 # 判定标准（与 demo/REPORT.md 一致）：日志恰好一次 "end of do-file"
-# 且无 r(错误码) → PASS；任一失败以非零退出码结束。
+# 且无 Stata 错误码 r(NN) → PASS；任一失败以非零退出码结束。
+# 错误码匹配用 `r\([0-9]{2,}\)`（至少 2 位数字），避免误吃合法命令参数
+# 如 power(0.90) / star(5) 中的 r(...) 子串。
 #
 # 平台二进制路径唯一来源：verify/stata.conf（macOS / Windows 双平台）。
 # ============================================================
@@ -98,7 +100,7 @@ for name in "${TARGETS[@]}"; do
   fi
 
   ends=$(grep -c "end of do-file" "$log")
-  errs=$(grep -c "r([0-9]" "$log")
+  errs=$(grep -cE "r\([0-9]{2,}\)" "$log")
   if [ "$ends" -eq 1 ] && [ "$errs" -eq 0 ]; then
     echo "PASS  ${name}（end of do-file x1，无错误码）"
     pass=$((pass+1))
