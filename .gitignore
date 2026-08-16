@@ -1,7 +1,8 @@
 # Stata 临时日志
 *.smcl
-# 验证运行产生的本地日志副本（正式验证记录在 verify/ 下）
-data/agis6/verify-*.log
+# 数据目录只放数据：验证运行 / 教材 chapter 复现产生的日志一律不入库
+# （正式验证记录在 verify/ 下）
+data/agis6/*.log
 # panelview / fect 安装时复制到 demo/ 的配套数据（net install ... , all replace 会重出）
 demo/simdata.dta
 demo/simdata1.dta
