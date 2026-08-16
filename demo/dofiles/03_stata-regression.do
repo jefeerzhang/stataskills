@@ -75,3 +75,15 @@ if _rc == 0 {
         xtitle("reghdfe residual") ytitle("regress residual")
     graph export "output/03_reghdfe_resid_compare.png", replace
 }
+
+*---- 第 10.6 章：IV + 多维固定效应 ivreghdfe -----------------------
+* 检测 ivreghdfe 三件套是否都装；未装则跳过但 do-file 仍 PASS（与 verify 同款）
+cap which ivreghdfe
+if _rc == 0 {
+    * IV + 单层 FE：mpg 当内生变量，displacement 当工具变量（语法演示；
+    * 经济学上 mpg 与 displacement 高度相关，可作工具）
+    ivreghdfe price weight length (mpg = displacement), absorb(foreign)
+
+    * IV + 两向聚类稳健 SE
+    ivreghdfe price weight length (mpg = displacement), absorb(foreign) cluster(foreign)
+}
