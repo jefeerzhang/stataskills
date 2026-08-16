@@ -403,4 +403,98 @@ concern: 1 |  candidate: 1 yes, 0
            |     45.00      55.00 |    100.00 
 
 . 
+. * ---- ch10.5 高维固定效应 reghdfe ----
+. * 检测 reghdfe 是否安装；未装则跳过但 do-file 仍 PASS（cap 包住不报错）
+. cap which reghdfe
+
+. if _rc == 0 {
+.     use gss2006_chapter9_2way, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+.     * 多维 FE：workfull × married
+.     reghdfe tvhours age, absorb(workfull married)
+(MWFE estimator converged in 3 iterations)
+
+HDFE Linear regression                            Number of obs   =      1,981
+Absorbing 2 HDFE groups                           F(   1,   1977) =      11.56
+                                                  Prob > F        =     0.0007
+                                                  R-squared       =     0.0764
+                                                  Adj R-squared   =     0.0750
+                                                  Within R-sq.    =     0.0058
+                                                  Root MSE        =     2.2002
+
+------------------------------------------------------------------------------
+     tvhours | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |   .0104351   .0030694     3.40   0.001     .0044156    .0164546
+       _cons |   2.444765   .1532447    15.95   0.000     2.144226    2.745303
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+    workfull |         2           0           2     |
+     married |         2           1           1     |
+-----------------------------------------------------+
+.     * 多向聚类稳健 SE
+.     reghdfe tvhours age, absorb(workfull married) vce(cluster workfull marrie
+> d)
+(MWFE estimator converged in 3 iterations)
+Warning: VCV matrix was non-positive semi-definite; adjustment from Cameron, Ge
+> lbach & Miller applied.
+
+HDFE Linear regression                            Number of obs   =      1,981
+Absorbing 2 HDFE groups                           F(   1,      1) =       3.82
+Statistics robust to heteroskedasticity           Prob > F        =     0.3010
+                                                  R-squared       =     0.0764
+                                                  Adj R-squared   =     0.0745
+Number of clusters (workfull) =          2        Within R-sq.    =     0.0058
+Number of clusters (married) =          2         Root MSE        =     2.2007
+
+                       (Std. err. adjusted for 2 clusters in workfull married)
+------------------------------------------------------------------------------
+             |               Robust
+     tvhours | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |   .0104351   .0053367     1.96   0.301    -.0573737    .0782439
+       _cons |   2.444765   .2659218     9.19   0.069    -.9340925    5.823622
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+    workfull |         2           2           0    *|
+     married |         2           2           0    *|
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+.     * 报告 Within R² + 吸收 DoF 表（reghdfe 默认行为）
+.     reghdfe tvhours age, absorb(workfull married) residuals
+(MWFE estimator converged in 3 iterations)
+
+HDFE Linear regression                            Number of obs   =      1,981
+Absorbing 2 HDFE groups                           F(   1,   1977) =      11.56
+                                                  Prob > F        =     0.0007
+                                                  R-squared       =     0.0764
+                                                  Adj R-squared   =     0.0750
+                                                  Within R-sq.    =     0.0058
+                                                  Root MSE        =     2.2002
+
+------------------------------------------------------------------------------
+     tvhours | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |   .0104351   .0030694     3.40   0.001     .0044156    .0164546
+       _cons |   2.444765   .1532447    15.95   0.000     2.144226    2.745303
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+    workfull |         2           0           2     |
+     married |         2           1           1     |
+-----------------------------------------------------+
+. }
+
+. 
 end of do-file
