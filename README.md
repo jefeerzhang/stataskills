@@ -2,6 +2,8 @@
 
 > 把 800 页英文 Stata 教材压成 4 个可被 Agent 调用的中文教学 Skill：basics / descriptives / regression / advanced。
 
+[English summary](#english-summary) | [中文说明](#中文说明)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
 [![Verify](https://img.shields.io/badge/verify-4%2F4%20PASS-brightgreen.svg)](verify/)
@@ -12,22 +14,24 @@
 [![skills.sh: stata-regression](https://skills.sh/b/jefeerzhang/stataskills/stata-regression)](https://skills.sh/jefeerzhang/stataskills/stata-regression)
 [![skills.sh: stata-advanced](https://skills.sh/b/jefeerzhang/stataskills/stata-advanced)](https://skills.sh/jefeerzhang/stataskills/stata-advanced)
 
-## 你什么时候需要它？
+## 特性
 
-- 你是实证研究者（社科 / 经济 / 公共卫生），想用 Stata 但不想读完整本教材
-- 你已经会基础 Stata，想做 ANOVA / 多元回归诊断 / 逻辑回归 / SEM / 多层 / IRT 等进阶分析
-- 你在 Claude Code / Codex / OpenClaw 里跑 Agent，需要让 Agent 自己会写 do-file
-
-## 它会交付什么？
-
-- **4 个独立 SKILL.md**（200–270 行）：完整命令 + 解读逻辑 + 报告惯例 + 8 条 boxed tips
-- **38 个 `.dta` 配套数据集**（AGIS6 完整版，含每章 do-file）
-- **可一行复现的 verify harness**：`bash verify/run-verify.sh` → 当前实测 **4/4 PASS**
-- **5 个 demo do-file + 11 张真实 PNG + 一份完整 REPORT.md**
+- **4 个分章节 Skill**：basics / descriptives / regression / advanced 严格对应教材第 1–16 章 + 附录 A
+- **完整命令 + 解读逻辑 + 报告惯例 + 8 条 boxed tips**，每个 SKILL.md 200 – 270 行
+- **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
+- **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 4/4 PASS
+- **真实 demo** 报告：5 个 do-file + 11 张 PNG + 完整 REPORT.md
+- **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
 
 ![因子分析碎石图](demo/output/04_screeplot.png)
 ![逻辑回归边际效应](demo/output/03_logit_margins.png)
 ![MPG 按产地箱线图](demo/output/02_hbox_mpg_by_foreign.png)
+
+## 你什么时候需要它？
+
+- 你是实证研究者（社科 / 经济 / 公共卫生），想用 Stata 但不想读完整本教材
+- 你已经会基础 Stata，想做 ANOVA / 多元回归诊断 / 逻辑回归 / SEM（结构方程） / 多层 / IRT 等进阶分析
+- 你在 Claude Code / Codex / OpenClaw 里跑 Agent，需要让 Agent 自己会写 do-file
 
 ## 快速开始
 
@@ -43,7 +47,7 @@ bash verify/run-verify.sh
 ## 触发方式
 
 - **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced`
-- **自然语言**："用 Stata 帮我做多元回归诊断" / "演示 factor analysis" / "怎么做 IRT"
+- **自然语言**：「用 Stata 帮我做多元回归诊断」/「演示 factor analysis」/「怎么做 IRT」
 - **路由表**：
 
 | 用户问题 | 路由到 |
@@ -55,11 +59,11 @@ bash verify/run-verify.sh
 
 ## 示例
 
-来自 `demo/REPORT.md` 的真实运行结果（macOS StataNow 19.5 MP）：
+来自 demo/REPORT.md 的真实运行结果（macOS StataNow 19.5 MP）：
 
 | Skill | 关键结果 |
 |---|---|
-| basics | 清洗 auto.dta → 74 obs × 12 vars，`rep78` 5 缺失，保存为 `data/auto_clean.dta` |
+| basics | 清洗 auto.dta → 74 obs × 12 vars，`rep78` 缺失 5，保存为 `data/auto_clean.dta` |
 | descriptives | `rep78 × foreign` χ²(4)=27.26, p<0.001, Cramér's V=0.63 |
 | regression | `price ~ weight + foreign` ANCOVA F=35.35, p<0.001, R²=0.499 |
 | advanced | `factor ... , pcf` 保留 1 因子解释 74.3% 方差 |
@@ -77,13 +81,13 @@ bash verify/run-verify.sh
 | ADR / 架构决策 | ✅ ADR-0001 | ❌ | ❌ |
 | 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
 
-我们不是"又一个 Stata skill"——是**唯一带完整数据 + verify + ADR + demo 的工程化外壳**。
+我们不是「又一个 Stata skill」——是**唯一带完整数据 + verify + ADR + demo 的工程化外壳**。
 
 ## 安全边界
 
 - **默认英文标签作图**：Stata 图形 PostScript 字体不支持中文，会渲染为乱码；需要中文图表时先与用户确认（详见 `docs/run-stata.md`）。
 - **不会自动运行你的数据**：所有命令都在 do-file 里，由你控制何时 `do file.do`。
-- **已下线 UCLA 包标注**：`chitable` / `chi2power` / `powerreg` / `powerlog` 随 UCLA 服务器下线无法联网安装；各 SKILL.md 已标注等价命令（`power twoproportions`、`power rsquared` 等）。
+- **已下线 UCLA 包标注**：`chitable` / `chi2power` / `powerreg` / `powerlog` 随 UCLA 服务器下线无法联网安装；各 SKILL.md 已标注等价命令（如 `power twoproportions`、`power rsquared`）。
 - **教材原文版权**：`book/` 包含 Alan C. Acock《A Gentle Introduction to Stata》(6th ed.) 原文，仅供教学参考，版权归 Stata Press；详见 [LICENSE](LICENSE) 的附加声明段。
 
 ## 文件结构
@@ -129,6 +133,22 @@ bash verify/run-verify.sh advanced  # 单个 skill
 **判定标准**：日志恰好一次 `end of do-file` 且无 `r(错误码)` → PASS。
 当前实测：**4/4 PASS**（`verify/verify-basics.log` 等 4 个 log 均为 `end_of_dofile=1, r_err=0`）。
 
+## 本地开发
+
+修改任何 skill 内容后，重跑 verify 确认 4/4 PASS：
+
+```bash
+bash verify/run-verify.sh
+```
+
+如果改动了命令，需要同步三处（按 ADR-0001 决策）：
+
+- `*/SKILL.md`（教学围栏）
+- `verify/verify-*.do`（验证 harness）
+- `data/agis6/chapter*.do`（教材原文）
+
+详见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 引用本 Skill
 
 见 [CITATION.cff](CITATION.cff)（含 APA / BibTeX）。
@@ -136,6 +156,12 @@ bash verify/run-verify.sh advanced  # 单个 skill
 同时请引用原教材：
 
 > Acock, A. C. (2018). *A Gentle Introduction to Stata* (6th ed.). Stata Press.
+
+## 致谢
+
+- 教材原文：Alan C. Acock《A Gentle Introduction to Stata》(6th ed., Stata Press, 2018)
+- 同类项目参考：[dylantmoore/stata-skill](https://github.com/dylantmoore/stata-skill)、[hanlulong/stata-mcp](https://github.com/hanlulong/stata-mcp)、[codex-stata-for-economists](https://github.com/maxwell2732/codex-stata-for-economists)
+- 教材 → Skill 元流程参考：[Leutenegger/book-to-skill](https://github.com/Leutenegger/book-to-skill)
 
 ---
 
