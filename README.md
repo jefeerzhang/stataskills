@@ -20,12 +20,14 @@
 - **完整命令 + 解读逻辑 + 报告惯例 + 8 条 boxed tips**，每个 SKILL.md 200 – 270 行
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 4/4 PASS
-- **真实 demo** 报告：5 个 do-file + 11 张 PNG + 完整 REPORT.md
+- **真实 demo** 报告：5 个 do-file + 12 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图）
+- **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
 
 ![因子分析碎石图](demo/output/04_screeplot.png)
 ![逻辑回归边际效应](demo/output/03_logit_margins.png)
 ![MPG 按产地箱线图](demo/output/02_hbox_mpg_by_foreign.png)
+![reghdfe 残差与 regress i.fe 残差对比（数学等价性证据）](demo/output/03_reghdfe_resid_compare.png)
 
 ## 你什么时候需要它？
 
@@ -54,7 +56,7 @@ bash verify/run-verify.sh
 |---|---|
 | 录入 / 标签 / 反向编码 / 构建量表 | `stata-basics` |
 | 描述统计 / 交叉表 / t 检验 / 相关 | `stata-descriptives` |
-| ANOVA / 多元回归 / 逻辑回归 / 功效 | `stata-regression` |
+| ANOVA / 多元回归 / 逻辑回归 / 功效 / 多维 FE（reghdfe） | `stata-regression` |
 | 因子 / SEM / 多重插补 / 多层 / IRT | `stata-advanced` |
 
 ## 示例
@@ -77,7 +79,7 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令 + 4/4 PASS 实测 | ❌ | ⚠️ log 验证 |
-| Demo 报告 | ✅ 5 do-file + 11 PNG + REPORT.md | ❌ | ❌ |
+| Demo 报告 | ✅ 5 do-file + 12 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 | ❌ | ❌ |
 | 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
 
@@ -120,7 +122,7 @@ stataskills/
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 5 个 do-file
     ├── logs/                       ← 5 个 Stata log（exit=0）
-    └── output/                     ← 11 张真实 PNG
+    └── output/                     ← 12 张真实 PNG
 ```
 
 ## 验证与测试
@@ -160,6 +162,7 @@ bash verify/run-verify.sh
 ## 致谢
 
 - 教材原文：Alan C. Acock《A Gentle Introduction to Stata》(6th ed., Stata Press, 2018)
+- 高维固定效应：[reghdfe](https://github.com/sergiocorreia/reghdfe)（Sergio Correia，里士满联储；[Correia 2017](http://scorreia.com/research/hdfe.pdf)）
 - 同类项目参考：[dylantmoore/stata-skill](https://github.com/dylantmoore/stata-skill)、[hanlulong/stata-mcp](https://github.com/hanlulong/stata-mcp)、[codex-stata-for-economists](https://github.com/maxwell2732/codex-stata-for-economists)
 - 教材 → Skill 元流程参考：[Leutenegger/book-to-skill](https://github.com/Leutenegger/book-to-skill)
 
@@ -176,7 +179,7 @@ bash verify/run-verify.sh
 | `stata-regression` | 9–11 | ANOVA/ANCOVA, multiple regression, logistic regression, power analysis |
 | `stata-advanced` | 12–16 + App. A | reliability/validity, factor, SEM/GSEM, multiple imputation (mi), multilevel (mixed), IRT |
 
-Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and an 8-item pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (5 do-files + 11 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **4/4 PASS** on StataNow 19.5 MP.
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and an 8-item pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (5 do-files + 12 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **4/4 PASS** on StataNow 19.5 MP.
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
