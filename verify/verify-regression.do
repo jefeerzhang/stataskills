@@ -43,3 +43,17 @@ if _rc == 0 {
     * 报告 Within R² + 吸收 DoF 表（reghdfe 默认行为）
     reghdfe tvhours age, absorb(workfull married) residuals
 }
+
+* ---- ch10.6 IV + 多维固定效应 ivreghdfe ----
+* 检测 ivreghdfe + ivreg2 三件套是否都装；未装则跳过但 do-file 仍 PASS
+cap which ivreghdfe
+if _rc == 0 {
+    use gss2006_chapter9_2way, clear
+    * IV + 单层 FE：workfull 当内生变量，married 当工具变量（语法演示）
+    * 工作变量在 gss2006_chapter9_2way：tvhours（被解释）、age（外生控制）、
+    *   workfull（分类 FE 候选，内生演示用）、married（分类 FE 候选，工具演示用）
+    ivreghdfe tvhours age (workfull = married), absorb(married)
+
+    * IV + 两向聚类稳健 SE
+    ivreghdfe tvhours age (workfull = married), absorb(married) cluster(married)
+}
