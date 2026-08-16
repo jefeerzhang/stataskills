@@ -175,6 +175,95 @@ regress prestg80 hrs1, beta        // beta=标准化系数
   - t = b/SE，df = N−2，报告 `t(2713) = 8.21, p < 0.001`。
 - **外推陷阱**：回归线两端信息少、置信带两端宽；预测范围外（0 小时、140 小时/周）无意义。
 
+## 8.5 面板数据可视化：`panelview`（扩展，教材未覆盖）
+
+`panelview`（Hongyu Mou & Yiqing Xu，Stanford / MIT）是面板数据**预处理可视化**的
+Stata 包。在跑 `reghdfe` / `xtreg` / `mixed` 之前用 panelview 看：
+- 缺失模式（哪些单位/时间点数据不全）
+- 处理状态时序图（treat ON/OFF 在多波的变化）
+- 因变量时序图（按处理状态着色）
+- 处理 × 结果双变量关系（按单位或聚合）
+
+### 安装（4 个依赖 + 主包）
+```stata
+* 依赖（4 个不同来源，按顺序装）
+net install grc1leg, from("http://www.stata.com/users/vwiggins") replace
+net install gr0075,  from("http://www.stata-journal.com/software/sj18-4") replace
+ssc install labutil, replace
+ssc install sencode, replace
+
+* 主包（GitHub master 比 SSC 新；用 yiqingxu.org 镜像）
+cap ado uninstall panelview
+net install panelview, all replace from("https://yiqingxu.org/packages/panelview_stata")
+```
+- Stata 15.1+
+- 备选：`ssc install panelview, all`（SSC 版本可能滞后于 GitHub）
+
+### 何时用 `panelview`（跑多维 FE / 多层模型前必看）
+- **进 `reghdfe` / `mixed` 之前**：看哪些 FE 组合要 drop（避免 NA）
+- **进 DiD / IV / 政策评估之前**：看处理时序（处理是否真正 staggered）
+- **数据清洗**：可视化缺失模式决定 `egen rowmiss(...)` 还是逐变量 listwise
+- **写作图表**：当论文要求"show treatment timing"时直接用
+
+### 4 种 `type`
+| type | 输入 | 输出 | 何时用 |
+|---|---|---|---|
+| `missing` | 任意 varlist | 黑白热图（白=缺失）+ 缺失计数表 | 数据清洗第一步 |
+| `treat` | D [X] | 处理状态时序图（按 D 的水平上色） | 看 treat 时序变 |
+| `outcome` | Y [D X] | 因变量时序图（按 D 着色） | 看 Y 与 D 共变 |
+| `bivariate` | Y D [X] | 双变量散点（按单位/聚合） | 看 Y-D 关系 |
+
+注意：`type` 选项**可选**——不写时按公式自动判断（多变量 → `missing`；只有 D → `treat`；含 Y+D+X → `outcome`）。**显式写 `type()` 更稳**。
+
+### 基本语法
+```stata
+* 必须 i(panelvar) t(timevar)
+panelview varlist, type(...) i(panelid) t(time)
+
+* 例：缺失模式可视化
+panelview Y D X, type(missing) i(id) t(wave)
+
+* 例：处理状态时序图
+panelview D X, type(treat) i(id) t(wave)
+
+* 例：因变量按处理着色
+panelview Y D X, type(outcome) i(id) t(wave)
+
+* 例：处理 × 结果双变量（按单位聚合）
+panelview Y D, type(bivariate) i(id) t(wave)
+```
+
+### 快速示例（longitudinal_mixed.dta reshape long）
+```stata
+use longitudinal_mixed, clear
+keep id drink98 drink00 drink02 drink04 drink06 drink08
+reshape long drink, i(id) j(wave)
+replace drink = . if drink < 0   // -9 表示缺失，先转 Stata 缺失
+
+* 缺失模式
+panelview drink, type(missing) i(id) t(wave)
+
+* 处理状态（drink>=2 当 treat）
+gen treat = (drink >= 2) if drink != .
+panelview treat, type(treat) i(id) t(wave)
+```
+
+### 何时不用 `panelview`
+- **横截面数据**（无 panel id 或 time 维度）→ 用 `inspect` / `codebook` 替代
+- **每个单位只有 1 个观测** → panelview 报 `option t() required`，需人为加 `gen t=1` 但失去 panel 价值
+- **需要正式出版图**（PDF/PNG 矢量控制）→ 用 `twoway` 自定义；panelview 适合探索
+
+### 已知陷阱
+- **超过 500 个单位**：panelview 自动**随机抽 500** 显示；要全看加 `displayall`
+- **处理组别太多**（> 10）：报 `Too many treatment levels; treat as continuous`——自动转连续型，可能不是你想要的
+- **缺失值编码**：必须先把 `-9` / `-8` 等缺失码 `recode` 成 `.`，否则 panelview 当真实值画
+- **大 N + 多 wave**：渲染慢（按单位逐一画线），先 `set seed` 抽样可复现
+
+### 引用
+> Hongyu Mou, Licheng Liu, Yiqing Xu. (2023). *Panel Data Visualization in R (panelView)
+> and Stata (panelview).* Journal of Statistical Software (JSS), 107(7), 1-20.
+> DOI: [10.18637/jss.v107.i07](https://doi.org/10.18637/jss.v107.i07)
+
 ### 相关的功效分析
 ```stata
 power onecorrelation 0 0.20        // H0: r=0 vs Ha: r=0.20，功效 0.80，输出 N
