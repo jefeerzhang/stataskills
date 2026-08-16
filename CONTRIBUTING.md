@@ -30,8 +30,10 @@
 |                       | `verify/verify-{basics,descriptives,regression,advanced,coefplot,did}.do`（可执行验证） |
 |                       | `data/agis6/chapter*.do`（教材原文 primary source） |
 | 新增数据集 | `data/manifest.txt`（**单一来源**）+ `verify/` 检查 |
-| 新增社区包扩展节 | `*/SKILL.md` 加新节 + frontmatter description 加触发词 + `verify/` 加用例 + `demo/` 加段 + README 致谢段 |
+| 新增社区包扩展节 | `*/SKILL.md` 加新节 + frontmatter description 加触发词 + `verify/` 加用例 + `demo/` 加段 + README 致谢段 ¹ |
 | 修改平台二进制路径 | **只能改** `verify/stata.conf`（单一来源）+ `docs/run-stata.md` 说明 |
+
+¹ **demo + README 致谢段可后置**：按 [ADR-0002](docs/adr/0002-demo-as-independent-panorama-layer.md)，demo 是独立的全景层（第 4 层），新增扩展节时可只先做 verify；后续扩展 demo 时需补齐。`verify/check-claims.sh` 的覆盖矩阵断言会持续提醒哪些扩展节尚缺 demo（assertion #8 的 facts 段输出）。
 
 ## 依赖安装
 

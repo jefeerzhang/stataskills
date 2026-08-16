@@ -17,10 +17,11 @@
 #   5. 每份 SKILL.md 含「运行 Stata 的方式」章节标题（独立分发约束）
 #   6. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
 #   7. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
+#   8. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅警告不 FAIL
 #
 # facts（供人工比对，不自动断言）：
 #   - 各 skill 陷阱条目数
-#   - demo↔verify 覆盖矩阵（ADR-0002）
+#   - verify↔demo 覆盖矩阵（verify 无 demo 的 skill 清单，ADR-0002 debt 跟踪）
 #
 # 不检查 README/CITATION 散文里的措辞性计数（散文措辞多变，误报风险高）；
 # 散文数字靠本脚本输出的 facts 供人工比对。
@@ -153,8 +154,13 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   echo "  ${skill_name}: ${pitfall_count} 条"
 done
 
-# ---- facts（ADR-0002 覆盖矩阵）：demo↔verify 覆盖情况 ----
-echo "facts: demo↔verify 覆盖矩阵"
+# ---- 8. demo↔verify 覆盖矩阵（ADR-0002）----
+# ADR-0002 把 demo 定为独立全景层（第四层），不强制每个 skill 同时有 verify + demo，
+# 但允许"扩展节按需补 demo"。缺口（verify/demo 单边）必须显式标记为可接受的 debt，
+# 而非静默通过 CI。此处不覆盖 verify 缺 demo 的语义判定，由
+# docs/adr/0002-demo-as-independent-panorama-layer.md 的"未来再评估"段承担。
+# 本断言的"覆盖"指：每个 demo do-file 必须配 verify 脚本（demo 必有 verify），
+# 而 verify 无 demo 只警告不 FAIL（demo 可后置；CI 不阻塞扩展节）。
 demo_skills=()
 for d in "$REPO_ROOT"/demo/dofiles/*.do; do
   [ -e "$d" ] || continue
@@ -162,22 +168,23 @@ for d in "$REPO_ROOT"/demo/dofiles/*.do; do
   [ -z "$ds" ] && continue
   demo_skills+=("$ds")
 done
-has_gap=0
+# 硬断言：demo 必有 verify（避免 demo 漂移为孤立演示）
+for ds in "${demo_skills[@]}"; do
+  if [ ! -f "$VERIFY_DIR/verify-${ds}.do" ]; then
+    bad "demo→verify 缺配对：demo/${ds} 有 demo do-file 但 verify/verify-${ds}.do 缺失"
+  fi
+done
+# 软警告（不计入 fail）：verify 无 demo 仅 echo，提示 ADR-0002 debt
+echo "facts: verify↔demo 覆盖矩阵（demo 必有 verify；verify 可无 demo，按 ADR-0002）"
 for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   [ -e "$s" ] || continue
   name="$(basename "$(dirname "$s")")"
   name="${name#stata-}"
   if ! printf '%s\n' "${demo_skills[@]}" | grep -qx "$name"; then
-    echo "  ${name}: 有 verify 无 demo"
-    has_gap=1
+    echo "  ${name}: 有 verify 无 demo（ADR-0002 当前允许；扩展 demo 时需补）"
   fi
 done
-for ds in "${demo_skills[@]}"; do
-  if [ ! -f "$VERIFY_DIR/verify-${ds}.do" ]; then
-    echo "  ${ds}: 有 demo 无 verify"
-    has_gap=1
-  fi
-done
-[ "$has_gap" -eq 0 ] && echo "  完全覆盖（每个 skill 均有 verify + demo）"
+# 汇总：所有 demo 都有 verify 即视为覆盖
+ok "demo→verify 配对完整（${#demo_skills[@]} 个 demo do-file 均有 verify 脚本）"
 
 summary

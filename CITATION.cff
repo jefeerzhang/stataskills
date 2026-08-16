@@ -11,7 +11,7 @@ abstract: |-
   plots, stata-did for the official difference-in-differences command family)
   — callable from Claude Code, Codex, OpenClaw and other skill-compatible
   runtimes. Each skill ships with the full chapter-to-command mapping,
-  interpretation logic, reporting conventions, and an 8-item pitfalls
+  interpretation logic, reporting conventions, and a pitfalls
   checklist, plus the 38 .dta datasets needed to reproduce every example.
 version: 0.1.0
 date-released: 2026-08-14

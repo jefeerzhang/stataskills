@@ -52,3 +52,18 @@ demo/ 是第四层，ADR-0001 未覆盖它。demo do-file 注释自称"与 verif
 
 若 demo 需求演变为"公开的 CI 可跑验证"（例如给没有 Stata 的用户在线跑 demo），
 重新评估是否将 demo 合并进 verify 的执行层。
+
+## 已记录的覆盖缺口（debt 跟踪）
+
+按本 ADR 的"覆盖不对称是当前状态，不是目标"原则，下列缺口被显式接受，
+但不视作永久豁免——`verify/check-claims.sh` 的覆盖矩阵断言（assertion #8）
+会在每次 CI 中列出这些 skill 的 verify 无 demo 状态，确保未来扩展 demo 时可补齐：
+
+| skill | 现状 | 触发补 demo 的条件 |
+|---|---|---|
+| `stata-did` | 有 `verify/verify-did.do`（9 节，全模拟数据），无 demo do-file | 教材第 16 章或后续 DID 实践章节需要端到端演示时；或 demo 扩到 ≥7 do-file 时 |
+
+`stata-did` 的 demo 优先级低于 `stata-coefplot`/`stata-basics`/`stata-descriptives`/
+`stata-regression`/`stata-advanced` 这 5 个现有 demo 目标（它们对应教材 16 章切片），
+故暂未排期。补 demo 时需同步：新增 `demo/dofiles/06_stata-did.do` + 对应 `logs/` +
+`output/` PNG + `demo/REPORT.md` 快照范围声明更新 + README 对比表 demo 规模计数。

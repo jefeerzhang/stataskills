@@ -199,7 +199,7 @@ bash verify/run-verify.sh
 | `stata-coefplot` | extension | coefficient plots/forest plots: multi-model comparison, subgraphs, bycoefs, sorting, matrix input, margins/at, recast, cismooth, labelling, markers |
 | `stata-did` | extension | difference-in-differences: didregress (repeated cross-section / DDD), xtdidregress (panel), hdidregress / xthdidregress (heterogeneity-robust, staggered), parallel-trends diagnostics (trendplot / ptrends / granger / aggregation / bdecomp) |
 
-Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and an 8-item pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (6 do-files + 19 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **6/6 PASS** on StataNow 19.5 MP.
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (6 do-files + 19 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **6/6 PASS** on StataNow 19.5 MP.
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
