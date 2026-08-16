@@ -91,3 +91,23 @@ if _rc == 0 {
     * 选项之间是空格分隔，不是逗号）
     ivreghdfe price weight length (mpg = gear_ratio), absorb(foreign) robust
 }
+
+*---- 第 10.7 章：面板因果推断 fect（TWFE 偏差修正） -------
+* 检测 fect + reghdfe + _gwtmean 三件套；未装则跳过但 do-file 仍 PASS
+* simdata1.dta 由 fect 安装时复制到 demo/（net install fect, all replace）
+* 数据：100 处理 + 100 控制 × 35 时段，staggered adoption
+cap which fect
+if _rc == 0 {
+    use simdata1, clear
+
+    * IFE：交互固定效应（Bai 2009），修正 staggered DiD 下 TWFE 负权重偏误
+    fect Y, treat(D) unit(id) time(time) method(ife) ///
+        saving("output/03_fect_ife")
+
+    * ATT 点估计与时序表（e(ATT) + e(ATTs)）
+    display "=== IFE ATT 点估计 ==="
+    matrix list e(ATT)
+
+    * 出图（PNG：Estimated Average Treatment Effect 时序图）
+    graph export "output/03_fect_ife.png", replace
+}
