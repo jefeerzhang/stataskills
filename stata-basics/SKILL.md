@@ -135,10 +135,18 @@ command varlist if/in, options
 ## 关键陷阱速查
 
 1. 漏掉选项前的逗号。
+   **Fix**：选项前永远先写逗号再接 `, option`；do-file 里 grep `^\s*[a-z]\+\s` 找无逗号行。
 2. `==` 与 `=` 混用；`&` 写成 and。
+   **Fix**：用 `==` 表相等、`&` 表与；`=` 仅在 `gen x = ...` 或选项赋值时用。`assert x==1` 是自检利器。
 3. if 条件漏掉 `& 变量 < .`（缺失值被误选）。
+   **Fix**：数值比较的 if 子句全部加 `& var < .`；或先 `mvdecode var, mv(99=.)` 把缺失码转 `.`。
 4. 反向编码前忘了 mvdecode，缺失代码参与算术出错。
+   **Fix**：`mvdecode var, mv(99=.a)` 在反向编码前先跑；用 `tab var, miss` 验证缺失码已合并。
 5. 生成新变量不验证（必须 tabulate 交叉核对）。
+   **Fix**：`assert inrange(newvar, min, max)` 或 `tab old new, miss` 交叉表核对；`codebook newvar` 查分布。
 6. 用算术法反向会丢失缺失原因的区别（.a/.b 都变 `.`），recode/clonevar 保留。
+   **Fix**：缺失码有区别时用 `recode var (1=4) (2=3) (3=2) (4=1) (.a=.a) (.b=.b)` 显式保留；先 `clonevar var_orig = var` 留底。
 7. 变量名 >8 字符显示被截断（如 `educat~n`），只是显示问题。
+   **Fix**：用 `label variable varname "全名"` 给长变量名加标签；导出表格时用 `estimates table, b(%9s)` 或 `outreg2`。
 8. 命令全小写（Stata 区分大小写）。
+   **Fix**：所有命令 lower-case；写完跑 `do myscript.do` 验证——不要依赖 IDE 高亮判断大小写。

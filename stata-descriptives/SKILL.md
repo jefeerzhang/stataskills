@@ -310,10 +310,18 @@ power onecorrelation 0 0.20        // H0: r=0 vs Ha: r=0.20，功效 0.80，输�
 ## 关键陷阱速查
 
 1. p 值报告 `p<0.001`，不写 0.000。
+   **Fix**：写报告/论文时把 `0.000` 全局替换为 `<0.001`；用 `outreg2, pformat(%9.3f)` 或 `estout, cells(b(star fmt(%9.3f)))` 控制输出格式。
 2. 统计显著 ≠ 实质显著：卡方随样本量膨胀、r=0.1 大样本也显著、t 检验任何差异都可能显著——始终结合效应量（φ/V、OR、Cohen's d、R²、β）解读。
+   **Fix**：每个推断必报效应量：`esizetwoway` / `esizei` (Cohen's d) / `tabodds, or` (OR) / `phi` / `V` (Cramer's V)；解读时分"显著+大效应 / 显著+小效应"两档说人话。
 3. sktest 与 sdtest 大样本敏感、小样本迟钝，结合数值与图形判断。
+   **Fix**：先 `histogram x, normal` 叠加正态曲线直观判断；再跑 sktest/swilk；冲突时优先信图形 + Q-Q 图。
 4. `V` 是 Stata 少见的必须大写的选项。
+   **Fix**：写交叉表时永远加 `, chi2 V`；自检：`tab var1 var2, V`（小写 v 会报 unrecognized）。
 5. 比例检验前先把变量 recode 成 0/1。
+   **Fix**：`recode var (1=1) (2=0) (nonmissing=.)` 把分类压成 0/1；用 `tab newvar, miss` 验证编码无误。
 6. 随机数先 `set seed` 保证可复现；`sample ..., count` 无放回、`bsample` 有放回。
+   **Fix**：do-file 头部固定 `set seed 20260816`；自助法用 `bsample`、简单抽样用 `sample 50, count`；蒙特卡洛模拟必带 `set seed`。
 7. 大样本散点图用 binscatter 或 jitter。
+   **Fix**：`ssc install binscatter` → `binscatter y x, n(50)`；或 `twoway (scatter y x, jitter(3))` 加抖动；不要直接画 N>10k 的 raw scatter。
 8. 外部命令安装：`ssc install fre binscatter`（实测可装）；书的 `chitable`/`chi2power`（UCLA 概率表/卡方功效辅助命令）已随 UCLA 服务器下线无法安装，非核心命令；查卡方临界值可用 `display invchi2(df, 0.95)` 替代（如 `invchi2(1, 0.95)` = 3.84）。
+   **Fix**：UCLA 包（chitable/chi2power/powerreg/powerlog）2024 年起下线，安装报错直接放弃；等效命令：`display invchi2(df, p)` 查临界值、`power twoproportions` 算比例检验功效、`power rsquared` 算 R² 功效。

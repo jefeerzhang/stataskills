@@ -681,10 +681,18 @@ nestreg: logistic drank30 (male) (age97) (dinner97 pdrink97)
 ## 关键陷阱速查
 
 1. `anova` 中连续协变量必须 `c.` 前缀，否则按分类处理。
+   **Fix**：`anova y i.group c.age`（连续加 c. 前缀）；自检：`anova y i.group age` 应报"变量 age 重编码为 categorical"——见此提示就改 `c.age`。
 2. 存在显著交互/二次项时：不直接读主效应/线性系数；用 margins+marginsplot 看图；不解释范围外截距。
+   **Fix**：跑 `margins, dydx(*) at(...)` + `marginsplot`；解读只说"在某 X 取值下 Y 的变化"，不说"主效应"；删二次项若不再显著。
 3. pseudo-R² 不是解释方差；OR 不是风险比；多单位 OR 变化要取幂。
+   **Fix**：逻辑回归报 OR 时用 `logit y x, or`；单位变化 >1 时 `display exp(b*X)`；pseudo-R² 仅作样本内拟合参考，**写报告明确写"伪 R²，不与 OLS R² 比较"**。
 4. nestreg 不支持因子变量记法（先 generate 平方项等）。
+   **Fix**：先 `gen x2 = x^2` 显式生成；再用 `nestreg: regress y (x x2)`；不要写 `c.x##c.x` 进 nestreg。
 5. 加权回归自动用稳健 SE；检查 sum of wgt 合理性。
+   **Fix**：跑前 `summarize [aw=weight_var]` 看 sum of wgt 与 N 比值；权重极端时改 `pw` 或归一化。
 6. 不要跨群体比较标准化 β/相关。
+   **Fix**：分组比较只比原始系数 b（标尺相同）或 CI 重叠；标准化 β 仅在同一样本内不同变量间比，**不跨样本/跨组**。
 7. Stata 峰度正态值=3（SAS/SPSS 报减 3 值）。
+   **Fix**：跨软件比较峰度时 `display r(kurtosis) - 3` 转换；解读永远用 Stata 原值。
 8. p 值报告 p<0.001。
+   **Fix**：同 descriptives 第 1 条——`outreg2, pformat(%9.3f)` + 论文正文不用 0.000。

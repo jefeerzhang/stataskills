@@ -1062,15 +1062,25 @@ coefplot (industry_*), keep(grade) asequation swapnames ///
 ## 关键陷阱速查
 
 1. `margins` 必须加 `post`，否则 coefplot 画的还是原模型系数。
+   **Fix**：`margins ..., post` 把边际效应存入 `e(b)` `e(V)`；否则 `coefplot` 只画原模型系数。验证：`estimates restore margins` 后 `coefplot` 应出多系数行。
 2. `eform` 后参考线是 1，不是 0；`xline(0)` 在 OR 图上无意义。
+   **Fix**：OR/Hazard 图用 `xline(1, lpattern(dash))`；用 `coefplot, eform` 时所有选项自动按 OR 轴解读；自检：`di exp(0)` = 1，参考线永远在 1。
 3. `vertical` 后所有 `x`/`y` 选项对调（`yline(0)`、`ytitle`、`ylabel`）。
+   **Fix**：默认横向（系数在 Y 轴）；`coefplot ..., vertical` 改纵向后，标题/坐标轴选项跟着对调。画前脑中过一遍：`xline` 是"垂直线"，`yline` 是"水平线"——转置后互换。
 4. `bycoefs` 后 `headings()`/`groups()` 用整数编号，不是系数名。
+   **Fix**：`coefplot ..., bycoefs headings(1="A" = 2="B")`；先用 `coefplot` 跑一次看系数顺序，再用整数编号。**不能写 `headings(x1="A")`**——会报 invalid numlist。
 5. `byopts(xrescale)` 允许各子图不同刻度；不加时子图共用刻度，系数尺度差异大时会被压缩。
+   **Fix**：系数尺度差异大（如 b1 ∈ [-0.1, 0.1]，b2 ∈ [-10, 10]）必加 `byopts(xrescale)`；否则小系数被压成一条线看不见。
 6. 多模型同名系数会重叠：用 `rename()`、或 `asequation` + `swapnames` 区分。
+   **Fix**：先 `estimates restore m1`，`coefplot ..., rename(_cons=mpg)`；或用 `coefplot (m1, label("Model 1")) (m2, label("Model 2"))` 分模型标注。
 7. `addplot` 必须加 `norescaling`，否则会破坏 coefplot 的坐标轴。
+   **Fix**：`coefplot ..., addplot((scatteri 0 1, norescaling))`；不加 `norescaling` 会把附加图层塞到与主图同坐标系，破坏 y 轴刻度。
 8. 比例/百分比 CI 用 `citype(logit)`，避免置信限越界；画 bar 时用 `citop` 把 CI 放前面。
+   **Fix**：百分比变量（0-100 或 0-1）置信区间易越界，加 `citype(logit)` 把 CI 计算搬到 logit 空间再映射回来；bar 图用 `recast(bar) citop` 让 CI 在柱顶而不是底部。
 9. `mlabels()` 位置参数（1/11/12 等）参考 `help marker_options`；`*` 匹配所有系数。
+   **Fix**：`coefplot ..., mlabels(, format(%9.3f)) mlabpos(12)` —— `mlabpos(12)` 表示标签在 12 点钟方向（上方）；`*` 匹配所有——`coefplot *, mlabels(, format(%9.2f))`。
 10. `coefplot` 默认画第一个方程；多方程模型要 `keep(*:)` 或按方程号选择。
+   **Fix**：`mvreg` / `sureg` 多方程，用 `coefplot ..., keep(eq1:)` 只画第一个方程；或 `keep(eq1: x1 x2)` 选特定系数。
 
 ## 引用
 
