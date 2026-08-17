@@ -22,7 +22,7 @@
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，SKILL.md 行数 144（basics）至 1077（coefplot）
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 6/6 PASS
-- **真实 demo** 报告：6 个 do-file + 19 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图）
+- **真实 demo** 报告：7 个 do-file + 27 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + Bacon 分解图）
 - **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
 
@@ -83,7 +83,7 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令 + 6/6 PASS 实测 | ❌ | ⚠️ log 验证 |
-| Demo 报告 | ✅ 6 do-file + 19 PNG + REPORT.md | ❌ | ❌ |
+| Demo 报告 | ✅ 7 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 | ❌ | ❌ |
 | 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
 
@@ -128,9 +128,9 @@ stataskills/
 │   └── verify-{basics,descriptives,regression,advanced,coefplot,did}.{do,log}
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
-    ├── dofiles/                    ← 6 个 do-file
-    ├── logs/                       ← 6 个 Stata log（exit=0）
-    └── output/                     ← 19 张真实 PNG
+    ├── dofiles/                    ← 7 个 do-file（含 did）
+    ├── logs/                       ← 7 个 Stata log（exit=0）
+    └── output/                     ← 27 张真实 PNG
 ```
 
 ## 验证与测试
@@ -199,7 +199,7 @@ bash verify/run-verify.sh
 | `stata-coefplot` | extension | coefficient plots/forest plots: multi-model comparison, subgraphs, bycoefs, sorting, matrix input, margins/at, recast, cismooth, labelling, markers |
 | `stata-did` | extension | difference-in-differences: didregress (repeated cross-section / DDD), xtdidregress (panel), hdidregress / xthdidregress (heterogeneity-robust, staggered), parallel-trends diagnostics (trendplot / ptrends / granger / aggregation / bdecomp) |
 
-Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (6 do-files + 19 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **6/6 PASS** on StataNow 19.5 MP.
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **6/6 PASS** on StataNow 19.5 MP.
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/

@@ -1,19 +1,15 @@
 # stataskills 技能演示报告（ Demo & 佐证材料）
 
-> 基于 [jefeerzhang/stataskills](https://github.com/jefeerzhang/stataskills) 的 5 个 Stata skill ，
-> 以 Stata 自带 `auto.dta` 为主数据，结合各 skill 完整走一遍「调用 → 写 do-file → 本机 Stata 执行 → 读 log 解读」全流程。
+> 基于 [jefeerzhang/stataskills](https://github.com/jefeerzhang/stataskills) 的 6 个 Stata skill ，
+> 以 Stata 自带 `auto.dta` 为主数据（DID demo 因需要面板结构使用本地模拟数据），
+> 结合各 skill 完整走一遍「调用 → 写 do-file → 本机 Stata 执行 → 读 log 解读」全流程。
 > 本报告可作为该 skills 可用性、可复现性的佐证材料。
-
-> **快照范围声明（2026-08-16）**：本报告是快照，覆盖 demo 演示的前 5 个 skill
-> （basics / descriptives / regression / advanced / coefplot）；正文的「5 个」均指
-> demo 范围。新增的 `stata-did`（第 6 个）未设 demo do-file，其验证见
-> `verify/verify-did.do` / `verify-did.log`。
 
 ---
 
 ## 0. 摘要
 
-本 demo 在一个本地项目中完成了对 **stataskills 仓库 5 个技能** 的端到端验证：
+本 demo 在一个本地项目中完成了对 **stataskills 仓库 6 个技能** 的端到端验证：
 
 | 技能 | 覆盖章节 | 演示内容 | 运行结果 |
 |---|---|---|---|
@@ -22,8 +18,9 @@
 | `stata-regression` | 第 9–11 章 | ANOVA/ANCOVA 、多元回归、诊断、稳健 SE 、交互/二次项、逻辑回归、功效 | ✅ 4 张图 + 全部模型 |
 | `stata-advanced` | 第 12–16 章 + 附录 A | 因子分析、 SEM/GSEM 、多重插补，补充多层模型(mixed)与 IRT | ✅ 2 张图 + 全部模型 |
 | `stata-coefplot` | 扩展（Ben Jann coefplot） | 系数图/森林图：多模型对比、条形图、连续轴预测概率、按系数分面 | ✅ 4 张图 |
+| `stata-did` | 扩展（Stata 19 DID flyer） | didregress（DID/DDD/DLang/wild bootstrap）/ xtdidregress（面板 DID + 平行趋势检验 + Granger）/ hdidregress & xthdidregress（异质性稳健，错时处理 cohort 事件研究）/ Bacon 分解 | ✅ 8 张图 + 全部估计 |
 
-**结论**： 5 个技能的命令均可在本机 **StataNow 19.5 （ MP 版）** 上直接运行， 6 个 do-file 全部以 `exit=0` 结束、日志无致命错误（`end of do-file`，无 `r(错误码)`）。
+**结论**： 6 个技能的命令均可在本机 **StataNow 19.5 （ MP 版）** 上直接运行， 7 个 do-file 全部以 `exit=0` 结束、日志无致命错误（`end of do-file`，无 `r(错误码)`）。
 
 ---
 
@@ -97,25 +94,28 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
 ├── stata-regression/SKILL.md       # skill 3（方差分析 / 回归）
 ├── stata-advanced/SKILL.md         # skill 4（因子 / SEM / 插补 / 多层 / IRT）
 ├── stata-coefplot/SKILL.md         # skill 5（系数图 / 森林图）
+├── stata-did/SKILL.md              # skill 6（DID 命令族：DID/DDD/错时/Bacon 分解）
 ├── data/agis6/                     # 书配套数据（longitudinal_mixed.dta、attitude.dta 等）
 ├── ...（README.md / CLAUDE.md / docs/ / verify/ / book/ / download_data.do 等原有内容）
 └── demo/                           # ← 本 demo，作为 skills 的端到端示例
-    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、19 张 PNG（11 张嵌入））
-    ├── dofiles/                    # 6 个 do-file
+    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、27 张 PNG（19 张嵌入））
+    ├── dofiles/                    # 7 个 do-file
     │   ├── 01_stata-basics.do
     │   ├── 02_stata-descriptives.do
     │   ├── 03_stata-regression.do
     │   ├── 04_stata-advanced.do
-    │   └── 05_stata-advanced-extra.do
-    ├── logs/                       # 6 个 Stata 运行日志（全量输出，exit=0）
+    │   ├── 05_stata-advanced-extra.do
+    │   └── 07_stata-did.do          # DID demo：本地模拟数据（flyer 案例复刻），不依赖外部 .dta
+    ├── logs/                       # 7 个 Stata 运行日志（全量输出，exit=0）
     │   ├── 01_stata-basics.log
     │   ├── 02_stata-descriptives.log
     │   ├── 03_stata-regression.log
     │   ├── 04_stata-advanced.log
-    │   └── 05_stata-advanced-extra.log
+    │   ├── 05_stata-advanced-extra.log
+    │   └── 07_stata-did.log
     ├── data/
     │   └── auto_clean.dta          # basics 技能清洗后的数据
-    └── output/                     # 19 张图（PNG，其中 11 张嵌入在 REPORT.md 各章节）
+    └── output/                     # 27 张图（PNG，其中 19 张嵌入在 REPORT.md 各章节）
         ├── 02_hist_price.png / 02_hist_mpg.png / 02_hbox_mpg_by_foreign.png
         ├── 02_scatter_price_mpg.png
         ├── 02_panelview_missing.png / 02_panelview_treat.png
@@ -125,7 +125,13 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
         ├── 03_fect_ife.png
         ├── 04_screeplot.png
         ├── 05_mixed_margins.png / 05_irt_icc.png
-        └── 06_coefplot_basic.png / 06_coefplot_bar.png / 06_coefplot_at.png / 06_coefplot_bycoefs.png
+        ├── 06_coefplot_basic.png / 06_coefplot_bar.png / 06_coefplot_at.png / 06_coefplot_bycoefs.png
+        ├── 07_trendplot_did.png / 07_xtdidregress_trendplot.png
+        ├── 07_xtdidregress_granger.png
+        ├── 07_hdidregress_atetplot.png
+        ├── 07_hdidregress_agg_cohort.png / 07_hdidregress_agg_dynamic.png
+        ├── 07_xthdidregress_atetplot.png
+        └── 07_bdecomp.png
 ```
 
 ---
@@ -390,12 +396,105 @@ coefplot bivariate multivariate, at recast(line) lwidth(*2) ///
 
 ---
 
+### 5.7 `stata-did` —— 双重差分 DID 命令族（Stata 19 DID flyer）
+
+**技能定位**：用 Stata 内置 DID 命令族做双重差分，覆盖 DID/DDD/错时处理/异质性稳健/Bacon 分解，
+参考 [Stata 19 DID flyer](https://www.stata.com/flyers/did19.pdf) 的命令体系（`didregress` / `xtdidregress` /
+`hdidregress` / `xthdidregress` 及 `estat` 事后诊断）。数据为本地模拟（flyer 案例复刻），不依赖网络与外部 `.dta`。
+
+**演示命令（节选，见 `dofiles/07_stata-did.do`）**：
+
+```stata
+* Part A：重复截面 DID（flyer 第 1 节医院满意度案例）
+clear
+set obs 24000
+gen month    = ceil(_n/2000)
+gen hospital = mod(_n, 2)
+gen treat    = (hospital==1 & month>=7)
+gen satis    = 50 + 3*hospital + 0.5*month + 2*treat + rnormal(0, 3)
+
+didregress (satis) (treat), group(hospital) time(month)
+estat trendplot                       // 平行趋势图
+```
+
+```stata
+* Part B：面板 DID + 事前平行趋势检验 + Granger
+xtset id month
+xtdidregress (satis x1) (treat), group(grp) time(month)
+estat ptrends                         // 事前平行趋势检验
+estat granger                         // Granger 型事前趋势检验
+```
+
+```stata
+* Part C：异质性 DID —— hdidregress twfe + estat aggregation 各维度聚合
+hdidregress twfe (y) (treat), group(id) time(month)
+estat atetplot                        // 各 cohort ATET 图
+estat aggregation, cohort graph       // 按 cohort 聚合
+estat aggregation, dynamic graph      // 事件研究（暴露期）聚合
+```
+
+```stata
+* Part D：Bacon 分解 —— 错时设计下 TWFE 偏误来源诊断
+collapse (mean) satis2 treat, by(hospital month)
+didregress (satis2) (treat), group(hospital) time(month)
+estat bdecomp, graph                  // DID/ATT/选择项分解
+```
+
+**关键统计结果（log 节选）**：
+
+```
+. didregress (satis) (treat), group(hospital) time(month)
+ATET = 2.01   (与 DGP 中真实效应 2.0 一致)
+
+. estat ptrends
+Parallel-trends test (pretreatment time period)
+H0: Linear trends are parallel
+ F(1, 1) = 8.60e+06
+Prob > F =   0.0002                  // 因构造的对照/处理趋势差异极显著，
+                                       真实数据应 p > 0.05 才说明平行趋势成立
+
+. hdidregress twfe (y) (treat), group(id) time(month)
+Overall ATET = 1.68
+
+. estat bdecomp
+Treated vs never treated      1.807   weight 0.832
+Treated earlier vs later      1.831   weight 0.075
+Treated later vs earlier      1.916   weight 0.093
+```
+
+> 注：本 demo 用合成数据演示命令族完整可执行性。在真实应用中
+> `estat ptrends` 的 p 值应 > 0.05 才接受平行趋势原假设，
+> `estat bdecomp` 用来诊断错时下 TWFE 是否被"已处理组当对照"的负权重污染。
+
+**图表**：
+
+![didregress 平行趋势图](output/07_trendplot_did.png)
+
+![xtdidregress 平行趋势图](output/07_xtdidregress_trendplot.png)
+
+![Granger 因果检验图](output/07_xtdidregress_granger.png)
+
+![hdidregress 各 cohort ATET 图](output/07_hdidregress_atetplot.png)
+
+![hdidregress 按 cohort 聚合](output/07_hdidregress_agg_cohort.png)
+
+![hdidregress 事件研究（暴露期）](output/07_hdidregress_agg_dynamic.png)
+
+![xthdidregress 各 cohort ATET 图](output/07_xthdidregress_atetplot.png)
+
+![Bacon 分解](output/07_bdecomp.png)
+
+**产物**：`logs/07_stata-did.log` + `07_*.png`（8 张）
+
+---
+
 ## 6. 结论与佐证价值
 
-1. **可执行**： 5 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
-2. **可复现**： 6 个 do-file + 6 个 log + 19 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
-3. **覆盖完整**： 5 个技能覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
-   （数据管理 → 描述统计 → 回归建模 → 因子/SEM/插补/多层/IRT ）。
+1. **可执行**： 6 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
+2. **可复现**： 7 个 do-file + 7 个 log + 27 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
+3. **覆盖完整**： 5 个核心技能覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
+   （数据管理 → 描述统计 → 回归建模 → 因子/SEM/插补/多层/IRT ）；第 6 个扩展技能 `stata-did` 覆盖 Stata 19 DID flyer
+   的完整命令族（`didregress` / `xtdidregress` / `hdidregress` / `xthdidregress` 及 `estat` 事后诊断）。
 4. **陷阱有效**： skill 中的"陷阱清单"在 demo 中真实发挥作用（如值标签重复定义 r(110)、因子只保留 1 个导致 `predict f2` 失败），
    证明这些 boxed tips 不是空谈，而是来自真实运行经验的可用护栏。
 
@@ -415,12 +514,17 @@ $STATA -b do dofiles/02_stata-descriptives.do
 $STATA -b do dofiles/03_stata-regression.do
 $STATA -b do dofiles/04_stata-advanced.do
 $STATA -b do dofiles/05_stata-advanced-extra.do   # 05 依赖 ../data/agis6/（仓库根目录的 data/agis6/）
+$STATA -b do dofiles/06_stata-coefplot.do
+$STATA -b do dofiles/07_stata-did.do              # DID demo（本地模拟数据，不依赖外部 .dta）
 ```
+
+> 注：05 拆自 advanced（多层模型 + IRT），07 是新增的 DID demo；06 与 07 之间未编号的 `06` 槽位对应 `stata-coefplot`。
 
 ## 附录 B ：数据说明
 
 - `auto.dta`： Stata 自带 1978 汽车数据（ 74 obs ），变量含 `make price mpg rep78 headroom trunk weight length turn displacement gear_ratio foreign`。
 - `data/agis6/`：书配套数据（ 38 个 `.dta` + 每章 do/log ），用于 ch15 多层、 ch16 IRT 及全 16 章验证。
+- `dofiles/07_stata-did.do`：使用本地模拟数据（flyer 案例复刻），不依赖网络与外部 `.dta`，`set seed 20260816` 保证可复现。
 
 ---
 
