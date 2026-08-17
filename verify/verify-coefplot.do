@@ -197,7 +197,12 @@ coefplot rep*, drop(_cons) xline(0) ///
     p3(pstyle(p5) label("Rep=5"))
 
 * ---- 17. 系数匹配：eqstrict / asequation / noeqlabels / rename ----
-webuse laborsub, clear
+* laborsub 是 StataCorp 官方 webuse 库数据集（已婚妇女工时与工资子样本，
+* N=250，字段 lfp whrs kl6 k618 wa we），原示例用 webuse laborsub。
+* 为支持离线 / 网络受限环境验证，本仓库在 data/webuse/ 维护本地副本
+* （来源 https://www.stata-press.com/data/r16/laborsub.dta，3501 字节，
+* 字节校验脚本 data/webuse/download_laborsub.sh）。详见 ADR-0003。
+use "../webuse/laborsub.dta", clear
 regress whrs kl6 k618 wa we
 estimates store regress
 tobit whrs kl6 k618 wa we, ll(0)
