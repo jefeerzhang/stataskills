@@ -18,6 +18,7 @@
 #   6. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
 #   7. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
 #   8. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅警告不 FAIL
+#   10. README 硬编码计数与文件系统事实一致性（skill/dta/PNG/dofile/prompt 数）
 #
 # facts（供人工比对，不自动断言）：
 #   - 各 skill 陷阱条目数
@@ -227,6 +228,53 @@ print(f"覆盖详情：{len(d['prompts'])} 条 prompt 含 {len(covered)} 个 ski
 PY
     ok "test-prompts.json 覆盖全部 6 个 skill（python3 详情见 stderr）"
   } || bad "test-prompts.json 未覆盖全部 skill：见 stderr"
+fi
+
+# ---- 10. README 硬编码计数与文件系统事实一致性 ----
+# 提取 README 中的数字声明，与 facts 比对。模式：
+#   "N 个 Skill" / "N 个 skill" / "N 个数据集" / "N .dta" / "N 张 demo PNG"
+#   "N do-file" / "N 个 do-file" / "N 条 Agent" / "N 条 prompt"
+README="$REPO_ROOT/README.md"
+if [ ! -f "$README" ]; then
+  bad "README.md 缺失（无法校验硬编码计数）"
+else
+  readme_drift=""
+
+  # skill 计数（匹配 "6 个 Skill" / "6 个 skill" / "6 个 skills"）
+  readme_skills=$(grep -oE '[0-9]+ 个 [Ss]kill[s]?' "$README" | head -1 | grep -oE '^[0-9]+')
+  if [ -n "$readme_skills" ] && [ "$readme_skills" -ne "$N_SKILLS" ]; then
+    readme_drift="${readme_drift} skill 计数：README 写 ${readme_skills}，实际 ${N_SKILLS};"
+  fi
+
+  # 数据集计数（匹配 "38 个数据集" / "38 .dta"）
+  readme_dta=$(grep -oE '[0-9]+ (个数据集|\.dta)' "$README" | head -1 | grep -oE '^[0-9]+')
+  if [ -n "$readme_dta" ] && [ "$readme_dta" -ne "$N_DTA" ]; then
+    readme_drift="${readme_drift} 数据集计数：README 写 ${readme_dta}，实际 ${N_DTA};"
+  fi
+
+  # demo PNG 计数（匹配 "27 张 demo PNG" / "27 张 PNG"）
+  readme_png=$(grep -oE '[0-9]+ 张 (demo )?PNG' "$README" | head -1 | grep -oE '^[0-9]+')
+  if [ -n "$readme_png" ] && [ "$readme_png" -ne "$N_DEMO_PNG" ]; then
+    readme_drift="${readme_drift} demo PNG 计数：README 写 ${readme_png}，实际 ${N_DEMO_PNG};"
+  fi
+
+  # demo do-file 计数（匹配 "7 do-file" / "7 个 do-file"）
+  readme_dofiles=$(grep -oE '[0-9]+ (个 )?do-file' "$README" | head -1 | grep -oE '^[0-9]+')
+  if [ -n "$readme_dofiles" ] && [ "$readme_dofiles" -ne "$N_DEMO_DO" ]; then
+    readme_drift="${readme_drift} demo do-file 计数：README 写 ${readme_dofiles}，实际 ${N_DEMO_DO};"
+  fi
+
+  # Agent 行为回归 prompt 计数（匹配 "8 条 Agent" / "8 条 prompt"）
+  readme_prompts=$(grep -oE '[0-9]+ 条 (Agent|prompt)' "$README" | head -1 | grep -oE '^[0-9]+')
+  if [ -n "$readme_prompts" ] && [ -n "${N_PROMPTS:-}" ] && [ "$readme_prompts" -ne "$N_PROMPTS" ]; then
+    readme_drift="${readme_drift} prompt 计数：README 写 ${readme_prompts}，实际 ${N_PROMPTS};"
+  fi
+
+  if [ -n "$readme_drift" ]; then
+    bad "README 硬编码计数漂移（${readme_drift}）"
+  else
+    ok "README 硬编码计数与文件系统事实一致"
+  fi
 fi
 
 summary
