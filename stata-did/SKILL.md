@@ -182,7 +182,11 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
    - `hdidregress aipw`——双重稳健，能在趋势差异存在时给出一致估计
    - `xthdidregress aipw`（面板版）
    - **不要简单地加更多控制变量**——这是过度反应，且会引入 bad control
-5. **报告与解释**：在论文里诚实报告平行趋势假设被拒，给出**视觉证据 + 协变量敏感性 + 异质性估计的对照三角化**；不应隐藏或回避。
+5. **跑 Honest DiD 敏感性分析**（Rambachan & Roth 2023）：
+   - 安装：`ssc install honestdid`（社区包，Stata 内置无）
+   - 跑：`honestdid, m(0)` 与 `honestdid, m(0.5)`——报告 PT 违反幅度 ≤ 0.5 SD 下的稳健 CI 上界
+   - 这是审稿人最常要求的稳健性检查；缺失等于"只信主估计"
+6. **报告与解释**：在论文里诚实报告平行趋势假设被拒，给出**视觉证据 + 协变量敏感性 + 异质性估计 + Honest DiD 上下界的对照三角化**；不应隐藏或回避。
 
 **关键提醒**：平行趋势被拒 ≠ DID 估计一定错，但意味着"因果解读"需要更强论证。
 
@@ -230,7 +234,130 @@ Stata 内置的 `hdidregress` 不是唯一选择；社区有三个主流替代�
 - **Sun & Abraham (2021)** "Estimating dynamic treatment effects in event studies with heterogeneous treatment effects." *Journal of Econometrics* 225(2): 200-230. — `eventstudyinteract` 的理论基础。
 - **Bertrand, Duflo & Mullainathan (2004)** "How much should we trust differences-in-differences estimates?" *QJE* 119(1): 249-275. — DID 推断问题的奠基讨论（cluster SE、必要聚类数等）。
 - **Roth, Sant'Anna, Bilinski & Poe (2022)** "What's Trending in Difference-in-Differences? A Synthesis of the Recent Econometrics Literature." — 错时 DID 的最新综述。
+- **Baker et al. (2025)** "How Practice Meets Theory in DiD: An 8-Step Practitioner's Workflow." — [diff-diff 仓库](https://github.com/igerber/diff-diff) 提炼的实操工作流，详见第 15 章。
+- **Rambachan & Roth (2023)** "A More Credible Approach to Parallel Trends." *Review of Economic Studies*. — Honest DiD（平行趋势违反下的稳健 CI），详见第 11 节第 4 步。
 - **Princeton DSS 教程**：https://libguides.princeton.edu/stata-did — 本节 wdipol.dta 案例数据来源（实操模板）。
+
+## 15. 8 步 practitioner 工作流（Baker et al. 2025）
+
+跳过诊断步骤 = 不可靠结论。以下 8 步是 `igerber/diff-diff` 项目从学术最佳实践中凝练的工作流，**全部 8 步都能在 Stata + stataskills did 内执行**——`diff-diff` 只是把流程命名约定化了，Stata 生态每个命令都能映射。
+
+### 步骤 1 — 定义目标参数
+
+明确你要估计什么：
+
+| 目标参数 | Stata 估计量 |
+|---|---|
+| ATT（平均处理效应） | `didregress` / `xtdidregress` |
+| ATT(g, t)（cohort × 时期） | `hdidregress` + `estat aggregation, cohort` |
+| ATT_es(e)（事件研究） | `hdidregress` + `estat aggregation, dynamic` |
+
+明说是否加权（绝大多数情况下未加权；survey 数据见 [Roth et al. 2023](https://www.nber.org/papers/w31203)）。
+
+### 步骤 2 — 陈述识别假设
+
+至少明说三种：
+
+- **平行趋势**（哪种变体？无条件的 / conditional on covariates / PT-GT-Nev / PT-GT-NYT）— 详见 Roth et al. (2022) § 3.1。
+- **无预期**（no anticipation）：处理前一期，处理组不改变行为。
+- **重叠**（overlap）：处理组与对照组在协变量分布上有共同支撑。
+
+### 步骤 3 — 测试平行趋势
+
+```stata
+didregress (y) (treat), group(id) time(t)
+estat ptrends                          // 数字检验（注意 staggered 时此检验不可靠）
+estat trendplot                        // 图形诊断
+```
+
+**关键提醒**（来自 Roth 2022）：
+- simple 2x2：`estat ptrends` 的 p > 0.05 是必要不充分条件。
+- staggered：`estat ptrends` 失效，必须看 CS / SA 事件研究的 pre-period 系数。
+- **不显著的 pre-trends 不证明 PT 成立**——只是没证据拒它。
+
+### 步骤 4 — 选估计量
+
+| 设计特征 | 推荐估计量 | Stata 命令 |
+|---|---|---|
+| simple 2x2 | DiD / TWFE | `didregress` / `xtdidregress` |
+| staggered adoption | CS / SA / BJS（**不是** plain TWFE） | `hdidregress aipw` / `xthdidregress aipw` |
+| 少数处理单元 | Synthetic DiD | `ssc install synthdid` |
+| 复杂共同因子 | TROP | `ssc install trop` |
+| 内生选择 + 因子 | TROP / Imputation | 社区包 |
+
+跑前先用 `estat bdecomp`（错时）或 `reghdfe`（手动 TWFE）诊断 TWFE 偏误大小。
+
+### 步骤 5 — 估计并核对聚类数
+
+```stata
+xtdidregress (y x1 x2) (treat), group(id) time(t) vce(cluster id)
+* 或：didregress (y x1 x2) (treat), group(id) time(t) wildbootstrap(reps(99) rseed(...))
+```
+
+**先打印 cluster 数**：
+
+```stata
+levelsof id, local(ids)
+display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-robust；< 50 改 wildbootstrap / DLang
+```
+
+规则（Bertrand et al. 2004）：聚类数 < 50 → wild bootstrap 或 `aggregate(dlang)`；≥ 50 → 默认 cluster-robust SE。
+
+### 步骤 6 — 敏感性分析
+
+不能只报主估计。必报：
+
+- **Honest DiD**（Rambachan & Roth 2023）——平行趋势假设可能违反时的稳健 CI 上界：
+
+  ```stata
+  * 需要 ssc install honestdid（社区包）
+  didregress (y) (treat), group(id) time(t)
+  honestdid, m(0)         // M=0 表示允许 PT 违反的大小为 0（即原 PT 成立）
+  honestdid, m(0.5)       // M=0.5 允许 PT 违反幅度 ≤ 0.5 SD（更宽松）
+  ```
+
+  报告 `M=0` 与 `M=0.5` 下的稳健 CI——这是审稿人最爱要的稳健性检查。
+- **Placebo tests**（虚假检验）：用未受处理的时间窗口做"伪政策"分析，看系数是否接近零。
+- **协变量敏感性**：带 vs 不带协变量两套结果对比，说明识别是否由条件分布驱动。
+
+### 步骤 7 — 异质性
+
+```stata
+hdidregress aipw (y x1) (treat), group(id) time(t)
+
+* 按 cohort 聚合（处理在哪一年入场）
+estat aggregation, cohort graph
+
+* 按事件研究聚合（暴露期长度）
+estat aggregation, dynamic graph
+```
+
+**不要只报单一 ATT**——不同 cohort 的处理效应可能差异巨大（异质性处理效应是错时 DID 偏误的根源）。
+
+### 步骤 8 — 稳健性
+
+至少跑 2-3 个估计量对照：
+
+- `didregress`（TWFE）vs `hdidregress aipw`（双重稳健）vs `csdid`（CS 估计量）
+- 报"带协变量"与"不带协变量"两套结果
+- 报 pre-trends 与稳健 CI 上下界
+
+在论文里把这些数字放进一个对比表，让读者看估计量的稳定范围——单一估计量不可信。
+
+### 工作流总结
+
+| 步 | 输出 |
+|---|---|
+| 1 | 目标参数定义 |
+| 2 | 假设明文化 |
+| 3 | 平行趋势检验 + 图 |
+| 4 | 估计量选择（含 TWFE 偏误诊断） |
+| 5 | 估计结果 + 聚类数核对 |
+| 6 | Honest DiD + placebo + 协变量敏感性 |
+| 7 | 异质性（cohort × event-time） |
+| 8 | 多估计量稳健性对照 |
+
+> **关键提醒**：`igerber/diff-diff` 的 `get_llm_guide("practitioner")` 返回该工作流的 Python API 映射——可直接喂给 AI Agent 做 DID 自动化分析；Stata 用户可手按此 8 步操作。
 
 ## 事后命令速查
 
