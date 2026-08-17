@@ -29,7 +29,7 @@
 #   `--community` 模式下，这种"跳过"会被识别为 BAD（通过 sentinel 字符串
 #   `__COMMUNITY_PACKAGE_MISSING__<pkg>__` 传递）。意图是：默认模式让
 #   CI 不被网络/装包绑定，--community 模式让本地"我想真正验证社区包章节"
-#   的需求显式可执行。详见 docs/adr/（待写：ADR-0003）。
+#   的需求显式可执行。详见 docs/adr/0003-community-packages-as-first-class-verifiable-subjects.md。
 #
 # 平台二进制路径唯一来源：verify/stata.conf（macOS / Windows 双平台）。
 # ============================================================

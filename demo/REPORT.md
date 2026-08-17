@@ -105,6 +105,7 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
     │   ├── 03_stata-regression.do
     │   ├── 04_stata-advanced.do
     │   ├── 05_stata-advanced-extra.do
+    │   ├── 06_stata-coefplot.do     # coefplot demo：多模型系数图/森林图
     │   └── 07_stata-did.do          # DID demo：本地模拟数据（flyer 案例复刻），不依赖外部 .dta
     ├── logs/                       # 7 个 Stata 运行日志（全量输出，exit=0）
     │   ├── 01_stata-basics.log
@@ -112,6 +113,7 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
     │   ├── 03_stata-regression.log
     │   ├── 04_stata-advanced.log
     │   ├── 05_stata-advanced-extra.log
+    │   ├── 06_stata-coefplot.log
     │   └── 07_stata-did.log
     ├── data/
     │   └── auto_clean.dta          # basics 技能清洗后的数据
