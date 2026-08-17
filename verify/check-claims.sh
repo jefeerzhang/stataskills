@@ -44,7 +44,7 @@ count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
 
 # ---- facts：文件系统真相 ----
 N_SKILLS=$(count "$REPO_ROOT"/stata-*/SKILL.md)
-N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # 探针 zz* 在下方单独排除
+N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # zz 探针与 verify-synth-sdid 在下方排除
 N_DTA=$(count "$REPO_ROOT"/data/agis6/*.dta)
 N_MANIFEST=$(grep -cE '^[^#[:space:]]' "$REPO_ROOT/data/manifest.txt")
 N_DEMO_DO=$(count "$REPO_ROOT"/demo/dofiles/*.do)
@@ -53,16 +53,18 @@ N_DEMO_PNG=$(count "$REPO_ROOT"/demo/output/*.png)
 
 echo "facts: skills=${N_SKILLS} verify=${N_VERIFY} dta=${N_DTA} manifest=${N_MANIFEST} demo_do=${N_DEMO_DO} demo_log=${N_DEMO_LOG} demo_png=${N_DEMO_PNG}"
 
-# ---- 1. skill ↔ verify 脚本一一对应（排除 test-harness 的 zz 探针）----
+# ---- 1. skill ↔ verify 脚本一一对应（排除 test-harness 的 zz 探针与
+#      did 的社区包附加脚本 verify-synth-sdid.do——后者验证 stata-did
+#      第 14–15 节合成控制章节，不构成独立 skill）----
 N_VERIFY_REAL=0
 for d in "$REPO_ROOT"/verify/verify-*.do; do
   [ -e "$d" ] || continue
   b="$(basename "$d" .do)"
-  case "$b" in verify-zz*) continue ;; esac
+  case "$b" in verify-zz*|verify-synth-sdid) continue ;; esac
   N_VERIFY_REAL=$((N_VERIFY_REAL+1))
 done
 if [ "$N_VERIFY_REAL" -eq "$N_SKILLS" ]; then
-  ok "skill 数（${N_SKILLS}）与 verify-*.do 数（${N_VERIFY_REAL}，排除 zz 探针）一致"
+  ok "skill 数（${N_SKILLS}）与 verify-*.do 数（${N_VERIFY_REAL}，排除 zz 探针与 verify-synth-sdid）一致"
 else
   bad "skill 数（${N_SKILLS}）≠ verify-*.do 数（${N_VERIFY_REAL}）：加 skill 须配 verify 脚本"
 fi
