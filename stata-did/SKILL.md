@@ -1,6 +1,6 @@
 ---
 name: stata-did
-description: 帮助用户用 Stata 内置 DID 命令族做双重差分分析。Use when needing 政策评估 / 双重差分 / DID / DiD / difference-in-differences / 平行趋势检验 / 事件研究 / 错时处理 staggered DID / 三重差分 DDD / 异质性处理效应 / ATET 估计 / wild bootstrap 推断。覆盖 didregress（重复截面）、xtdidregress（面板）、hdidregress / xthdidregress（异质性稳健）四个估计命令与 trendplot / ptrends / granger / aggregation / atetplot / bdecomp 事后诊断。全部为 Stata 17/18+ 内置命令，无需安装；示例语法经 Stata 19.5 实测可复现（verify/verify-did.do）。
+description: 帮助用户用 Stata 内置 DID 命令族做双重差分分析。Use when needing 政策评估 / 双重差分 / DID / DiD / difference-in-differences / 平行趋势检验 / 事件研究 / 错时处理 staggered DID / 三重差分 DDD / 异质性处理效应 / ATET 估计 / wild bootstrap 推断 / 经典手工 DID（xtreg + 交互项）/ 字符串组变量 encode / 手工平行趋势图 / 平行趋势假设被拒的应对 / reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令。覆盖 didregress（重复截面）、xtdidregress（面板）、hdidregress / xthdidregress（异质性稳健）四个估计命令与 trendplot / ptrends / granger / aggregation / atetplot / bdecomp 事后诊断；附 Princeton DSS 教程案例的应对流程。全部为 Stata 17/18+ 内置命令，无需安装；示例语法经 Stata 19.5 实测可复现（verify/verify-did.do）。
 ---
 
 # Stata 双重差分：didregress 命令族（DID / DDD / 错时处理）
@@ -118,6 +118,120 @@ didregress (y) (treat), group(group) time(time)
 estat bdecomp                          // DID / ATT / 选择项分解
 ```
 
+## 8. 经典手工 DID：`xtreg` + 交互项（Stata < 17 时代脉络）
+
+Stata 17+ 的 `didregress`/`xtdidregress` 自动吸收组与时间固定效应并报告 ATET；Stata 17 之前没有这条官方路径，研究者手工构造"处理 × 事后"交互项并用 `xtreg` 跑。这一节保留这条历史脉络，方便阅读老论文与迁移到 `xtdidregress`。
+
+```stata
+* 1. 生成交互项：treat_post = treated × post
+gen post    = (year >= 2000)
+gen treated = (condlist)              // 1 = 处理组，0 = 对照组
+gen treat_post = treated * post
+
+* 2. 跑双向固定效应面板回归（处理 + 年固定效应）
+xtreg trade treat_post i.year, fe vce(cluster id)
+```
+
+`treat_post` 的系数就是 DID 估计量；`i.year` 吸收年固定效应；`fe` 吸收个体固定效应；`vce(cluster id)` 在个体层聚类稳健 SE。这与 `xtdidregress (y) (treat_post), group(id) time(year)` 在代数上等价——后者只是把同样的估计写成声明式接口。
+
+## 9. 组变量预处理：`encode` 把字符串变数值
+
+`xtset` 只接受数值型组变量；如果原始数据组变量是字符串（如 country = "Australia"），必须先 `encode`：
+
+```stata
+xtset country year
+* → "country is string variable; cannot be xtset"
+
+encode country, gen(country_id)        // country_id 是 1..N 的整数 + 同名值标签
+xtset country_id year                  // 现在 OK
+xtdidregress (y) (treat), group(country_id) time(year)
+```
+
+**Fix**：`encode` 创建的新变量带值标签，所以 `tab country_id` 仍能看到原国家名；不要把 `country` 原变量与 `country_id` 混用。
+
+## 10. 手工平行趋势图：`bysort` + `twoway line`
+
+不依赖 `didregress` / `xtdidregress`，任何面板数据都能画——这在探索阶段（还没决定估计量）或跑 `reghdfe`/`csdid` 后很有用：
+
+```stata
+* 1. 收缩到 (年 × 组) 均值
+bysort year treated: egen mean_y = mean(y)
+
+* 2. 双线图（实线对照 + 虚线处理）+ 政策年参考线
+twoway line mean_y year if treated==0, sort lpattern(solid) ///
+   || line mean_y year if treated==1, sort lpattern(dash) ///
+   || xline(2000, lpattern(dot))                      ///
+   legend(label(1 "Control") label(2 "Treated"))    ///
+   title("Pre/Post trend (manual, any data)")        ///
+   scheme(s1mono)
+graph export "output/pre_post_trend_manual.png", replace
+```
+
+**Fix**：先 `bysort year treated: egen mean_y = mean(y)` 才会出现两条线，否则散点太密；`sort` 选项让线按 x 轴排序；`xline(政策年)` 是判断平行趋势假设的视觉锚点。
+
+## 11. 真实案例：平行趋势假设被拒时的应对
+
+Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), group(country) time(year)` 后跑 `estat ptrends` 报 p=0.003——明确拒绝平行趋势原假设。
+
+**这种时候标准做法**（按优先级）：
+
+1. **看平行趋势图**：`estat trendplot`（或上面的手工 line 图）——判断是"处理前趋势本身就不平行"还是"预处理期太短/数据噪音大"。
+2. **检查政策时间线**：是不是真的有"同期对照"？会不会某对照国其实在那段时间也有政策影响？通常需重读文献。
+3. **加协变量平衡趋势差**：`xtdidregress (y x1 x2) (treat), group(id) time(t)`，看加协变量后 ptrends 是否变得不显著。
+4. **改用合成 DID / 异质性稳健估计**：
+   - `hdidregress aipw`——双重稳健，能在趋势差异存在时给出一致估计
+   - `xthdidregress aipw`（面板版）
+   - **不要简单地加更多控制变量**——这是过度反应，且会引入 bad control
+5. **报告与解释**：在论文里诚实报告平行趋势假设被拒，给出**视觉证据 + 协变量敏感性 + 异质性估计的对照三角化**；不应隐藏或回避。
+
+**关键提醒**：平行趋势被拒 ≠ DID 估计一定错，但意味着"因果解读"需要更强论证。
+
+## 12. `reghdfe` 事件研究（手动哑变量）
+
+`hdidregress` / `xthdidregress` 是 Stata 18+ 内置的错时 DID 异质性估计；Stata 17 及更早，社区包 `reghdfe`（Sergio Correia）的事件研究写法是主流——构建"相对时间"哑变量、手动选参考期、用 `reghdfe` 跑。这条脉络对阅读旧论文与维护旧代码至关重要。
+
+```stata
+* 1. 构造相对时间（事件时间）
+gen rel_time = year - treat_year if treated == 1
+replace rel_time = 0 if treated == 0     // 对照组所有期都映射到参考期
+
+* 2. 生成每期一个哑变量（除参考期）
+tab rel_time, gen(time_to_event)
+drop time_to_event11                      // 假设 rel_time=-1 作参考期
+
+* 3. 跑事件研究（双向 FE + 聚类稳健 SE）
+reghdfe y (time_to_event*), absorb(id year) cluster(id)
+coefplot, keep(time_to_event*) vertical ///
+    yline(0) xline(-0.5, lpattern(dash)) ///
+    title("Event study (reghdfe manual dummies)") ///
+    scheme(s1mono)
+```
+
+`coefplot` 画出的每点对应一个相对时间的事件期系数；pre-treatment 期（负 rel_time）应不显著、落在零线附近，post-treatment 期（正 rel_time）开始显著——这就是"事件研究图"的视觉判读。
+
+**Fix**：参考期选择影响整张图的解读——常选 `rel_time = -1`（处理前一期）；太长或太短的参考期都会让事件期系数估计有偏。
+
+## 13. 错时事件研究的替代命令：`eventdd` / `csdid` / `eventstudyinteract`
+
+Stata 内置的 `hdidregress` 不是唯一选择；社区有三个主流替代：
+
+| 命令 | 包 / 论文 | 优势 | 何时用 |
+|---|---|---|---|
+| `eventdd` | SSC：`ssc install eventdd` | 一行 `eventdd y i.year, timevar(rel_time) method(fe, cluster(id)) graph_op(...)` 出图；最简单 | 探索阶段、要快速看图时 |
+| `csdid` | SSC：`ssc install csdid` | Callaway & Sant'Anna (2021) 估计量；双重稳健；可控制协变量；与 `hdidregress aipw` 同源思路 | 想做更严谨的异质性处理效应估计 |
+| `eventstudyinteract` | SSC：`ssc install eventstudyinteract` | Sun & Abraham (2021) 异质性修正；估计"干净"事件研究系数，避免错时下 TWFE 偏误 | 想发顶刊 / 需要与传统 TWFE 估计对照时 |
+
+**这三者都不是 Stata 内置**——需 `ssc install`；网络受限时（如中国大陆）安装可能失败，请改回 `hdidregress`。
+
+## 14. 参考文献与延伸阅读
+
+- **Callaway & Sant'Anna (2021)** "Difference-in-differences with multiple time periods." *Journal of Econometrics* 225(2): 200-230. — `csdid` 的理论基础。
+- **Goodman-Bacon (2021)** "Difference-in-differences with variation in treatment timing." *Journal of Econometrics* 225(2): 254-277. — `estat bdecomp` 的理论基础。
+- **Sun & Abraham (2021)** "Estimating dynamic treatment effects in event studies with heterogeneous treatment effects." *Journal of Econometrics* 225(2): 200-230. — `eventstudyinteract` 的理论基础。
+- **Bertrand, Duflo & Mullainathan (2004)** "How much should we trust differences-in-differences estimates?" *QJE* 119(1): 249-275. — DID 推断问题的奠基讨论（cluster SE、必要聚类数等）。
+- **Roth, Sant'Anna, Bilinski & Poe (2022)** "What's Trending in Difference-in-Differences? A Synthesis of the Recent Econometrics Literature." — 错时 DID 的最新综述。
+- **Princeton DSS 教程**：https://libguides.princeton.edu/stata-did — 本节 wdipol.dta 案例数据来源（实操模板）。
+
 ## 事后命令速查
 
 | 命令 | 适用估计 | 作用 |
@@ -148,6 +262,12 @@ estat bdecomp                          // DID / ATT / 选择项分解
    **Fix**：wildbootstrap 后只能看原始估计表（CI 用 percentile）；要看 vce 必须去掉 `wildbootstrap()` 重跑——CI 自动回归到默认 robust。
 8. **2-cluster 时 wild bootstrap CI 不可识别**：当 `group()` 变量只有 2 个聚类（如 0/1 对照/处理），Stata 报告 `lower confidence bound not found`——这是 wild bootstrap 的已知边界，**不是错误**。
    **Fix**：组数 < 5 时不用 wildbootstrap，改用 `aggregate(dlang)`（Donald-Lang 聚合，少组时更稳）；或合并同类小组合成 ≥ 5 个组；研究设计中应保证至少 5 个独立处理单元（policy group）。
+9. **`xtset` 字符串变量报错**：`xtset country year` 报 `country is string variable` —— xtset 只接受数值型组变量。
+   **Fix**：`encode country, gen(country_id)` 把字符串转数值（自动带值标签）；后面所有 `group()`/`absorb()`/`cluster()` 用 `country_id`。
+10. **平行趋势假设被拒的处理**：实操里 `estat ptrends` 报 p < 0.05 是常事——直接放弃 DID 是过度反应。
+   **Fix**：按优先级（详见第 11 节）：(1) 看 `estat trendplot` 判断是"真趋势差"还是"数据噪音"；(2) 加协变量平衡趋势差；(3) 改用 `hdidregress aipw` 或 `xthdidregress aipw`；(4) 诚实报告 + 三角化论证，**不要简单加更多控制变量**（可能引入 bad control）。
+11. **`reghdfe` 旧代码迁移到 `hdidregress`**：`reghdfe y (time_to_event*), absorb(...) cluster(...)` 是 Stata 17 主流写法；Stata 18+ 可改用 `hdidregress aipw (y) (treat), group(id) time(t)`，结果在代数上不等价（异质性估计 vs 平均 TWFE）——不能直接说"一样的"。
+   **Fix**：迁移时在论文方法节明示；保留旧 `reghdfe` 输出作对照；不要混用两套估计量报同一个政策效应。
 
 ## 验证
 
