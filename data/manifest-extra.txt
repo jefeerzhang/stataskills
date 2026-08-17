@@ -1,0 +1,16 @@
+# stataskills 项目级扩展数据集清单
+#
+# 与 manifest.txt 的关系：
+#   - manifest.txt 是 data/agis6/ 下 AGIS6 教材配套数据集的单一来源；
+#   - 本清单是 data/*-extra/ 下项目自用、来源非 AGIS6、与具体 skill
+#     强绑定的数据集的单一来源（如 data/synth/synth_smoking.dta）。
+#   - 两份清单由 verify/run-verify.sh 同时校验，互不重叠。
+#
+# 格式：每行一个 .dta 基名（不含后缀）；空行与 # 开头的行为注释。
+# 新增数据集时：
+#   1. 把 .dta 放进 data/<子目录>/
+#   2. 在 data/<子目录>/README.md 留档（来源 / 许可 / 字节校验值）
+#   3. 在本清单登记
+#   4. 如该数据集由脚本下载，download_*.sh 必须含 EXPECTED_SIZE 字节校验
+#
+synth_smoking
