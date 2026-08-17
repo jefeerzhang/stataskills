@@ -43,7 +43,7 @@
 | 可执行文件 | `/Applications/StataNow/StataMP.app/Contents/MacOS/stata-mp` |
 | 批处理方式 | `stata-mp -b do 脚本.do`（结束在同名 `.log` 记录全部输出） |
 | 演示数据 | `auto.dta`（ Stata 自带 1978 Automobile Data ， N=74 ） |
-| 技能来源 | 仓库自带的 5 个 `stata-*/SKILL.md`（`stata-basics` / `stata-descriptives` / `stata-regression` / `stata-advanced` / `stata-coefplot`） |
+| 技能来源 | 仓库自带的 6 个 `stata-*/SKILL.md`（`stata-basics` / `stata-descriptives` / `stata-regression` / `stata-advanced` / `stata-coefplot` / `stata-did`） |
 
 > 说明：仓库的平台二进制路径现收在 `docs/run-stata.md`（macOS / Windows 双平台对照）；
 > 本机以 macOS 方式执行（`stata-mp -b do ...`），命令本体完全一致。
@@ -54,7 +54,7 @@
 
 ```mermaid
 flowchart LR
-    A["用户需求<br/>数据清洗/描述/回归/进阶"] --> B["路由到对应 skill<br/>basics / descriptives / regression / advanced"]
+    A["用户需求<br/>数据清洗/描述/回归/进阶/<br/>系数图/DID"] --> B["路由到对应 skill<br/>basics / descriptives / regression / advanced / coefplot / did"]
     B --> C["加载 SKILL.md<br/>命令语法 + 解读逻辑 + 陷阱清单"]
     C --> D["写 do-file<br/>按 skill 命令落到 auto.dta"]
     D --> E["本机 Stata 执行<br/>stata-mp -b do 脚本.do"]
@@ -64,7 +64,7 @@ flowchart LR
 
 文字版流程：
 
-1. **需求路由**：按分析主题（数据管理 / 描述统计 / 回归 / 进阶方法 / 系数图）选中 5 个 skill 之一。
+1. **需求路由**：按分析主题（数据管理 / 描述统计 / 回归 / 进阶方法 / 系数图 / DID）选中 6 个 skill 之一。
 2. **加载 skill**：读取该 skill 的 `SKILL.md`——内含「完整命令语法 + 结果解读逻辑 + 菜单路径线索 + 陷阱清单（ boxed tips ）」。
 3. **落地脚本**：把 skill 里的命令按 demo 数据改写成自包含的 do-file 。
 4. **执行**：用本机 Stata 批处理运行，命令原样执行。
@@ -75,12 +75,12 @@ flowchart LR
 
 | 环节 | 工具 | 在本 demo 中的作用 |
 |---|---|---|
-| 获取技能 | `gh` CLI + `git clone` | 拉取仓库、读取 5 个 SKILL.md |
-| 技能本体 | 5 个 `SKILL.md` | 提供命令语法、解读逻辑、陷阱清单 |
-| 脚本载体 | 6 个 do-file （`.do`） | 按 skill 命令写成的可执行脚本 |
+| 获取技能 | `gh` CLI + `git clone` | 拉取仓库、读取 6 个 SKILL.md |
+| 技能本体 | 6 个 `SKILL.md` | 提供命令语法、解读逻辑、陷阱清单 |
+| 脚本载体 | 7 个 do-file （`.do`） | 按 skill 命令写成的可执行脚本 |
 | 执行引擎 | StataNow 19.5 MP | `-b` 批处理执行 |
-| 运行记录 | 6 个 `.log` | 全量输出，可审计 |
-| 图形产物 | `graph export` PNG （ 19 张） | 可视化 |
+| 运行记录 | 7 个 `.log` | 全量输出，可审计 |
+| 图形产物 | `graph export` PNG （ 27 张，其中 23 张嵌入 REPORT.md） | 可视化 |
 | 数据 | `auto.dta` + 仓库 `data/agis6/` | 演示数据 |
 
 ---
@@ -98,7 +98,7 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
 ├── data/agis6/                     # 书配套数据（longitudinal_mixed.dta、attitude.dta 等）
 ├── ...（README.md / CLAUDE.md / docs/ / verify/ / book/ / download_data.do 等原有内容）
 └── demo/                           # ← 本 demo，作为 skills 的端到端示例
-    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、27 张 PNG（19 张嵌入））
+    ├── REPORT.md                   # 演示报告（流程、工具链、各技能结果、27 张 PNG（23 张嵌入））
     ├── dofiles/                    # 7 个 do-file
     │   ├── 01_stata-basics.do
     │   ├── 02_stata-descriptives.do
@@ -115,7 +115,7 @@ stataskills/                        # 本仓库 (jefeerzhang/stataskills)
     │   └── 07_stata-did.log
     ├── data/
     │   └── auto_clean.dta          # basics 技能清洗后的数据
-    └── output/                     # 27 张图（PNG，其中 19 张嵌入在 REPORT.md 各章节）
+    └── output/                     # 27 张图（PNG，其中 23 张嵌入在 REPORT.md 各章节）
         ├── 02_hist_price.png / 02_hist_mpg.png / 02_hbox_mpg_by_foreign.png
         ├── 02_scatter_price_mpg.png
         ├── 02_panelview_missing.png / 02_panelview_treat.png
@@ -492,9 +492,10 @@ Treated later vs earlier      1.916   weight 0.093
 
 1. **可执行**： 6 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
 2. **可复现**： 7 个 do-file + 7 个 log + 27 张图 + 1 份清洗数据构成完整可复现链路；重跑命令见附录。
-3. **覆盖完整**： 5 个核心技能覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
-   （数据管理 → 描述统计 → 回归建模 → 因子/SEM/插补/多层/IRT ）；第 6 个扩展技能 `stata-did` 覆盖 Stata 19 DID flyer
-   的完整命令族（`didregress` / `xtdidregress` / `hdidregress` / `xthdidregress` 及 `estat` 事后诊断）。
+3. **覆盖完整**： 6 个 skill 共同覆盖《 A Gentle Introduction to Stata 》第 6 版第 1–16 章 + 附录 A 的完整分析链条
+   （数据管理 → 描述统计 → 回归建模 → 因子/SEM/插补/多层/IRT）以及 Stata 19 DID 命令族的全部内置命令（`didregress` /
+   `xtdidregress` / `hdidregress` / `xthdidregress` 及 `estat` 事后诊断）。其中前 5 个 skill 对应教材章节，`stata-did`
+   对应 Stata 19 DID flyer。
 4. **陷阱有效**： skill 中的"陷阱清单"在 demo 中真实发挥作用（如值标签重复定义 r(110)、因子只保留 1 个导致 `predict f2` 失败），
    证明这些 boxed tips 不是空谈，而是来自真实运行经验的可用护栏。
 
@@ -518,7 +519,7 @@ $STATA -b do dofiles/06_stata-coefplot.do
 $STATA -b do dofiles/07_stata-did.do              # DID demo（本地模拟数据，不依赖外部 .dta）
 ```
 
-> 注：05 拆自 advanced（多层模型 + IRT），07 是新增的 DID demo；06 与 07 之间未编号的 `06` 槽位对应 `stata-coefplot`。
+> 注：05 拆自 advanced（多层模型 + IRT，依赖 `data/agis6/`）；06 是 coefplot demo；07 是 DID demo（本地模拟数据，不依赖外部 `.dta`）。
 
 ## 附录 B ：数据说明
 
