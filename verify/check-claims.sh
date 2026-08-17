@@ -18,6 +18,7 @@
 #   6. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
 #   7. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
 #   8. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅警告不 FAIL
+#   11. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性
 #   10. README 硬编码计数与文件系统事实一致性（skill/dta/PNG/dofile/prompt 数）
 #
 # facts（供人工比对，不自动断言）：
@@ -88,6 +89,39 @@ if [ "$N_DTA" -eq "$N_MANIFEST" ]; then
   ok "data/agis6/*.dta（${N_DTA}）与 manifest 条数（${N_MANIFEST}）一致"
 else
   bad ".dta 数（${N_DTA}）≠ manifest 条数（${N_MANIFEST}）"
+fi
+
+# ---- 11. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性 ----
+MANIFEST_EXTRA="$REPO_ROOT/data/manifest-extra.txt"
+if [ -f "$MANIFEST_EXTRA" ]; then
+  # 统计 manifest-extra 中的条目数（排除注释和空行）
+  N_MANIFEST_EXTRA=$(grep -cE '^[^#[:space:]]' "$MANIFEST_EXTRA")
+  # 统计 data/*/ 下（排除 agis6）的 .dta 文件数
+  N_EXTRA_DTA=$(find "$REPO_ROOT/data" -maxdepth 2 -name "*.dta" -not -path "*/agis6/*" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$N_MANIFEST_EXTRA" -eq "$N_EXTRA_DTA" ]; then
+    ok "manifest-extra 条数（${N_MANIFEST_EXTRA}）与 data/*/.dta 数（${N_EXTRA_DTA}）一致"
+  else
+    bad "manifest-extra 条数（${N_MANIFEST_EXTRA}）≠ data/*/.dta 数（${N_EXTRA_DTA}）"
+  fi
+  # 反向：每个 manifest-extra 条目必须在 data/*/ 下存在对应 .dta
+  extra_missing=""
+  while IFS= read -r ds; do
+    case "$ds" in \#*|"") continue ;; esac
+    found=0
+    while IFS= read -r f; do
+      [ -f "$f" ] && found=1 && break
+    done < <(find "$REPO_ROOT/data" -maxdepth 2 -name "${ds}.dta" -not -path "*/agis6/*" 2>/dev/null)
+    if [ "$found" -eq 0 ]; then
+      extra_missing="${extra_missing} ${ds}.dta"
+    fi
+  done < <(cat "$MANIFEST_EXTRA")
+  if [ -n "$extra_missing" ]; then
+    bad "manifest-extra 登记但文件缺失：${extra_missing}"
+  else
+    ok "manifest-extra 每个条目均有对应 .dta 文件"
+  fi
+else
+  ok "manifest-extra.txt 不存在（跳过扩展清单验证）"
 fi
 
 # ---- 4. demo dofiles 与 logs 数量一致且同名配对 ----

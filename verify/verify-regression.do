@@ -32,29 +32,33 @@ use environ, clear
 tab2 environ libcand, row
 
 * ---- ch10.5 高维固定效应 reghdfe ----
-* 检测 reghdfe 是否安装；未装则跳过但 do-file 仍 PASS（cap 包住不报错）
+* 检测 reghdfe 是否安装；未装则发 sentinel 并报错（--community 模式可捕获）
 cap which reghdfe
-if _rc == 0 {
-    use gss2006_chapter9_2way, clear
-    * 多维 FE：workfull × married
-    reghdfe tvhours age, absorb(workfull married)
-    * 多向聚类稳健 SE
-    reghdfe tvhours age, absorb(workfull married) vce(cluster workfull married)
-    * 报告 Within R² + 吸收 DoF 表（reghdfe 默认行为）
-    reghdfe tvhours age, absorb(workfull married) residuals
+if _rc != 0 {
+    display "__COMMUNITY_PACKAGE_MISSING__reghdfe__"
+    error 1
 }
+use gss2006_chapter9_2way, clear
+* 多维 FE：workfull × married
+reghdfe tvhours age, absorb(workfull married)
+* 多向聚类稳健 SE
+reghdfe tvhours age, absorb(workfull married) vce(cluster workfull married)
+* 报告 Within R² + 吸收 DoF 表（reghdfe 默认行为）
+reghdfe tvhours age, absorb(workfull married) residuals
 
 * ---- ch10.6 IV + 多维固定效应 ivreghdfe ----
-* 检测 ivreghdfe + ivreg2 三件套是否都装；未装则跳过但 do-file 仍 PASS
+* 检测 ivreghdfe + ivreg2 三件套是否都装；未装则发 sentinel 并报错
 * ivreghdfe 要求工具变量/FE/cluster 变量互不重叠
 cap which ivreghdfe
-if _rc == 0 {
-    use gss2006_chapter9_2way, clear
-    * IV + 单层 FE：prestg80 当内生变量（prestige 可能有反向因果），
-    * age 当工具变量，marital 当 FE。变量互不重叠。
-    ivreghdfe tvhours sex (prestg80 = age), absorb(marital)
-
-    * IV + 异方差稳健 SE（ivreghdfe 用 ivreg2 语法：`robust` 直接选项；
-    * 注意：选项之间是空格分隔（不是逗号），否则 ivreghdfe 解析器拒为 invalid syntax）
-    ivreghdfe tvhours sex (prestg80 = age), absorb(marital) robust
+if _rc != 0 {
+    display "__COMMUNITY_PACKAGE_MISSING__ivreghdfe__"
+    error 1
 }
+use gss2006_chapter9_2way, clear
+* IV + 单层 FE：prestg80 当内生变量（prestige 可能有反向因果），
+* age 当工具变量，marital 当 FE。变量互不重叠。
+ivreghdfe tvhours sex (prestg80 = age), absorb(marital)
+
+* IV + 异方差稳健 SE（ivreghdfe 用 ivreg2 语法：`robust` 直接选项；
+* 注意：选项之间是空格分隔（不是逗号），否则 ivreghdfe 解析器拒为 invalid syntax）
+ivreghdfe tvhours sex (prestg80 = age), absorb(marital) robust

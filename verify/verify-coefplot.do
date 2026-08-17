@@ -347,18 +347,18 @@ coefplot (., cionly transform(* = min(@,@b)) pstyle(p2)) ///
     (., noci pstyle(p1)) ///
     , nooffsets ciopts(lwidth(*10) lcolor(*.5)) legend(off)
 
-* ---- 23. center 标准化（未安装 center 则跳过） ----
+* ---- 23. center 标准化（可选包；未安装则发可选 sentinel） ----
 cap which center
-if _rc == 0 {
+if _rc != 0 {
+    display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__center__"
+}
+else {
     sysuse auto, clear
     preserve
     center price mpg weight length turn foreign, inplace standardize
     regress price mpg weight length turn, noconstant
     restore
     coefplot, xline(0) xtitle(Standardized Coefficients)
-}
-else {
-    di as txt "note: center not installed; skip standardized-center example"
 }
 
 * ---- 24. mlogit margins 老版本循环 ----
