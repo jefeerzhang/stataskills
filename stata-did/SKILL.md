@@ -1,11 +1,11 @@
 ---
 name: stata-did
-description: 帮助用户用 Stata 内置 DID 命令族做双重差分分析。Use when needing 政策评估 / 双重差分 / DID / DiD / difference-in-differences / 平行趋势检验 / 事件研究 / 错时处理 staggered DID / 三重差分 DDD / 异质性处理效应 / ATET 估计 / wild bootstrap 推断 / 经典手工 DID（xtreg + 交互项）/ 字符串组变量 encode / 手工平行趋势图 / 平行趋势假设被拒的应对 / reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令。覆盖 didregress（重复截面）、xtdidregress（面板）、hdidregress / xthdidregress（异质性稳健）四个估计命令与 trendplot / ptrends / granger / aggregation / atetplot / bdecomp 事后诊断；附 Princeton DSS 教程案例的应对流程。全部为 Stata 17/18+ 内置命令，无需安装；示例语法经 Stata 19.5 实测可复现（verify/verify-did.do）。
+description: 帮助用户用 Stata 内置 DID 命令族做双重差分分析。Use when needing 政策评估 / 双重差分 / DID / DiD / difference-in-differences / 平行趋势检验 / 事件研究 / 错时处理 staggered DID / 三重差分 DDD / 异质性处理效应 / ATET 估计 / wild bootstrap 推断 / 经典手工 DID（xtreg + 交互项）/ 字符串组变量 encode / 手工平行趋势图 / 平行趋势假设被拒的应对 / reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences。覆盖 didregress（重复截面）、xtdidregress（面板）、hdidregress / xthdidregress（异质性稳健）四个内置估计命令与 trendplot / ptrends / granger / aggregation / atetplot / bdecomp 事后诊断，另含 synth / synth_runner / sdid 社区包（少数处理单元场景）；附 Princeton DSS 教程案例的应对流程。内置命令示例语法经 Stata 19.5 实测可复现（verify/verify-did.do），社区包需 ssc install。
 ---
 
 # Stata 双重差分：didregress 命令族（DID / DDD / 错时处理）
 
-本 skill 对应 Stata 官方 DID 命令族（源自 Stata 19 宣传单 [Causal inference: Difference-in-differences] 的命令体系）：`didregress`、`xtdidregress`、`hdidregress`、`xthdidregress` 及 `estat` 事后诊断。全部为**内置命令**，无需 `ssc install`。
+本 skill 对应 Stata 官方 DID 命令族（源自 Stata 19 宣传单 [Causal inference: Difference-in-differences] 的命令体系）：`didregress`、`xtdidregress`、`hdidregress`、`xthdidregress` 及 `estat` 事后诊断，全部为**内置命令**，无需 `ssc install`。第 12–15 节补充主流社区包（reghdfe / eventdd / csdid / eventstudyinteract / synth / synth_runner / sdid），需 `ssc install`。
 
 ## 运行 Stata 的方式
 
@@ -28,6 +28,7 @@ help didregress                    // 官方手册 [CAUSAL] didregress
 | 重复截面 | 单时点 | `didregress` | 两组×多期独立截面 |
 | 重复截面 | 单时点 + 双组维度 | `didregress` + 双 `group()` | 三重差分 DDD |
 | 面板 | 单时点 | `xtdidregress` | 需先 `xtset` |
+| 面板（长前期） | 单时点，处理单位极少（1 至几个） | `synth` / `sdid`（社区包） | 合成控制 / 合成 DID，见第 14–15 节 |
 | 重复截面/面板 | 错时（staggered） | `hdidregress` / `xthdidregress` | TWFE 在错时下有偏，用异质性稳健估计量 |
 
 共同语法骨架：`命令 (结局变量 [协变量]) (处理变量), group(组变量) time(时间变量)`——**处理变量必须放在第二对括号里**，估计目标是 ATET（处理组的平均处理效应）。
@@ -227,18 +228,96 @@ Stata 内置的 `hdidregress` 不是唯一选择；社区有三个主流替代�
 
 **这三者都不是 Stata 内置**——需 `ssc install`；网络受限时（如中国大陆）安装可能失败，请改回 `hdidregress`。
 
-## 14. 参考文献与延伸阅读
+## 14. 合成控制：synth / synth_runner（少数处理单元 + 长前期）
+
+适用场景：**处理单位只有一个（或极少数）**（加州控烟法、某省自贸区试点、某城市限行），且处理前期较长——此时普通对照组"谁都不像处理单位"，DID 的平行趋势假设很难令人信服。合成控制（Abadie, Diamond & Hainmueller 2010）从捐赠池（donor pool）里加权组合出一个"合成对照"，使其处理前轨迹与处理单位尽量重合。
+
+```stata
+ssc install synth, replace             // 社区包（自带示例数据 synth_smoking.dta）
+
+use synth_smoking.dta, clear           // 加州 Prop 99（1989 年生效）经典案例
+tsset state year
+
+* state==3 为加州；1989 年起处理
+synth cigsale beer(1984(1)1988) lnincome(1972(1)1988) retprice age15to24 ///
+      cigsale(1988) cigsale(1980) cigsale(1975), ///
+      trunit(3) trperiod(1989) xperiod(1980(1)1988) ///
+      nested fig keep(synth_smoking_out)
+```
+
+语法要点：
+
+- `trunit(#)`：处理单位的**数值型** id（字符串先 `encode`，见第 9 节）；`trperiod(#)`：首个处理期。
+- 预测变量可加期段：`beer(1984(1)1988)` 取 1984–1988 均值（注意：synth 包的 numlist 是 `start(1)end` 形式，不是 `start:end`；后者会被 synth 报 `invalid numlist r(121)`），`cigsale(1988)` 取单年值；不带期段的变量按 `xperiod()` 范围取均值。**预测变量只能用处理前期的信息**——混入处理后期等于偷看未来。
+- `nested`：嵌套优化（多局部最优时更稳，推荐常加）；`allopt` 更彻底但更慢。
+- `keep(file)`：把实际值与合成值存成 `.dta` 供后续画图；`fig`：直接出趋势对照图。
+
+结果解读：`e(W)` 是捐赠池权重（哪些州、各占多少），`e(V)` 是预测变量权重；处理后各期 `e(Y_treated) - e(Y_synthetic)` 即各期效应（gap）。**pre-period 拟合越好（RMSPE 越小），post 期 gap 越可信。**
+
+**推断：synth 不给 SE**——标准做法是 placebo 置换（ADH 2015）：把处理"假装"分给每个控制单位重跑，看真实处理的 post/pre RMSPE 比在全部 placebo 分布里的排名。手工循环繁琐，用 `synth_runner`（Galiani & Quistorff 2017）自动化：
+
+```stata
+ssc install synth_runner, replace
+synth_runner cigsale beer(1984(1)1988) lnincome retprice age15to24, ///
+    trunit(3) trperiod(1989) gen_vars
+
+single_treatment_graphs, trlinediff(-1)   // 真实效应 vs 全部 placebo 效应
+effect_graphs , trlinediff(-1)            // 效应与 placebo 分布对照
+pval_graphs                               // 各期 placebo p 值
+```
+
+`gen_vars` 生成 `effect`（各期 gap）、`pre_rmspe`、`post_rmspe`、`lead`（相对期）等变量，可直接二次作图。多处理单位、错时时点时用 `d(处理哑变量)` 选项替代 `trunit()/trperiod()`，逐单位估计并聚合。
+
+## 15. 合成 DID：sdid（合成控制 × DID 的结合）
+
+Arkhangelsky et al. (2021, *AER*)：同时给**单位**（像 synth）和**时期**加权，再跑加权 DID。比 synth 多了单位固定效应（允许持久水平差），比 DID 多了数据驱动的权重——通常 pre-period 拟合与稳健性都更好。Stata 实现：`sdid`（Clarke & Pailañir，SSC）。
+
+```stata
+ssc install sdid, replace
+
+* 语法骨架：sdid 结局 组变量 时间变量 处理哑变量
+* 处理哑变量 = 处理单位 × 处理后（treat_post 型 0/1，不是 cohort 成员变量！）
+
+* 本地模拟例：39 个对照州 + 1 个处理州 × 20 期，第 15 期起处理
+clear
+set seed 20260817
+set obs 800
+gen state = ceil(_n/20)
+gen year  = mod(_n-1, 20) + 1
+gen treat = (state==1 & year>=15)
+gen y     = 5 + 0.1*year + 0.5*(state==1) + 1.2*treat + rnormal(0, 1)
+
+sdid y state year treat, vce(bootstrap) reps(50) seed(20260817) graph
+```
+
+常用选项：
+
+- `vce()`：`bootstrap`（通用，默认推荐）/ `jackknife`（仅面板可用，更快）/ `placebo`（大捐赠池）/ `noinference`。
+- `method(sdid|sc|did)`：同一框架切换 合成 DID / 纯合成控制 / 普通 DID——**三方法一行对照**，与 diff-diff 的 `SyntheticDiD` / `SyntheticControl` / `DifferenceInDifferences` 一一对应。
+- `covariates(varlist, projected)`：协变量调整（`optimized` 为默认算法）。
+- `graph`：效应图 + 权重图；结果存在 `e(ATT)`、`e(se)`、`e(series)`。
+- 错时采用：v2+ 原生支持，按处理 cohort 分别估计后聚合（面板下可与 `hdidregress aipw` 互为稳健性对照）。
+
+**何时用 sdid 而非 synth**：处理前存在持久水平差（synth 拟合不动）、或想要标准误而不只 placebo 排名。**何时用 sdid 而非 hdidregress**：处理单位极少、需要权重透明可展示（论文里报告哪些对照单位进入了合成）。
+
+与 diff-diff 的对应关系：`sdid` ≈ `SyntheticDiD`（含 bootstrap 推断）；`synth` + synth_runner placebo ≈ `SyntheticControl` + `in_space_placebo()`。
+
+## 16. 参考文献与延伸阅读
 
 - **Callaway & Sant'Anna (2021)** "Difference-in-differences with multiple time periods." *Journal of Econometrics* 225(2): 200-230. — `csdid` 的理论基础。
 - **Goodman-Bacon (2021)** "Difference-in-differences with variation in treatment timing." *Journal of Econometrics* 225(2): 254-277. — `estat bdecomp` 的理论基础。
 - **Sun & Abraham (2021)** "Estimating dynamic treatment effects in event studies with heterogeneous treatment effects." *Journal of Econometrics* 225(2): 200-230. — `eventstudyinteract` 的理论基础。
+- **Abadie, Diamond & Hainmueller (2010)** "Synthetic Control Methods for Comparative Case Studies." *JASA* 105(490): 493-510. — `synth` 的理论基础（第 14 节）。
+- **Abadie, Diamond & Hainmueller (2015)** "Comparative Politics and the Synthetic Control Method." *AJPS* 59(2): 495-510. — placebo 置换推断（RMSPE 比排名）的来源。
+- **Galiani & Quistorff (2017)** "The synth_runner package: Utilities to automate synthetic control estimation using synth." *Stata Journal* 17(4): 834-849. — 多处理单位 + placebo 自动化（第 14 节）。
+- **Arkhangelsky, Athey, Hirshberg, Imbens & Wager (2021)** "Synthetic Difference-in-Differences." *American Economic Review* 111(12): 4088-4118. — `sdid` 的理论基础（第 15 节）。
 - **Bertrand, Duflo & Mullainathan (2004)** "How much should we trust differences-in-differences estimates?" *QJE* 119(1): 249-275. — DID 推断问题的奠基讨论（cluster SE、必要聚类数等）。
 - **Roth, Sant'Anna, Bilinski & Poe (2022)** "What's Trending in Difference-in-Differences? A Synthesis of the Recent Econometrics Literature." — 错时 DID 的最新综述。
-- **Baker et al. (2025)** "How Practice Meets Theory in DiD: An 8-Step Practitioner's Workflow." — [diff-diff 仓库](https://github.com/igerber/diff-diff) 提炼的实操工作流，详见第 15 章。
+- **Baker et al. (2025)** "How Practice Meets Theory in DiD: An 8-Step Practitioner's Workflow." — [diff-diff 仓库](https://github.com/igerber/diff-diff) 提炼的实操工作流，详见第 17 章。
 - **Rambachan & Roth (2023)** "A More Credible Approach to Parallel Trends." *Review of Economic Studies*. — Honest DiD（平行趋势违反下的稳健 CI），详见第 11 节第 4 步。
 - **Princeton DSS 教程**：https://libguides.princeton.edu/stata-did — 本节 wdipol.dta 案例数据来源（实操模板）。
 
-## 15. 8 步 practitioner 工作流（Baker et al. 2025）
+## 17. 8 步 practitioner 工作流（Baker et al. 2025）
 
 跳过诊断步骤 = 不可靠结论。以下 8 步是 `igerber/diff-diff` 项目从学术最佳实践中凝练的工作流，**全部 8 步都能在 Stata + stataskills did 内执行**——`diff-diff` 只是把流程命名约定化了，Stata 生态每个命令都能映射。
 
@@ -281,7 +360,7 @@ estat trendplot                        // 图形诊断
 |---|---|---|
 | simple 2x2 | DiD / TWFE | `didregress` / `xtdidregress` |
 | staggered adoption | CS / SA / BJS（**不是** plain TWFE） | `hdidregress aipw` / `xthdidregress aipw` |
-| 少数处理单元 | Synthetic DiD | `ssc install synthdid` |
+| 少数处理单元 | Synthetic Control / Synthetic DiD | `ssc install synth`（第 14 节）/ `ssc install sdid`（第 15 节） |
 | 复杂共同因子 | TROP | `ssc install trop` |
 | 内生选择 + 因子 | TROP / Imputation | 社区包 |
 
@@ -395,9 +474,22 @@ estat aggregation, dynamic graph
    **Fix**：按优先级（详见第 11 节）：(1) 看 `estat trendplot` 判断是"真趋势差"还是"数据噪音"；(2) 加协变量平衡趋势差；(3) 改用 `hdidregress aipw` 或 `xthdidregress aipw`；(4) 诚实报告 + 三角化论证，**不要简单加更多控制变量**（可能引入 bad control）。
 11. **`reghdfe` 旧代码迁移到 `hdidregress`**：`reghdfe y (time_to_event*), absorb(...) cluster(...)` 是 Stata 17 主流写法；Stata 18+ 可改用 `hdidregress aipw (y) (treat), group(id) time(t)`，结果在代数上不等价（异质性估计 vs 平均 TWFE）——不能直接说"一样的"。
    **Fix**：迁移时在论文方法节明示；保留旧 `reghdfe` 输出作对照；不要混用两套估计量报同一个政策效应。
+12. **`synth` 的 `trunit()` 只认数值 id，预测变量只能用处理前期**：字符串州名/国名先 `encode`（第 9 节）；预测变量混入处理后期信息会让合成单位"偷看未来"，估计完全失效。
+   **Fix**：`encode` 后用数值 id；期段写法 `beer(1984(1)1988)` 的上限 ≤ `trperiod()-1`；跑完先查 pre-period RMSPE 与平衡表（处理 vs 合成的预测变量均值差）。
+13. **`synth` 没有内置 SE / p 值**：只报点估计与 `fig` 图就投稿，会被审稿人打回。
+   **Fix**：用 `synth_runner ... , gen_vars` 跑 placebo 置换推断，`single_treatment_graphs` + `pval_graphs` 报 RMSPE 比排名（ADH 2015 标准做法）；捐赠池太小（< 10 个控制单位）时 placebo 排名分辨率不足，论文中明说推断粒度限制。
+14. **`sdid` 的处理变量是 treat×post 哑变量，不是 cohort 成员变量**：传入"是否属于处理州"（全期 = 1）会把处理前期也当处理后，系数偏到零。
+   **Fix**：先 `gen treat = (state==1 & year>=15)` 再 `sdid y state year treat, ...`；面板数据可用 `vce(jackknife)`（更快），重复截面 jackknife 不可用、改用默认 `bootstrap`。
 
 ## 验证
 
-- 本 skill 全部语法经 `verify/verify-did.do` 在 Stata 19.5（StataNow MP）批处理模式实测通过；数据全部本地模拟（`set seed` 固定），不依赖网络与额外 `.dta`。
-- 运行：`bash verify/run-verify.sh did`；全量六个 skill：`bash verify/run-verify.sh`。
+- 本 skill 全部内置命令语法经 `verify/verify-did.do` 在 Stata 19.5（StataNow MP）批处理模式实测通过；数据全部本地模拟（`set seed` 固定），不依赖网络与额外 `.dta`。
+- 第 14–15 节的 `synth` / `sdid` 为社区包（需 `ssc install`），由 `verify/verify-synth-sdid.do` 覆盖：
+  - 数据：`data/synth/synth_smoking.dta`（加州 Prop 99 经典案例，47045 字节，来源 scunning1975/mixtape，MIT 许可；下载脚本 `data/synth/download_synth_smoking.sh`，字节校验 EXPECTED_SIZE=47045，变化需团队确认）；`sdid` 部分用本地模拟数据（800 obs，39 对照 + 1 处理 × 20 期）。
+  - 模式：
+    - `bash verify/run-verify.sh did`（默认）：社区包已装则 PASS；未装则用 `cap which` 跳过关键命令、log 末尾打 `__COMMUNITY_PACKAGE_MISSING__<pkg>__` sentinel，仍 PASS（适合 CI / 网络受限环境）。
+    - `bash verify/run-verify.sh did --community`：缺任一必需包（synth / sdid）即 BAD，强制本地"真验证"。
+    - `synth_runner` 标记为可选——缺包仅打 sentinel，不影响 PASS。
+  - 网络受限时第 14–15 节方法与 `synthdid` R 包 / diff-diff 的 `SyntheticDiD` 同源，可跨语言替代。
+- 运行：`bash verify/run-verify.sh did`（默认）/ `bash verify/run-verify.sh did --community`（强制）；全量六个 skill：`bash verify/run-verify.sh`。
 - 真实研究中需注意：2-cluster 演示场景（如医院 0/1）跑 wildbootstrap 会报 CI 不可识别，应改用 `aggregate(dlang)`——见第 8 条陷阱。

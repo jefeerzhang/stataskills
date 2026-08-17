@@ -57,7 +57,7 @@ estat trendplot                        // 平行趋势图
 estat ptrends                          // 事前平行趋势检验
 estat granger                          // Granger 型事前趋势检验
 
-* ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort）----
+* ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort，SKILL.md 第 5 节）----
 clear
 set obs 7200                           // 600 个体 × 12 期
 gen id     = ceil(_n/12)
@@ -77,17 +77,17 @@ estat aggregation                      // 总体聚合（默认 overall）
 estat aggregation, cohort              // 按 cohort 聚合
 estat aggregation, dynamic             // 按处理暴露期聚合（事件研究）
 
-* ---- 7. 回归调整估计量：hdidregress ra ----
+* ---- 7. 回归调整估计量：hdidregress ra（SKILL.md 第 5 节）----
 hdidregress ra (y) (treat), group(id) time(month)
 estat aggregation, overall
 
-* ---- 8. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据）----
+* ---- 8. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据，SKILL.md 第 6 节）----
 xtset id month
 xthdidregress twfe (y) (treat), group(id)
 estat atetplot
 estat aggregation, cohort
 
-* ---- 9. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据）----
+* ---- 9. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据，SKILL.md 第 7 节）----
 clear
 set obs 4800                           // 4 组医院 × 12 期 × 100 人
 gen month    = ceil(_n/400)

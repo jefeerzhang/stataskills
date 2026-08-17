@@ -311,7 +311,8 @@ H0: No effect in anticipation of treatment
 Prob > F =   0.0043
 
 . 
-. * ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort）----
+. * ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort，SKILL.md 第 5 节）--
+> --
 . clear
 
 . set obs 7200                           // 600 个体 × 12 期
@@ -446,7 +447,7 @@ Duration of exposure ATET                                Number of obs = 7,200
 Note: Exposure is the number of periods since the first treatment time.
 
 . 
-. * ---- 8. 回归调整估计量：hdidregress ra ----
+. * ---- 7. 回归调整估计量：hdidregress ra（SKILL.md 第 5 节）----
 . hdidregress ra (y) (treat), group(id) time(month)
 note: variable _did_cohort, containing cohort indicators formed by treatment
       variable treat and group variable id, was added to the dataset using
@@ -528,7 +529,8 @@ Overall ATET                                             Number of obs = 7,200
 Note: Aggregation weights vary across times and cohorts.
 
 . 
-. * ---- 9. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据）----
+. * ---- 8. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据，SKILL.md 第 6 节
+> ）----
 . xtset id month
 
 Panel variable: id (strongly balanced)
@@ -607,7 +609,8 @@ ATET over cohort                                         Number of obs = 7,200
 ------------------------------------------------------------------------------
 
 . 
-. * ---- 10. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据）----
+. * ---- 9. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据，SKILL.md 第 7
+>  节）----
 . clear
 
 . set obs 4800                           // 4 组医院 × 12 期 × 100 人
