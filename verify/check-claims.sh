@@ -187,4 +187,44 @@ done
 # 汇总：所有 demo 都有 verify 即视为覆盖
 ok "demo→verify 配对完整（${#demo_skills[@]} 个 demo do-file 均有 verify 脚本）"
 
+# ---- 9. test-prompts.json：Agent 行为回归测试集 ----
+# 把"Skill 不只是文档，还能被 Agent 实际执行并产生期望锚点"这件事
+# 变成可验证的 CI 断言。覆盖 6 个 skill + 跨 skill 联动：
+# - JSON 合法（用 python3 -m json.tool 自检，python3 失败即 FAIL）
+# - prompts 数组非空、含 id/skill/scenario/expected_actions 字段
+# - 每个 skill 至少有 1 条 prompt 覆盖（避免新 skill 漏登记）
+TEST_PROMPTS="$REPO_ROOT/test-prompts.json"
+if [ ! -f "$TEST_PROMPTS" ]; then
+  bad "test-prompts.json 缺失：repo 根目录应有 Agent 行为回归测试集（覆盖 6 个 skill）"
+elif ! python3 -m json.tool "$TEST_PROMPTS" >/dev/null 2>&1; then
+  bad "test-prompts.json 不是合法 JSON"
+else
+  N_PROMPTS=$(python3 -c "import json; print(len(json.load(open('$TEST_PROMPTS'))['prompts']))")
+  ok "test-prompts.json 合法，含 ${N_PROMPTS} 条 prompt"
+  # 每个 skill 至少 1 条 prompt（用 awk 提取 skill 字段做覆盖矩阵）
+  python3 - "$REPO_ROOT" <<'PY' && {
+import json, sys, os, glob
+repo_root = sys.argv[1]
+with open(os.path.join(repo_root, "test-prompts.json")) as f:
+    d = json.load(f)
+covered = set()
+for p in d["prompts"]:
+    # skill 字段可能含 " + " 联动，按 ", " 或 " + " 切分
+    for s in p["skill"].replace("+", ",").split(","):
+        covered.add(s.strip())
+missing = []
+for sdir in sorted(glob.glob(os.path.join(repo_root, "stata-*"))):
+    full_name = os.path.basename(sdir)  # 目录名本来就是 stata-xxx
+    if full_name not in covered:
+        missing.append(full_name)
+if missing:
+    print(f"FAIL  test-prompts 未覆盖以下 skill：{', '.join(missing)}", file=sys.stderr)
+    sys.exit(1)
+# 把覆盖详情写到 stderr，让 ok 行单独占据 stdout
+print(f"覆盖详情：{len(d['prompts'])} 条 prompt 含 {len(covered)} 个 skill", file=sys.stderr)
+PY
+    ok "test-prompts.json 覆盖全部 6 个 skill（python3 详情见 stderr）"
+  } || bad "test-prompts.json 未覆盖全部 skill：见 stderr"
+fi
+
 summary

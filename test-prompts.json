@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 6 个 skill + 2 个跨 skill 联动场景。配合 verify/check-claims.sh 第 9 条断言使用（见 verify/check-claims.sh 注释）。",
+  "version": "1.0.0",
+  "prompts": [
+    {
+      "id": "basics-01-reverse-coding",
+      "skill": "stata-basics",
+      "scenario": "用户问题：用 Stata 把 nlsy97_chapter7.dta 里的抑郁量表反向编码，缺失码 .a/.b 保留。",
+      "expected_actions": [
+        "load stata-basics SKILL.md",
+        "use mvdecode 把缺失码转 .a/.b",
+        "use recode 而非算术法反向（保留缺失码区别）",
+        "用 clonevar 留底原变量",
+        "tab 验证：tab old new, miss"
+      ],
+      "expected_outputs": ["反向编码后的 dta 文件", "缺失码区别保留的证据（tab 输出）"],
+      "verify_script": "verify/verify-basics.do"
+    },
+    {
+      "id": "descriptives-01-crosstab-effect-size",
+      "skill": "stata-descriptives",
+      "scenario": "用户问题：auto.dta 里 rep78 × foreign 的卡方检验报效应量。",
+      "expected_actions": [
+        "load stata-descriptives SKILL.md",
+        "sysuse auto, clear",
+        "tab rep78 foreign, chi2 V (V 必须大写)",
+        "报告 p<0.001 (不写 0.000) + Cramér's V"
+      ],
+      "expected_outputs": ["χ² 值与自由度", "p < 0.001", "Cramér's V ∈ [0, 1]"],
+      "verify_script": "verify/verify-descriptives.do"
+    },
+    {
+      "id": "regression-01-ancova-with-covariate",
+      "skill": "stata-regression",
+      "scenario": "用户问题：跑 price ~ weight + foreign 的 ANCOVA，连续协变量 weight 别按分类处理。",
+      "expected_actions": [
+        "load stata-regression SKILL.md",
+        "anova price foreign c.weight （c. 前缀必须）",
+        "或 regress price i.foreign c.weight",
+        "margins foreign, at(weight=(1760 2120 2560))",
+        "报告 F/p/R²，不解释 weight 主效应（因已控制）"
+      ],
+      "expected_outputs": ["ANCOVA F/p", "控制 weight 后 foreign 的边际均值差"],
+      "verify_script": "verify/verify-regression.do"
+    },
+    {
+      "id": "advanced-01-factor-not-just-alpha",
+      "skill": "stata-advanced",
+      "scenario": "用户问题：attitude.dta 跑因子分析，要求 PCF 与 PF 对比，报告累积方差贡献，不只看 α。",
+      "expected_actions": [
+        "load stata-advanced SKILL.md",
+        "factor rating-questions, pcf (主成分法)",
+        "factor rating-questions, pf (主因子法)",
+        "estat kaiser / screeplot (碎石图)",
+        "rotate, varimax 与 promax 各跑一次对比",
+        "alpha 不作为删条依据；用 alpha, item 看每条目 α 但不删"
+      ],
+      "expected_outputs": ["保留因子数 + 各因子方差贡献", "旋转对比表"],
+      "verify_script": "verify/verify-advanced.do"
+    },
+    {
+      "id": "coefplot-01-multiple-models-forest",
+      "skill": "stata-coefplot",
+      "scenario": "用户问题：跑两个 logit 模型（auto.dta，foreign ~ mpg + weight vs foreign ~ mpg + weight + price），画森林图对比系数，OR 形式，参考线 1。",
+      "expected_actions": [
+        "load stata-coefplot SKILL.md",
+        "logit foreign mpg weight, or; estimates store m1",
+        "logit foreign mpg weight price, or; estimates store m2",
+        "coefplot m1 m2, eform drop(_cons) xline(1)",
+        "xline 必须用 1 (eform) 不是 0；mlabels 加 format(%9.2f)"
+      ],
+      "expected_outputs": ["森林图 PNG（含 OR + 95% CI）", "两模型系数对比"],
+      "verify_script": "verify/verify-coefplot.do"
+    },
+    {
+      "id": "did-01-staggered-twowfe-bias",
+      "skill": "stata-did",
+      "scenario": "用户问题：错时 DID 数据（两个 cohort：第 5 期、第 8 期处理），估计 ATET，并诊断 TWFE 偏误。",
+      "expected_actions": [
+        "load stata-did SKILL.md",
+        "不要用 didregress (TWFE 在错时下有偏)",
+        "hdidregress twfe (y) (treat), group(id) time(month)",
+        "estat atetplot 看各 cohort ATET",
+        "estat aggregation, dynamic graph 看事件研究",
+        "另起一份 collapse (mean) y treat, by(group month) → didregress → estat bdecomp, graph 看 Bacon 分解"
+      ],
+      "expected_outputs": ["cohort ATET 图", "事件研究图（暴露期）", "Bacon 分解图", "含「已处理当对照」负权重分量的诊断"],
+      "verify_script": "verify/verify-did.do"
+    },
+    {
+      "id": "cross-01-clean-then-descriptives",
+      "skill": "stata-basics + stata-descriptives",
+      "scenario": "用户问题：把 firstsurvey.dta 清洗（reverse coding、构建量表），然后跑量表的描述统计 + 信度。",
+      "expected_actions": [
+        "先加载 stata-basics：mvdecode + recode 反向编码 → rowmean 构建量表 → save 清洗数据",
+        "再加载 stata-descriptives：summarize newscale, detail → sktest → alpha newscale（用 statadescriptives 里的描述段，不是 advanced 里的『删条目提 α』陷阱）",
+        "alpha 输出报告项目级 α，不要建议删条目"
+      ],
+      "expected_outputs": ["清洗后的 .dta", "量表描述 + α（不删条目）"],
+      "verify_script": "verify/verify-basics.do + verify/verify-descriptives.do"
+    },
+    {
+      "id": "cross-02-regression-then-coefplot",
+      "skill": "stata-regression + stata-coefplot",
+      "scenario": "用户问题：跑 3 个嵌套回归（auto.dta，price ~ mpg；+ weight；+ length + turn），画森林图对比每步新增系数的显著性变化。",
+      "expected_actions": [
+        "先加载 stata-regression：quietly regress ... ; estimates store m1/m2/m3",
+        "再加载 stata-coefplot：coefplot m1 m2 m3, drop(_cons) xline(0) bycoefs（按系数分面）",
+        "bycoefs 用整数编号 headings(1=mpg 2=weight 3=length 4=turn)，不是系数名",
+        "byopts(xrescale) 让各子图不同刻度（因 m1 只有 1 个系数，m3 有 3 个）"
+      ],
+      "expected_outputs": ["嵌套模型森林图 PNG", "每步新增系数显著性的对比"],
+      "verify_script": "verify/verify-regression.do + verify/verify-coefplot.do"
+    }
+  ]
+}
