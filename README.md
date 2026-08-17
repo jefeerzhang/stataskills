@@ -4,6 +4,8 @@
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
+> 🎯 **6 个 Skill · 38 个数据集 · 27 张 demo PNG · 6/6 verify PASS · 8 条 Agent 行为回归 prompt**
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
 [![verify](https://github.com/jefeerzhang/stataskills/actions/workflows/verify.yml/badge.svg)](https://github.com/jefeerzhang/stataskills/actions/workflows/verify.yml)
@@ -83,11 +85,12 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令 + 6/6 PASS 实测 | ❌ | ⚠️ log 验证 |
+| Agent 行为回归 | ✅ `test-prompts.json` 8 条 prompt + check-claims 自动覆盖断言 | ❌ | ❌ |
 | Demo 报告 | ✅ 7 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
-| ADR / 架构决策 | ✅ ADR-0001 | ❌ | ❌ |
+| ADR / 架构决策 | ✅ ADR-0001 / ADR-0002 | ❌ | ❌ |
 | 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
 
-我们不是「又一个 Stata skill」——是**唯一带完整数据 + verify + ADR + demo 的工程化外壳**。
+我们不是「又一个 Stata skill」——是**唯一带完整数据 + verify + Agent 行为回归 + ADR + demo 的工程化外壳**。
 
 ## 安全边界
 
@@ -106,6 +109,7 @@ stataskills/
 ├── CHANGELOG.md                    ← 变更历史
 ├── CITATION.cff                    ← 学术引用
 ├── download_data.do                ← 一键下载全部数据
+├── test-prompts.json               ← 8 条 Agent 行为回归测试（check-claims 第 9 条断言）
 ├── stata-basics/SKILL.md           ← skill 1（数据管理 / 清洗）
 ├── stata-descriptives/SKILL.md     ← skill 2（描述 / 检验）
 ├── stata-regression/SKILL.md       ← skill 3（回归）
@@ -199,7 +203,7 @@ bash verify/run-verify.sh
 | `stata-coefplot` | extension | coefficient plots/forest plots: multi-model comparison, subgraphs, bycoefs, sorting, matrix input, margins/at, recast, cismooth, labelling, markers |
 | `stata-did` | extension | difference-in-differences: didregress (repeated cross-section / DDD), xtdidregress (panel), hdidregress / xthdidregress (heterogeneity-robust, staggered), parallel-trends diagnostics (trendplot / ptrends / granger / aggregation / bdecomp) |
 
-Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist. The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **6/6 PASS** on StataNow 19.5 MP.
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist (now with **Fix** action lines). The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **6/6 PASS** on StataNow 19.5 MP. Agent behavior is regression-tested via `test-prompts.json` (8 prompts covering all 6 skills + 2 cross-skill scenarios).
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
