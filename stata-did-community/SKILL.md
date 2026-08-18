@@ -1056,8 +1056,10 @@ estat aggregation, dynamic graph
 
 ### 特征对照矩阵
 
-| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | did_multiplegt (DCDH) | stacked | lpdid (LPDiD) |
-|------|-----------|-------------|-------|-------|----------------|----------------------|---------|--------------|
+#### 核心能力
+
+| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | DCDH | stacked | lpdid |
+|------|-----------|-------------|-------|-------|----------------|------|---------|-------|
 | 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC | ❌ SSC | ❌ GitHub | ❌ SSC |
 | 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **可逆处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ | ✅ nonabsorbing |
@@ -1068,6 +1070,11 @@ estat aggregation, dynamic graph
 | leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ | ❌ | ❌ |
 | 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+#### 诊断与人机工程
+
+| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | DCDH | stacked | lpdid |
+|------|-----------|-------------|-------|-------|----------------|------|---------|-------|
 | **长差分+局部投影** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
 | **设计诊断 D 统计量** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ |
 | **按 cohort 权重分解** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ bygroup | ❌ |

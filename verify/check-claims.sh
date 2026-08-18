@@ -57,12 +57,14 @@ N_DEMO_PNG=$(count "$REPO_ROOT"/demo/output/*.png)
 echo "facts: skills=${N_SKILLS} verify=${N_VERIFY} dta=${N_DTA} manifest=${N_MANIFEST} demo_do=${N_DEMO_DO} demo_log=${N_DEMO_LOG} demo_png=${N_DEMO_PNG}"
 
 # ---- 1. skill ↔ verify 脚本一一对应（排除 test-harness 的 zz 探针与
-#      did 的社区包附加脚本 verify-synth-sdid.do——后者验证 stata-did
-#      第 14–15 节合成控制章节，不构成独立 skill）----
+#      verify-synth-sdid.do——后者是社区包附加验证脚本，被
+#      verify-did-community.do 委托调用，不构成独立 skill 的 verify 入口。
+#      新增 skill 时只需放入 verify-<skill-name>.do，此处自动计入。----
 N_VERIFY_REAL=0
 for d in "$REPO_ROOT"/verify/verify-*.do; do
   [ -e "$d" ] || continue
   b="$(basename "$d" .do)"
+  # verify-synth-sdid 是社区包验证脚本，由 verify-did-community.do 委托调用
   case "$b" in verify-zz*|verify-synth-sdid) continue ;; esac
   N_VERIFY_REAL=$((N_VERIFY_REAL+1))
 done
