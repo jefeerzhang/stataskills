@@ -1,9 +1,9 @@
 ---
 name: stata-did-community
-description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 可逆处理 reversible treatment / 非二元处理 continuous treatment / DCDH de Chaisemartin D'Haultfoeuille / did_multiplegt dyn stat had / 无 stayer 异质性采用 / StackedDiD 堆叠 DID Wing Hollingsworth Freedman / stacked Q 权重 设计诊断 D 统计量 / 方法选择决策树。全部需 ssc install 或 GitHub net install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
+description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 可逆处理 reversible treatment / 非二元处理 continuous treatment / DCDH de Chaisemartin D'Haultfoeuille / did_multiplegt dyn stat had / 无 stayer 异质性采用 / StackedDiD 堆叠 DID Wing Hollingsworth Freedman / stacked Q 权重 设计诊断 D 统计量 / LPDiD 局部投影 DID Dube Girardi Jorda Taylor / lpdid 长差分 干净对照 冲击型处理 nonabsorbing oneoff / 方法选择决策树。全部需 ssc install 或 GitHub net install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
 ---
 
-# Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked）
+# Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid）
 
 本 skill 覆盖主流 DID 社区包，需 `ssc install`。Stata 内置 DID 命令（`didregress` / `xtdidregress` / `hdidregress` / `xthdidregress`）见 `stata-did` skill。
 
@@ -763,7 +763,143 @@ stacked reg outcome, duck cluster(state)
 | 要官方内置 | `hdidregress` | Stata 18+ |
 | 大数据（100M+ 行） | **StackedDiD** | DuckDB 后端秒级回归 |
 
-## 7. 8 步 practitioner 工作流（Baker et al. 2025）
+## 7. LPDiD：局部投影双重差分（Dube, Girardi, Jordà & Taylor 2025）
+
+适用场景：想要**长差分事件研究**——用局部投影（local projections）估计动态效应，同时限制估计样本为"新处理单位 + 干净对照组"，避免 TWFE 负权重偏误。与 `csdid`/`hdidregress` 的"逐 cohort 估计后聚合"不同，LPDiD 直接跑长差分回归，每期一个方程，更灵活、更直观。
+
+核心思想：把 `y_{t+h} - y_{t-1}`（h 期长差分）对 `ΔD`（处理变化）回归，只用"干净对照组"（D_{t+h}=0 的单位）。每个 horizon h 一个方程，系数就是该期的 ATT。
+
+### 安装
+
+```stata
+ssc install lpdid, replace
+* 依赖（一次性）
+ssc install reghdfe, replace
+ssc install ftools, replace
+ssc install listreg, replace
+ssc install boottest, replace
+ssc install egenmore, replace
+```
+
+### 核心语法
+
+```stata
+lpdid Y, unit(varname) time(varname) treat(varname) pre(#) post(#) [options]
+```
+
+| 参数 | 含义 |
+|---|---|
+| `Y` | 结局变量 |
+| `unit(varname)` | 单位 id（默认也是聚类变量） |
+| `time(varname)` | 时间变量 |
+| `treat(varname)` | 处理指示变量（0/1 二元） |
+| `pre(#)` | 事件窗口前的期数（≥2） |
+| `post(#)` | 事件窗口后的期数（≥0） |
+
+### 主要选项
+
+| 选项 | 含义 | 默认 |
+|---|---|---|
+| `rw` | 重新加权以估计等权重 ATT（而非方差加权 ATT） | 关闭 |
+| `controls(varlist)` | 协变量 | — |
+| `absorb(varlist)` | 额外固定效应（时间 FE 自动包含） | — |
+| `ylags(#)` | 结局变量滞后项 | — |
+| `dylags(#)` | 结局变量一阶差分滞后项 | — |
+| `cluster(varname)` | 聚类变量 | 默认按 unit 聚类 |
+| `nevertreated` | 仅用从未处理单位做对照 | 关闭（用所有干净对照） |
+| `nocomp` | 排除跨期组合效应（保持同一对照组） | 关闭 |
+| `pmd(#)` | 前均值差分版本（用多个 pre 期均值做基准） | 关闭 |
+| `bootstrap(#)` | wild bootstrap 推断（少聚类时推荐） | 关闭 |
+| `seed(#)` | bootstrap 随机种子 | — |
+| `nonabsorbing(#, [opts])` | 非吸收处理（见下表） | — |
+| `nograph` | 不出图 | 关闭 |
+| `only_pooled` | 仅估计汇总效应（跳过事件研究） | 关闭 |
+| `only_event` | 仅估计事件研究（跳过汇总效应） | 关闭 |
+
+### 非吸收处理选项 `nonabsorbing()`
+
+| 子选项 | 含义 |
+|---|---|
+| `nonabsorbing(#)` | 效应在 # 期后稳定；持久处理（入处后持续直到退出） |
+| `nonabsorbing(#, notyet)` | 仅用 not-yet-treated 做对照 |
+| `nonabsorbing(#, firsttreat)` | 仅估计首次处理的效应 |
+| `nonabsorbing(#, oneoff)` | 冲击型处理（仅持续 1 期，如飓风） |
+| `nonabsorbing(, firsttreat notyet)` | 首次处理 vs 从未处理（无需指定稳定期数） |
+
+### 完整工作流示例
+
+```stata
+* 0. 安装（一次性）
+ssc install lpdid, replace
+ssc install reghdfe ftools listreg boottest egenmore, replace
+
+* 1. 加载示例数据
+use http://fmwww.bc.edu/repec/bocode/l/lpdidtestdata1.dta, clear
+
+* 2. 基础事件研究（方差加权 ATT）
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10)
+
+* 3. 等权重 ATT（重新加权）
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) rw
+
+* 4. 排除组合效应
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) rw nocomp
+
+* 5. 仅用从未处理做对照
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) rw nevertreated
+
+* 6. 前均值差分版本
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) pmd(max)
+
+* 7. 含协变量
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) rw controls(gdp unemployment)
+
+* 8. 少聚类时用 wild bootstrap
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) bootstrap(500) seed(20260817)
+
+* 9. 非吸收处理（效果在 5 期后稳定）
+use http://fmwww.bc.edu/repec/bocode/l/lpdidtestdata2.dta, clear
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) nonabs(5)
+
+* 10. 冲击型处理（如飓风）
+use http://fmwww.bc.edu/repec/bocode/l/lpdidtestdata3.dta, clear
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) nonabs(3, oneoff)
+
+* 11. 自定义事件研究图
+lpdid Y, time(time) unit(unit) treat(treat) pre(5) post(10) nograph
+matrix R = e(results)
+svmat R, names(col)
+gen horizon = _n - (e(pre_window) + 1) if (_n - (e(pre_window) + 1))<=e(post_window)
+twoway (rcap ci_high ci_low horizon, color(gs6)) ///
+       (scatter coefficient horizon, color(blue)), legend(off)
+```
+
+### 方差加权 vs 等权重 ATT
+
+| 版本 | 选项 | 权重 | 何时用 |
+|---|---|---|---|
+| 方差加权（默认） | 无 `rw` | 更精确的 cohort 权重更大 | 效应同质时最高效 |
+| 等权重 | `rw` | 每个 treated obs 等权重 | 效应异质时更稳健 |
+
+**bias-variance tradeoff**：方差加权有偏（不同 cohort 权重不同）但方差更小；等权重无偏但方差更大。默认方差加权的权重**严格为正**（不像 TWFE 可能为负），所以即使不加 `rw` 也比 TWFE 更可靠。
+
+### LPDiD vs 其他估计量
+
+| 场景 | 推荐 | 理由 |
+|---|---|---|
+| 长差分事件研究 + 干净对照 | **LPDiD** | 局部投影天然支持任意 horizon |
+| 少聚类（<50） | **LPDiD** | `bootstrap()` wild bootstrap 内置 |
+| 非吸收处理 + 持久型 | **LPDiD** `nonabsorbing(#)` | 专门设计 |
+| 冲击型处理（飓风、地震） | **LPDiD** `nonabsorbing(#, oneoff)` | 专门设计 |
+| 要 DR/IPW/Reg 三方法 | `csdid` | LPDiD 无此选项 |
+| 要设计诊断 D 统计量 | `stacked` | LPDiD 无此功能 |
+| 要非线性模型 | `jwdid` | LPDiD 仅支持线性 |
+
+### 与 diff-diff 的对应关系
+
+`lpdid` ≈ diff-diff 的 `LPDiD`。diff-diff 用 `lpdid` 作为 Stata 端的交叉验证锚点。
+
+## 8. 8 步 practitioner 工作流（Baker et al. 2025）
 
 跳过诊断步骤 = 不可靠结论。以下 8 步是 `igerber/diff-diff` 项目从学术最佳实践中凝练的工作流，**全部 8 步都能在 Stata + stataskills did 内执行**——`diff-diff` 只是把流程命名约定化了，Stata 生态每个命令都能映射。
 
@@ -910,6 +1046,9 @@ estat aggregation, dynamic graph
 | 错时 DID + 想做 DR/IPW/Reg 三方法对照 | `csdid method(dr)`（第 1 节） | 唯一提供三种估计方法 |
 | 错时 DID + 想要设计诊断（看 TWFE 偏误来源） | `stacked`（第 6 节） | D 统计量直接报告权重差距 |
 | 错时 DID + 大数据（100M+ 行） | `stacked`（第 6 节） | DuckDB 后端秒级回归 |
+| 错时 DID + 少聚类（<50） | `lpdid bootstrap(500)`（第 7 节） | wild bootstrap 内置 |
+| 冲击型处理（飓风、地震，仅持续 1 期） | `lpdid nonabsorbing(#, oneoff)`（第 7 节） | 专门设计 |
+| 非吸收处理 + 持久型（可开启/关闭） | `lpdid nonabsorbing(#)`（第 7 节） | 与 DCDH 互补：LPDiD 用长差分，DCDH 用事件研究 |
 | 错时 DID + 想要一键出图 | `jwdid` + `estat plot`（第 1 节） | `estat plot` 一键事件研究图 |
 | 错时 DID + 想要内置平行趋势检验 | `jwdid` 或 `did_imputation`（第 1 节） | `estat event, pretrend` 或 `pretrends(k)` |
 | 错时 DID + 想要异质性约束 | `jwdid hettype(event/cohort/time)`（第 1 节） | `hettype()` 选项 |
@@ -917,26 +1056,28 @@ estat aggregation, dynamic graph
 
 ### 特征对照矩阵
 
-| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | did_multiplegt (DCDH) | stacked (StackedDiD) |
-|------|-----------|-------------|-------|-------|----------------|----------------------|---------------------|
-| 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC | ❌ SSC | ❌ GitHub |
-| 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **可逆处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ |
-| **非二元处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **无 stayer 设计** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ had 模式 | ❌ |
-| 非线性模型 | ❌ | ❌ | ❌ | ✅ poisson/logit | ❌ | ❌ | ❌ |
-| DR/IPW/Reg 方法 | ❌ | aipw | ✅ 三方法 | ❌ | ❌ | ❌ | ❌ |
-| leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ | ❌ |
-| 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **设计诊断 D 统计量** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
-| **按 cohort 权重分解** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ bygroup |
-| **大数据（100M+）** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ DuckDB |
-| estat plot | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ dyn 自动出图 | ✅ stacked plot |
-| pretrend 检验 | estat ptrends | estat ptrends | 手动 | ✅ estat | ✅ pretrends | ✅ placebo 期 | ✅ screen D |
-| hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| 控制组选择 | — | notyet | notyet/never | notyet/never | — | not-yet-switchers | both/never/notyet |
-| 滞后效应 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ dyn 模式 | ❌ |
+| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | did_multiplegt (DCDH) | stacked | lpdid (LPDiD) |
+|------|-----------|-------------|-------|-------|----------------|----------------------|---------|--------------|
+| 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC | ❌ SSC | ❌ GitHub | ❌ SSC |
+| 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **可逆处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ | ✅ nonabsorbing |
+| **非二元处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **冲击型处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ oneoff |
+| 非线性模型 | ❌ | ❌ | ❌ | ✅ poisson/logit | ❌ | ❌ | ❌ | ❌ |
+| DR/IPW/Reg 方法 | ❌ | aipw | ✅ 三方法 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ | ❌ | ❌ |
+| 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **长差分+局部投影** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
+| **设计诊断 D 统计量** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ |
+| **按 cohort 权重分解** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ bygroup | ❌ |
+| **大数据（100M+）** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ DuckDB | ❌ |
+| wild bootstrap | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| estat plot | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ dyn 自动出图 | ✅ stacked plot | ✅ 内置出图 |
+| pretrend 检验 | estat ptrends | estat ptrends | 手动 | ✅ estat | ✅ pretrends | ✅ placebo 期 | ✅ screen D | ✅ pre 系数 |
+| hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| 控制组选择 | — | notyet | notyet/never | notyet/never | — | not-yet-switchers | both/never/notyet | all clean/never |
+| 滞后效应 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ dyn 模式 | ❌ | ❌ |
 
 ### AI Agent 选择逻辑
 
@@ -953,8 +1094,11 @@ estat aggregation, dynamic graph
 9. **估计方法需求**：要 DR/IPW/Reg？ → `csdid method(dr)`
 10. **设计诊断需求**：要看到 TWFE 偏误来源 + cohort 权重分解？ → `stacked`（第 6 节）
 11. **大数据需求**：数据 100M+ 行？ → `stacked` DuckDB 后端（第 6 节）
-12. **出图需求**：要一键出图？ → `jwdid` + `estat plot`
-13. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
+12. **冲击型处理**：处理仅持续 1 期（飓风、地震）？ → `lpdid nonabsorbing(#, oneoff)`（第 7 节）
+13. **少聚类**：聚类数 < 50？ → `lpdid bootstrap(500)`（第 7 节）
+14. **长差分需求**：想用局部投影估计任意 horizon 的动态效应？ → `lpdid`（第 7 节）
+15. **出图需求**：要一键出图？ → `jwdid` + `estat plot`
+16. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
 
 ## 事后命令速查
 
@@ -986,6 +1130,14 @@ estat aggregation, dynamic graph
 | `stacked summary` | stacked | 设计诊断：权重差距 + 恒等式 |
 | `stacked plot` | stacked | 事件研究图 |
 | `stacked plot, bygroup` | stacked | 按 cohort 分解图 |
+| `lpdid Y, ... pre(#) post(#)` | lpdid | 方差加权事件研究 |
+| `lpdid Y, ... rw` | lpdid | 等权重 ATT |
+| `lpdid Y, ... pmd(max)` | lpdid | 前均值差分版本 |
+| `lpdid Y, ... nonabsorbing(#)` | lpdid | 非吸收处理 |
+| `lpdid Y, ... nonabsorbing(#, oneoff)` | lpdid | 冲击型处理 |
+| `lpdid Y, ... bootstrap(500)` | lpdid | wild bootstrap 推断 |
+| `matrix list e(results)` | lpdid | 查看事件研究系数 |
+| `matrix list e(pooled_results)` | lpdid | 查看汇总效应 |
 
 ## 关键陷阱速查
 
@@ -1017,6 +1169,12 @@ estat aggregation, dynamic graph
     **Fix**：先跑 `stacked kappa` 看哪些 `(kpre, kpost)` 组合保留所有 cohort；选 n_sub_exp 最大的组合。
 14. **`stacked reg, fe(interacted)` 需要 `reghdfe`**：未安装 `reghdfe` 时 `fe(interacted)` 报错。
     **Fix**：`ssc install reghdfe, replace`；或用默认 `fe(saturated)`（无 FE，不需要 `reghdfe`）。
+15. **`lpdid` 的 `pre()` 必须 ≥2**：`pre(1)` 会报错。
+    **Fix**：`pre(5)` 或更大；最少 2 期。
+16. **`lpdid` 的 `nonabsorbing()` 与 `rw` 组合时用回归调整**：含协变量 + `rw` 时走 RA 路径（DGJT §4.1.1），不含 `rw` 时直接加入 OLS（需效应与协变量独立假设）。
+    **Fix**：有协变量时优先用 `rw`（RA 路径假设更弱）。
+17. **`lpdid` 的结果存在 `e(results)` 矩阵中，不是 `e(b)`**：`estat` 等标准 post-estimation 命令不适用。
+    **Fix**：`matrix list e(results)` 看事件研究系数；`matrix list e(pooled_results)` 看汇总效应；自定义图用 `svmat` 提取。
 
 ## 参考文献与延伸阅读
 
@@ -1040,6 +1198,7 @@ estat aggregation, dynamic graph
 - **de Chaisemartin & D'Haultfoeuille (2024b)** "Two-way Fixed Effects and Differences-in-Differences Estimators in Heterogeneous Adoption Designs." — `did_multiplegt (had)` 模式的理论基础（无 stayer 设计）。
 - **de Chaisemartin et al. (2022)** "Difference-in-Differences for Continuous Treatments and Instruments with Stayers." — `did_multiplegt (stat)` 连续处理 + IV-DID 的理论基础。
 - **Wing, Hollingsworth & Freedman (2024)** "Stacked Difference-in-Differences." *NBER Working Paper* 32054. — `stacked` 的理论基础。Q 权重确保 cohort 聚合不混入负权重，D 统计量诊断 TWFE 偏误来源。
+- **Dube, Girardi, Jordà & Taylor (2025)** "A Local Projections Approach to Difference-in-Differences." *Journal of Applied Econometrics* 40(7). — `lpdid` 的理论基础。长差分 + 干净对照条件，避免 TWFE 负权重；支持非吸收/冲击型处理。
 
 ## 验证
 
