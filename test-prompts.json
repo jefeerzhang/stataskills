@@ -14,7 +14,10 @@
         "用 clonevar 留底原变量",
         "tab 验证：tab old new, miss"
       ],
-      "expected_outputs": ["反向编码后的 dta 文件", "缺失码区别保留的证据（tab 输出）"],
+      "expected_outputs": [
+        "反向编码后的 dta 文件",
+        "缺失码区别保留的证据（tab 输出）"
+      ],
       "verify_script": "verify/verify-basics.do"
     },
     {
@@ -27,7 +30,11 @@
         "tab rep78 foreign, chi2 V (V 必须大写)",
         "报告 p<0.001 (不写 0.000) + Cramér's V"
       ],
-      "expected_outputs": ["χ² 值与自由度", "p < 0.001", "Cramér's V ∈ [0, 1]"],
+      "expected_outputs": [
+        "χ² 值与自由度",
+        "p < 0.001",
+        "Cramér's V ∈ [0, 1]"
+      ],
       "verify_script": "verify/verify-descriptives.do"
     },
     {
@@ -41,7 +48,10 @@
         "margins foreign, at(weight=(1760 2120 2560))",
         "报告 F/p/R²，不解释 weight 主效应（因已控制）"
       ],
-      "expected_outputs": ["ANCOVA F/p", "控制 weight 后 foreign 的边际均值差"],
+      "expected_outputs": [
+        "ANCOVA F/p",
+        "控制 weight 后 foreign 的边际均值差"
+      ],
       "verify_script": "verify/verify-regression.do"
     },
     {
@@ -56,7 +66,10 @@
         "rotate, varimax 与 promax 各跑一次对比",
         "alpha 不作为删条依据；用 alpha, item 看每条目 α 但不删"
       ],
-      "expected_outputs": ["保留因子数 + 各因子方差贡献", "旋转对比表"],
+      "expected_outputs": [
+        "保留因子数 + 各因子方差贡献",
+        "旋转对比表"
+      ],
       "verify_script": "verify/verify-advanced.do"
     },
     {
@@ -70,7 +83,10 @@
         "coefplot m1 m2, eform drop(_cons) xline(1)",
         "xline 必须用 1 (eform) 不是 0；mlabels 加 format(%9.2f)"
       ],
-      "expected_outputs": ["森林图 PNG（含 OR + 95% CI）", "两模型系数对比"],
+      "expected_outputs": [
+        "森林图 PNG（含 OR + 95% CI）",
+        "两模型系数对比"
+      ],
       "verify_script": "verify/verify-coefplot.do"
     },
     {
@@ -85,8 +101,55 @@
         "estat aggregation, dynamic graph 看事件研究",
         "另起一份 collapse (mean) y treat, by(group month) → didregress → estat bdecomp, graph 看 Bacon 分解"
       ],
-      "expected_outputs": ["cohort ATET 图", "事件研究图（暴露期）", "Bacon 分解图", "含「已处理当对照」负权重分量的诊断"],
+      "expected_outputs": [
+        "cohort ATET 图",
+        "事件研究图（暴露期）",
+        "Bacon 分解图",
+        "含「已处理当对照」负权重分量的诊断"
+      ],
       "verify_script": "verify/verify-did.do"
+    },
+    {
+      "id": "did-02-csdid-staggered",
+      "skill": "stata-did",
+      "scenario": "用户问题：错时 DID 数据，用 csdid 估计 ATET，要求 notyet 控制组 + DR 方法 + 事件研究图。",
+      "expected_actions": [
+        "load stata-did SKILL.md",
+        "ssc install drdid csdid",
+        "csdid y x, ivar(id) time(t) gvar(first_treat) notyet method(dr)",
+        "estat simple  // 总体 ATT",
+        "estat group   // 按 cohort 聚合",
+        "estat event   // 事件研究系数",
+        "与 hdidregress aipw 对照（同源理论，结果应一致）"
+      ],
+      "expected_outputs": [
+        "csdid ATT + SE",
+        "事件研究系数表",
+        "与 hdidregress aipw 对照一致"
+      ],
+      "verify_script": "verify/verify-synth-sdid.do"
+    },
+    {
+      "id": "did-03-jwdid-etwfe",
+      "skill": "stata-did",
+      "scenario": "用户问题：错时 DID 数据，用 jwdid 估计 ETWFE，要求 poisson 模型 + 事件研究图 + 平行趋势检验。",
+      "expected_actions": [
+        "load stata-did SKILL.md",
+        "ssc install hdfe jwdid",
+        "gen y_count = exp(outcome)",
+        "jwdid y_count x, ivar(id) time(t) gvar(first_treat) method(poisson) group",
+        "estat simple  // 总体 ATT",
+        "estat event   // 事件研究系数",
+        "estat event, pretrend  // 平行趋势检验",
+        "estat plot     // 事件研究图"
+      ],
+      "expected_outputs": [
+        "jwdid ATT + SE",
+        "事件研究系数表",
+        "平行趋势检验 p 值",
+        "事件研究图"
+      ],
+      "verify_script": "verify/verify-synth-sdid.do"
     },
     {
       "id": "cross-01-clean-then-descriptives",
@@ -97,7 +160,10 @@
         "再加载 stata-descriptives：summarize newscale, detail → sktest → alpha newscale（用 statadescriptives 里的描述段，不是 advanced 里的『删条目提 α』陷阱）",
         "alpha 输出报告项目级 α，不要建议删条目"
       ],
-      "expected_outputs": ["清洗后的 .dta", "量表描述 + α（不删条目）"],
+      "expected_outputs": [
+        "清洗后的 .dta",
+        "量表描述 + α（不删条目）"
+      ],
       "verify_script": "verify/verify-basics.do + verify/verify-descriptives.do"
     },
     {
@@ -110,7 +176,10 @@
         "bycoefs 用整数编号 headings(1=mpg 2=weight 3=length 4=turn)，不是系数名",
         "byopts(xrescale) 让各子图不同刻度（因 m1 只有 1 个系数，m3 有 3 个）"
       ],
-      "expected_outputs": ["嵌套模型森林图 PNG", "每步新增系数显著性的对比"],
+      "expected_outputs": [
+        "嵌套模型森林图 PNG",
+        "每步新增系数显著性的对比"
+      ],
       "verify_script": "verify/verify-regression.do + verify/verify-coefplot.do"
     }
   ]
