@@ -152,6 +152,26 @@
       "verify_script": "verify/verify-synth-sdid.do"
     },
     {
+      "id": "did-04-did-imputation",
+      "skill": "stata-did",
+      "scenario": "用户问题：错时 DID 数据，用 did_imputation 估计插补法 ATT，要求 leaveout 方差修正 + 事件研究 + 平行趋势检验。",
+      "expected_actions": [
+        "load stata-did SKILL.md",
+        "ssc install reghdfe did_imputation",
+        "replace Ei = . if first_treat == 0  // 注意：Ei 用缺失表示从未处理，不是 0",
+        "did_imputation y id t Ei, horizons(0/5) leaveout autosample",
+        "did_imputation y id t Ei, pretrends(5)  // 平行趋势检验",
+        "与 hdidregress aipw 或 csdid 对照"
+      ],
+      "expected_outputs": [
+        "did_imputation ATT + SE（leaveout）",
+        "事件研究系数（horizons 0-5）",
+        "平行趋势检验 F/p",
+        "与 hdidregress/csdid 对照一致"
+      ],
+      "verify_script": "verify/verify-synth-sdid.do"
+    },
+    {
       "id": "cross-01-clean-then-descriptives",
       "skill": "stata-basics + stata-descriptives",
       "scenario": "用户问题：把 firstsurvey.dta 清洗（reverse coding、构建量表），然后跑量表的描述统计 + 信度。",

@@ -3,11 +3,11 @@ set more off
 set seed 20260817
 
 * ============================================================
-* stata-did 验证脚本：第 13-15 节（csdid / jwdid / 合成控制 / 合成 DID，社区包）
+* stata-did 验证脚本：第 13-15 节（csdid / jwdid / did_imputation / 合成控制 / 合成 DID，社区包）
 *
 * 数据：
-*   - csdid / jwdid 章节用本地模拟数据（40 units × 10 periods，2 cohorts），
-*     不依赖任何外部数据集。
+*   - csdid / jwdid / did_imputation 章节用本地模拟数据
+*     （40 units × 10 periods，2 cohorts），不依赖任何外部数据集。
 *   - ../synth/synth_smoking.dta —— Scott Cunningham *Mixtape* 经典案例
 *     （加州 Prop 99，1989 年生效）。来源见 data/synth/README.md。
 *   - sdid 章节用本地模拟数据（800 obs，39 对照 + 1 处理 × 20 期），
@@ -18,6 +18,8 @@ set seed 20260817
 *   - drdid          ：可选（csdid 的依赖包，未装时 sentinel）
 *   - jwdid          ：必需（Wooldridge ETWFE 估计量）
 *   - hdfe           ：可选（jwdid 的依赖包，未装时 sentinel）
+*   - did_imputation ：必需（BJS 插补法估计量）
+*   - reghdfe        ：可选（did_imputation 的依赖包，未装时 sentinel）
 *   - synth          ：必需（run-verify.sh 在数据已就绪时仍要求装包才 PASS）
 *   - synth_runner   ：可选；未装时 display sentinel，--community 模式下报 BAD
 *   - sdid           ：必需（同 synth）
@@ -97,6 +99,46 @@ estat group
 estat event
 
 display as text "jwdid 完成"
+
+* ============================================================
+* 第 13 节：did_imputation（BJS 插补法估计量）
+* ============================================================
+display as text "=== 测试第 13 节：did_imputation ==="
+
+capture which did_imputation
+if _rc != 0 {
+    display "__COMMUNITY_PACKAGE_MISSING__did_imputation__"
+    display as error "did_imputation 未安装，请运行 ssc install did_imputation, replace"
+    error 1
+}
+
+* reghdfe 是 did_imputation 的依赖包
+capture which reghdfe
+if _rc == 0 {
+    display as text "reghdfe 已安装（did_imputation 依赖）"
+} else {
+    display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__reghdfe__"
+    display as text "reghdfe 未安装（did_imputation 依赖包）"
+}
+
+* 使用与 csdid/jwdid 验证块相同的模拟数据（已在 csdid 块中生成）
+* 注意：did_imputation 的 Ei 编码与 csdid/jwdid 的 gvar 不同：
+*   - csdid/jwdid: gvar = 0 或 . 表示从未处理
+*   - did_imputation: Ei 必须是缺失值（.）表示从未处理，0 会被当作"第 0 期处理"
+* first_treat 在模拟数据中已经是 0 = 从未处理，需要转换为缺失
+preserve
+gen Ei = first_treat
+replace Ei = . if first_treat == 0
+
+* 基本估计：总体 ATT + 事件研究
+did_imputation y id t Ei, horizons(0/5) autosample
+
+* leaveout 方差修正（BJS 附录 A.9，唯一实现）
+did_imputation y id t Ei, horizons(0/5) leaveout autosample
+
+restore
+
+display as text "did_imputation 完成"
 
 * ---- 第 14 节：合成控制 synth ----
 display as text "=== 测试第 14 节：synth ==="

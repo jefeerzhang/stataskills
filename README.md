@@ -4,7 +4,7 @@
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
-> 🎯 **6 个 Skill · 38 个数据集 · 27 张 demo PNG · 7/7 verify PASS · 10 条 Agent 行为回归 prompt**
+> 🎯 **6 个 Skill · 38 个数据集 · 27 张 demo PNG · 7/7 verify PASS · 11 条 Agent 行为回归 prompt**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
@@ -87,7 +87,7 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令 + 7/7 PASS 实测 | ❌ | ⚠️ log 验证 |
-| Agent 行为回归 | ✅ `test-prompts.json` 10 条 prompt + check-claims 自动覆盖断言 | ❌ | ❌ |
+| Agent 行为回归 | ✅ `test-prompts.json` 11 条 prompt + check-claims 自动覆盖断言 | ❌ | ❌ |
 | Demo 报告 | ✅ 7 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 / ADR-0002 | ❌ | ❌ |
 | 单一来源 | ✅ `data/manifest.txt` + `verify/stata.conf` | ❌ | ❌ |
@@ -111,7 +111,7 @@ stataskills/
 ├── CHANGELOG.md                    ← 变更历史
 ├── CITATION.cff                    ← 学术引用
 ├── download_data.do                ← 一键下载全部数据
-├── test-prompts.json               ← 10 条 Agent 行为回归测试（check-claims 第 9 条断言）
+├── test-prompts.json               ← 11 条 Agent 行为回归测试（check-claims 第 9 条断言）
 ├── stata-basics/SKILL.md           ← skill 1（数据管理 / 清洗）
 ├── stata-descriptives/SKILL.md     ← skill 2（描述 / 检验）
 ├── stata-regression/SKILL.md       ← skill 3（回归）
