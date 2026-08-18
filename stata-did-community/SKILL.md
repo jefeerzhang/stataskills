@@ -1,9 +1,9 @@
 ---
 name: stata-did-community
-description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 可逆处理 reversible treatment / 非二元处理 continuous treatment / DCDH de Chaisemartin D'Haultfoeuille / did_multiplegt dyn stat had / 无 stayer 异质性采用 / 方法选择决策树。全部需 ssc install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
+description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 可逆处理 reversible treatment / 非二元处理 continuous treatment / DCDH de Chaisemartin D'Haultfoeuille / did_multiplegt dyn stat had / 无 stayer 异质性采用 / StackedDiD 堆叠 DID Wing Hollingsworth Freedman / stacked Q 权重 设计诊断 D 统计量 / 方法选择决策树。全部需 ssc install 或 GitHub net install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
 ---
 
-# Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt）
+# Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked）
 
 本 skill 覆盖主流 DID 社区包，需 `ssc install`。Stata 内置 DID 命令（`didregress` / `xtdidregress` / `hdidregress` / `xthdidregress`）见 `stata-did` skill。
 
@@ -600,7 +600,170 @@ did_multiplegt (dyn) lwage nr year union, ///
 
 `did_multiplegt (dyn)` ≈ diff-diff 的 `ChaisemartinDHaultfoeuille`（别名 `DCDH`）。diff-diff 用 `did_multiplegt` 作为 Stata 端的交叉验证锚点。
 
-## 6. 8 步 practitioner 工作流（Baker et al. 2025）
+## 6. StackedDiD：堆叠双重差分（Wing, Hollingsworth & Freedman 2024）
+
+适用场景：**错时 DID 下担心 TWFE 负权重偏误**，且想要一个**透明可分解**的估计量——每个 adoption cohort 是一个独立子实验，Q 权重确保聚合时不混入负权重。与 `csdid`/`hdidregress` 的理论路径不同，StackedDiD 的核心优势是**设计诊断**：`stacked summary` 直接报告"未加权 TWFE 的隐含权重"与"目标 Q 权重"的差距（D 统计量），让你看到偏误来自哪里。
+
+### 安装
+
+```stata
+* 尚未上 SSC，从 GitHub 安装
+net install stacked, ///
+    from("https://raw.githubusercontent.com/hollina/stacked/main/Stata") replace
+* 获取示例数据（一次性）
+net get stacked
+```
+
+依赖：`reghdfe`（可选，用于 `fe(interacted)` 和 `absorb()`）。无 `reghdfe` 时自动退化为 `regress`。
+
+### 核心工作流（三步）
+
+```stata
+* 0. 加载示例数据
+stacked use medicaid, clear
+
+* 1. 筛选事件窗口（kappa 权衡表）
+stacked kappa, time(year) unit(state) adopt(adopt_year) ///
+    kpre(1/4) kpost(1/4)
+
+* 2. 构建堆叠数据集
+stacked build, time(year) unit(state) adopt(adopt_year) ///
+    kpre(3) kpost(2)
+
+* 3. Q 加权事件研究回归
+stacked reg uninsured, cluster(state)
+
+* 4. 出图
+stacked plot
+```
+
+### 三步详解
+
+**Step 1：`stacked kappa`** — 筛选事件窗口
+
+不同 `(kpre, kpost)` 组合下的样本量权衡。`kpost` 太大 → 最新 cohort 被丢弃（没有足够的 post 期）。选一个所有 cohort 都能保留的组合。
+
+```stata
+stacked kappa, time(year) unit(state) adopt(adopt_year) ///
+    kpre(1/4) kpost(1/4) screen
+```
+
+`screen` 选项额外输出 D 统计量（设计诊断）：D = Σ|w_a^S - w_a^T|，即未加权 TWFE 隐含权重与目标 Q 权重的总偏差。D ≈ 0 → 两种估计差异小；D 大 → 未加权 TWFE 可能严重偏误。
+
+**Step 2：`stacked build`** — 构建堆叠数据集
+
+将原始面板替换为堆叠数据集：每个 adoption cohort 一个子实验（`sub_exp`），含 `event_time`、`treat`、`post`、`q_weight` 变量。
+
+```stata
+stacked build, time(year) unit(state) adopt(adopt_year) ///
+    kpre(3) kpost(2) controltype(both)
+```
+
+| 选项 | 含义 | 默认 |
+|---|---|---|
+| `time(varname)` | 时间变量 | 必填 |
+| `unit(varname)` | 单位 id | 必填 |
+| `adopt(varname)` | 首次处理期（缺失 = 从未处理） | 必填 |
+| `kpre(#)` / `kpost(#)` | 事件窗口前后期数 | 3 / 2 |
+| `controltype(str)` | `both` / `never` / `notyet` | `both` |
+| `nythorizon(#)` | not-yet 控制组的最远采用期 | — |
+| `weightvar(varname)` | 调查/抽样权重 | — |
+| `datatype(str)` | `panel` / `repeated_cross_section` | `panel` |
+| `weighttype(str)` | 权重类型（见下表） | `unit_weights` |
+
+| weighttype | 含义 |
+|---|---|
+| `unit_weights` | 每个单位等权重（默认） |
+| `population_between` | 人口权重（组间） |
+| `pop_constant` | 人口权重（常数） |
+| `pop_total_periods` | 人口权重（全期合计） |
+| `pop_period_specific` | 人口权重（逐期） |
+| `sample_share` | 样本份额权重 |
+
+**Step 3：`stacked reg`** — Q 加权回归
+
+```stata
+* 事件研究（默认）
+stacked reg uninsured, cluster(state)
+
+* 单一 ATT
+stacked reg uninsured, cluster(state) model(att)
+
+* 交互固定效应（规范 stacked DiD 设定）
+stacked reg uninsured, cluster(state) fe(interacted)
+
+* 按 cohort 分解
+stacked reg uninsured, cluster(state) bygroup
+
+* 含协变量
+stacked reg uninsured, cluster(state) covariates(income poverty)
+```
+
+| 选项 | 含义 | 默认 |
+|---|---|---|
+| `cluster(varname)` | 聚类变量 | — |
+| `ref(#)` | 参考事件期 | -1 |
+| `model(str)` | `eventstudy` / `att` | `eventstudy` |
+| `fe(str)` | `saturated`（无 FE）/ `interacted`（unit×sub_exp + time×sub_exp） | `saturated` |
+| `bygroup` | 按 cohort 分解估计 | 关闭 |
+| `covariates(varlist)` | 额外协变量 | — |
+| `absorb(fvlist)` | 高维 FE（传给 reghdfe） | — |
+
+### 设计诊断：`stacked summary`
+
+`stacked summary` 输出每个 cohort 的 ATT、SE、权重，并报告两个聚合恒等式：
+
+```stata
+stacked summary uninsured, cluster(state)
+```
+
+输出：
+- 每行一个 cohort：N obs、treated units、precision weight (w_a^S)、corrective Q-weight (w_a^T)、ATT、SE
+- 汇总行：D 统计量（设计差距）、D-gap（最大单 cohort 偏差）
+- 两个恒等式：precision 加权和 = 未加权 TWFE 系数；Q 加权和 = 目标 ATT
+
+**D 统计量解读**：D = Σ|w_a^S - w_a^T|。D ≈ 0 → 未加权 TWFE 和 Q 加权估计差异小；D 大 → 未加权 TWFE 隐含权重与目标权重严重不匹配，TWFE 偏误风险高。
+
+### 按 cohort 分解：`stacked reg, bygroup`
+
+```stata
+stacked reg uninsured, cluster(state) bygroup
+stacked plot, bygroup                    // 叠加图（marker 大小 = 权重）
+stacked plot, bygroup combine(facet)     // 分面图（每 cohort 一个面板）
+stacked levels uninsured, bygroup        // 每 cohort 加权均值
+```
+
+`bygroup` 存储在 `r(group_att)`：每行一个 cohort（sub_exp, att, se, lb, ub, weight）。恒等式：pooled ATT = Σ(weight × cohort ATT)。
+
+### 大数据支持（DuckDB/Parquet）
+
+```stata
+* 连接 DuckDB（一次性下载 JDBC 驱动 ~75MB）
+stacked duckconnect, download
+
+* 从 Parquet 构建堆叠（不进内存）
+stacked build, parquet("data/*.parquet") time(year) unit(state) adopt(adopt_year) kpre(3) kpost(2)
+
+* 从压缩数据回归（秒级，支持 100M+ 行）
+stacked reg outcome, duck cluster(state)
+```
+
+### 与 diff-diff 的对应关系
+
+`stacked` ≈ diff-diff 的 `StackedDiD`。diff-diff 用 `stacked` 作为 Stata 端的交叉验证锚点。
+
+### 何时用 StackedDiD vs csdid/hdidregress
+
+| 场景 | 推荐 | 理由 |
+|---|---|---|
+| 要设计诊断（看 TWFE 偏误来源） | **StackedDiD** | `stacked summary` 的 D 统计量直接报告权重差距 |
+| 要按 cohort 分解（权重透明） | **StackedDiD** | `bygroup` + `plot` 直观展示每个 cohort 的贡献 |
+| 要 DR/IPW/Reg 三方法 | `csdid` | StackedDiD 无此选项 |
+| 要非线性模型 | `jwdid` | StackedDiD 仅支持线性 |
+| 要官方内置 | `hdidregress` | Stata 18+ |
+| 大数据（100M+ 行） | **StackedDiD** | DuckDB 后端秒级回归 |
+
+## 7. 8 步 practitioner 工作流（Baker et al. 2025）
 
 跳过诊断步骤 = 不可靠结论。以下 8 步是 `igerber/diff-diff` 项目从学术最佳实践中凝练的工作流，**全部 8 步都能在 Stata + stataskills did 内执行**——`diff-diff` 只是把流程命名约定化了，Stata 生态每个命令都能映射。
 
@@ -745,6 +908,8 @@ estat aggregation, dynamic graph
 | 错时 DID + 想要单位特定趋势（unit-specific trends） | `did_imputation, unitcontrols(year)`（第 1 节） | `unitcontrols()` 选项 |
 | 错时 DID + 想要灵活 FE 规格（如州×年 FE） | `did_imputation, fe(i t#state)`（第 1 节） | `fe()` 任意组合 |
 | 错时 DID + 想做 DR/IPW/Reg 三方法对照 | `csdid method(dr)`（第 1 节） | 唯一提供三种估计方法 |
+| 错时 DID + 想要设计诊断（看 TWFE 偏误来源） | `stacked`（第 6 节） | D 统计量直接报告权重差距 |
+| 错时 DID + 大数据（100M+ 行） | `stacked`（第 6 节） | DuckDB 后端秒级回归 |
 | 错时 DID + 想要一键出图 | `jwdid` + `estat plot`（第 1 节） | `estat plot` 一键事件研究图 |
 | 错时 DID + 想要内置平行趋势检验 | `jwdid` 或 `did_imputation`（第 1 节） | `estat event, pretrend` 或 `pretrends(k)` |
 | 错时 DID + 想要异质性约束 | `jwdid hettype(event/cohort/time)`（第 1 节） | `hettype()` 选项 |
@@ -752,23 +917,26 @@ estat aggregation, dynamic graph
 
 ### 特征对照矩阵
 
-| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | did_multiplegt (DCDH) |
-|------|-----------|-------------|-------|-------|----------------|----------------------|
-| 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC | ❌ SSC |
-| 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **可逆处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
-| **非二元处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **无 stayer 设计** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ had 模式 |
-| 非线性模型 | ❌ | ❌ | ❌ | ✅ poisson/logit | ❌ | ❌ |
-| DR/IPW/Reg 方法 | ❌ | aipw | ✅ 三方法 | ❌ | ❌ | ❌ |
-| leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ |
-| 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| estat plot | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ dyn 自动出图 |
-| pretrend 检验 | estat ptrends | estat ptrends | 手动 | ✅ estat | ✅ pretrends | ✅ placebo 期 |
-| hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| 控制组选择 | — | notyet | notyet/never | notyet/never | — | not-yet-switchers |
-| 滞后效应 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ dyn 模式 |
+| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | did_multiplegt (DCDH) | stacked (StackedDiD) |
+|------|-----------|-------------|-------|-------|----------------|----------------------|---------------------|
+| 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC | ❌ SSC | ❌ GitHub |
+| 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **可逆处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ |
+| **非二元处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **无 stayer 设计** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ had 模式 | ❌ |
+| 非线性模型 | ❌ | ❌ | ❌ | ✅ poisson/logit | ❌ | ❌ | ❌ |
+| DR/IPW/Reg 方法 | ❌ | aipw | ✅ 三方法 | ❌ | ❌ | ❌ | ❌ |
+| leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ | ❌ |
+| 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **设计诊断 D 统计量** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
+| **按 cohort 权重分解** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ bygroup |
+| **大数据（100M+）** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ DuckDB |
+| estat plot | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ dyn 自动出图 | ✅ stacked plot |
+| pretrend 检验 | estat ptrends | estat ptrends | 手动 | ✅ estat | ✅ pretrends | ✅ placebo 期 | ✅ screen D |
+| hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| 控制组选择 | — | notyet | notyet/never | notyet/never | — | not-yet-switchers | both/never/notyet |
+| 滞后效应 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ dyn 模式 | ❌ |
 
 ### AI Agent 选择逻辑
 
@@ -783,8 +951,10 @@ estat aggregation, dynamic graph
 7. **方差修正需求**：要 leaveout？ → `did_imputation, leaveout`
 8. **FE 需求**：要灵活 FE（如州×年）？ → `did_imputation, fe()`
 9. **估计方法需求**：要 DR/IPW/Reg？ → `csdid method(dr)`
-10. **出图需求**：要一键出图？ → `jwdid` + `estat plot`
-11. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
+10. **设计诊断需求**：要看到 TWFE 偏误来源 + cohort 权重分解？ → `stacked`（第 6 节）
+11. **大数据需求**：数据 100M+ 行？ → `stacked` DuckDB 后端（第 6 节）
+12. **出图需求**：要一键出图？ → `jwdid` + `estat plot`
+13. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
 
 ## 事后命令速查
 
@@ -807,6 +977,15 @@ estat aggregation, dynamic graph
 | `normalized` | did_multiplegt (dyn) | 归一化效应（可解释为"处理+1 单位"） |
 | `design(0.5, console)` | did_multiplegt (dyn) | 显示 ≥50% switchers 的处理路径 |
 | `by_path(all)` | did_multiplegt (dyn) | 按处理路径分别估计 |
+| `stacked kappa` | stacked | 事件窗口权衡表 + D 统计量 |
+| `stacked build` | stacked | 构建堆叠数据集 |
+| `stacked reg` | stacked | Q 加权事件研究回归 |
+| `stacked reg, model(att)` | stacked | 单一 ATT |
+| `stacked reg, bygroup` | stacked | 按 cohort 分解 |
+| `stacked reg, fe(interacted)` | stacked | 交互固定效应（规范设定） |
+| `stacked summary` | stacked | 设计诊断：权重差距 + 恒等式 |
+| `stacked plot` | stacked | 事件研究图 |
+| `stacked plot, bygroup` | stacked | 按 cohort 分解图 |
 
 ## 关键陷阱速查
 
@@ -830,6 +1009,14 @@ estat aggregation, dynamic graph
    **Fix**：`placebo(#)` 的 `#` 必须 ≤ `effects(#)` 的 `#`。
 10. **`did_multiplegt (dyn)` 的 `bootstrap()` 参数用逗号分隔**：`bootstrap(100, 20260817)` 而不是 `bootstrap(100 seed(20260817))`；两个参数都必须写，即使留空也要保留逗号。
     **Fix**：`bootstrap(reps,seed)`——如 `bootstrap(100,20260817)`；留空默认 50 次无 seed。
+11. **`stacked` 未上 SSC**：安装方式是 `net install stacked, from("https://raw.githubusercontent.com/hollina/stacked/main/Stata") replace`，不是 `ssc install`。CI 环境可能无法访问 GitHub。
+    **Fix**：本地安装后确认 `which stacked` 有输出；CI 环境需预装或缓存。
+12. **`stacked build` 会替换内存中的数据**：运行后原始面板被堆叠数据集覆盖。需要保留原始数据时先 `save` 备份。
+    **Fix**：`save original.dta, replace` → `stacked build ...` → 分析完 `use original.dta, clear` 恢复。
+13. **`stacked kappa` 的 `kpost` 太大会丢弃最新 cohort**：最新 cohort 的 post 期不足 `kpost` 时会被静默丢弃，导致样本损失。
+    **Fix**：先跑 `stacked kappa` 看哪些 `(kpre, kpost)` 组合保留所有 cohort；选 n_sub_exp 最大的组合。
+14. **`stacked reg, fe(interacted)` 需要 `reghdfe`**：未安装 `reghdfe` 时 `fe(interacted)` 报错。
+    **Fix**：`ssc install reghdfe, replace`；或用默认 `fe(saturated)`（无 FE，不需要 `reghdfe`）。
 
 ## 参考文献与延伸阅读
 
@@ -852,6 +1039,7 @@ estat aggregation, dynamic graph
 - **de Chaisemartin & D'Haultfoeuille (2024a/2026)** "Difference-in-Differences Estimators of Intertemporal Treatment Effects." *REStud*. — `did_multiplegt_dyn` 的理论基础（事件研究估计量，支持可逆/非二元处理）。
 - **de Chaisemartin & D'Haultfoeuille (2024b)** "Two-way Fixed Effects and Differences-in-Differences Estimators in Heterogeneous Adoption Designs." — `did_multiplegt (had)` 模式的理论基础（无 stayer 设计）。
 - **de Chaisemartin et al. (2022)** "Difference-in-Differences for Continuous Treatments and Instruments with Stayers." — `did_multiplegt (stat)` 连续处理 + IV-DID 的理论基础。
+- **Wing, Hollingsworth & Freedman (2024)** "Stacked Difference-in-Differences." *NBER Working Paper* 32054. — `stacked` 的理论基础。Q 权重确保 cohort 聚合不混入负权重，D 统计量诊断 TWFE 偏误来源。
 
 ## 验证
 
