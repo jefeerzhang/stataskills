@@ -490,6 +490,36 @@ Treated later vs earlier      1.916   weight 0.093
 
 ---
 
+## 5.8 DID 方法选择 Demo（`08_did_method_selection.do`）
+
+**目标**：测试 `stata-did` skill 的**方法自动选择能力**——给定用户场景描述，AI 能否正确推荐最合适的 DID 估计量。
+
+**场景设计**：
+
+| 场景 | 用户描述特征 | 推荐方法 | 理由 |
+|------|-------------|---------|------|
+| 1 | 医院政策评估，单时点（2020 年 1 月） | `xtdidregress` | 面板 + 单时点 → 官方内置最简单 |
+| 2 | 县级就业政策，错时处理（不同县不同年份） | `hdidregress aipw` | 错时 + 面板 + 多处理单位 → 异质性稳健估计量 |
+| 3 | 医院就诊次数（计数数据），错时处理 | `jwdid method(poisson)` | 计数数据 → 唯一支持非线性模型 |
+| 4 | 面板数据，想要最精确的标准误 | `did_imputation, leaveout` | 有限样本方差修正 → 唯一实现 BJS 附录 A.9 |
+| 5 | 加州控烟政策，只有 1 个处理单位 | `synth` | 少数处理单位 → 合成控制法 |
+
+**测试方法**：
+
+1. 将用户提示词输入给 AI（加载 `stata-did` skill）
+2. 观察 AI 是否：
+   - 正确诊断数据结构（面板/截面/重复截面）
+   - 正确识别处理时点（单时点/错时）
+   - 正确推荐估计量
+   - 生成正确的 Stata 代码
+3. 记录 AI 的实际表现，与预期对比
+
+**详细说明**：见 `demo/SELECTION_DEMO.md`
+
+**产物**：`logs/08_did_method_selection.log`
+
+---
+
 ## 6. 结论与佐证价值
 
 1. **可执行**： 6 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
@@ -519,15 +549,18 @@ $STATA -b do dofiles/04_stata-advanced.do
 $STATA -b do dofiles/05_stata-advanced-extra.do   # 05 依赖 ../data/agis6/（仓库根目录的 data/agis6/）
 $STATA -b do dofiles/06_stata-coefplot.do
 $STATA -b do dofiles/07_stata-did.do              # DID demo（本地模拟数据，不依赖外部 .dta）
+$STATA -b do dofiles/08_did_method_selection.do   # DID 方法选择 demo（5 个场景，部分需社区包）
 ```
 
-> 注：05 拆自 advanced（多层模型 + IRT，依赖 `data/agis6/`）；06 是 coefplot demo；07 是 DID demo（本地模拟数据，不依赖外部 `.dta`）。
+> 注：05 拆自 advanced（多层模型 + IRT，依赖 `data/agis6/`）；06 是 coefplot demo；07 是 DID demo（本地模拟数据，不依赖外部 `.dta`）；08 是 DID 方法选择 demo（测试方法自动选择能力，场景 3-5 需安装社区包 jwdid/did_imputation/synth）。
 
 ## 附录 B ：数据说明
 
 - `auto.dta`： Stata 自带 1978 汽车数据（ 74 obs ），变量含 `make price mpg rep78 headroom trunk weight length turn displacement gear_ratio foreign`。
 - `data/agis6/`：书配套数据（ 38 个 `.dta` + 每章 do/log ），用于 ch15 多层、 ch16 IRT 及全 16 章验证。
 - `dofiles/07_stata-did.do`：使用本地模拟数据（flyer 案例复刻），不依赖网络与外部 `.dta`，`set seed 20260816` 保证可复现。
+- `dofiles/08_did_method_selection.do`：DID 方法选择 demo，5 个典型场景（简单 2x2 / 错时 / 计数结果 / leaveout / 合成控制），场景 1-2 使用本地模拟数据，场景 3-5 需安装社区包（jwdid / did_imputation / synth）。
+- `SELECTION_DEMO.md`：DID 方法选择 demo 详细说明，包含用户提示词、AI 诊断逻辑、推荐方法、生成代码。
 
 ---
 

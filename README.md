@@ -24,7 +24,7 @@
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，SKILL.md 行数 144（basics）至 1077（coefplot）
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 7/7 PASS（6 个 skill + 社区包章节）
-- **真实 demo** 报告：7 个 do-file + 27 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + Bacon 分解图）
+- **真实 demo** 报告：8 个 do-file + 27 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + Bacon 分解图）
 - **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
 
@@ -134,7 +134,7 @@ stataskills/
 │   └── verify-{basics,descriptives,regression,advanced,coefplot,did}.{do,log}
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
-    ├── dofiles/                    ← 7 个 do-file（含 did）
+    ├── dofiles/                    ← 8 个 do-file（含 did）
     ├── logs/                       ← 7 个 Stata log（exit=0）
     └── output/                     ← 27 张真实 PNG
 ```
