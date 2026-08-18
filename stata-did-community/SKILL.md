@@ -1,9 +1,9 @@
 ---
 name: stata-did-community
-description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 方法选择决策树。全部需 ssc install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
+description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 可逆处理 reversible treatment / 非二元处理 continuous treatment / DCDH de Chaisemartin D'Haultfoeuille / did_multiplegt dyn stat had / 无 stayer 异质性采用 / 方法选择决策树。全部需 ssc install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
 ---
 
-# Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid）
+# Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt）
 
 本 skill 覆盖主流 DID 社区包，需 `ssc install`。Stata 内置 DID 命令（`didregress` / `xtdidregress` / `hdidregress` / `xthdidregress`）见 `stata-did` skill。
 
@@ -492,7 +492,115 @@ coefplot, keep(time_to_event*) vertical ///
 
 **Fix**：参考期选择影响整张图的解读——常选 `rel_time = -1`（处理前一期）；太长或太短的参考期都会让事件期系数估计有偏。
 
-## 5. 8 步 practitioner 工作流（Baker et al. 2025）
+## 5. DCDH：可逆处理 DID（de Chaisemartin & D'Haultfœuille）
+
+适用场景：**处理可以开启也可以关闭**（如工会会员、政策实施后又撤销、补贴发放后又停止），或**处理是连续/离散多值**而非 0/1 二元。传统 DID 估计量（`csdid`/`jwdid`/`did_imputation`）都假设处理是吸收的（absorbing：一旦处理，永不撤销）；`did_multiplegt` 是 Stata 中**唯一**同时支持可逆处理和非二元处理的 DID 估计量。
+
+`did_multiplegt` 是一个统一入口，通过 `mode` 参数调用四个子估计量：
+
+| mode | 子命令 | 核心论文 | 用途 |
+|---|---|---|---|
+| `dyn` | `did_multiplegt_dyn` | de Chaisemartin & D'Haultfoeuille (2026) | **推荐默认**。事件研究估计量，支持可逆/非二元/滞后效应 |
+| `stat` | `did_multiplegt_stat` | de Chaisemartin & D'Haultfoeuille (2020); de Chaisemartin et al. (2022) | 静态 ATT，支持连续处理 + IV-DID |
+| `had` | `did_had` | de Chaisemartin & D'Haultfoeuille (2024b) | 异质性采用设计（无 stayers，仅 quasi-stayers） |
+| `old` | `did_multiplegt_old` | de Chaisemartin & D'Haultfoeuille (2020) | 旧版，**不推荐**，用 `dyn` 替代 |
+
+### 安装
+
+```stata
+ssc install did_multiplegt, replace
+* 也可单独安装 dyn 模式：
+ssc install did_multiplegt_dyn, replace
+```
+
+`did_multiplegt` 会自动更新子包（平均每 100 次运行更新一次），用 `no_updates` 选项可关闭。
+
+### 核心语法（dyn 模式）
+
+```stata
+did_multiplegt (dyn) Y G T D [if] [in] [, options]
+```
+
+| 参数 | 含义 |
+|---|---|
+| `Y` | 结局变量 |
+| `G` | 组变量（面板单位 id） |
+| `T` | 时间变量（需等间距） |
+| `D` | 处理变量（可二元/离散/连续，可随时间变化） |
+
+### 主要选项
+
+| 选项 | 含义 | 默认 |
+|---|---|---|
+| `effects(#)` | 估计事件研究效应的期数 | 1 |
+| `normalized` | 归一化效应（可解释为"处理增加 1 单位的效应"） | 关闭 |
+| `normalized_weights` | 显示归一化权重（当前处理 vs 各滞后） | 关闭 |
+| `placebo(#)` | 安慰剂检验期数（处理前） | 0 |
+| `same_switchers` | 限制为所有效应都可估计的 switchers | 关闭 |
+| `only_never_switchers` | 仅用从未变换单位做对照 | 关闭（用所有 not-yet-switchers） |
+| `controls(varlist)` | 时变协变量 | — |
+| `trends_lin` | 允许组特定线性趋势 | 关闭 |
+| `trends_nonparam(varlist)` | 非参数组特定趋势（如 industry×year） | — |
+| `cluster(varname)` | 聚类变量 | 默认按 G 聚类 |
+| `bootstrap(reps,seed)` | bootstrap 推断 | 关闭（用解析 SE） |
+| `by(varname)` | 按组级变量分组估计 | — |
+| `design(float, string)` | 显示 switchers 的处理路径 | — |
+| `by_path(#)` | 按最常见处理路径分别估计 | — |
+| `switchers(string)` | 仅估计 switchers-in 或 switchers-out | 全部 |
+| `graph_off` | 不出图 | 关闭 |
+| `save_results(path)` | 保存结果到 .dta | — |
+| `save_sample` | 生成 `_did_sample` 标记估计样本 | — |
+
+### 完整工作流示例
+
+```stata
+* 0. 安装（一次性）
+ssc install did_multiplegt, replace
+
+* 1. 数据准备
+* 工会会员对工资的影响（可逆处理：入会/退会）
+bcuse wagepan, clear
+
+* 2. 事件研究：5 期效应 + 2 期安慰剂
+did_multiplegt (dyn) lwage nr year union, ///
+    effects(5) placebo(2) cluster(nr) graph_off
+
+* 3. 归一化效应（可解释为"工会会员增加 1 期的效应"）
+did_multiplegt (dyn) lwage nr year union, ///
+    effects(5) normalized cluster(nr) graph_off
+
+* 4. 查看 switchers 的处理路径
+did_multiplegt (dyn) lwage nr year union, ///
+    effects(5) design(0.5, console) cluster(nr)
+
+* 5. 按路径分别估计（如 0→1→0 vs 0→1→1→...）
+did_multiplegt (dyn) lwage nr year union, ///
+    effects(5) by_path(all) cluster(nr) graph_off
+
+* 6. 静态 ATT（stat 模式）
+did_multiplegt (stat) lwage nr year union, ///
+    exact_match cluster(nr)
+
+* 7. 含协变量的估计
+did_multiplegt (dyn) lwage nr year union, ///
+    effects(5) controls(educ exper) cluster(nr) graph_off
+```
+
+### dyn vs stat 模式选择
+
+| 场景 | 推荐模式 | 理由 |
+|---|---|---|
+| 要事件研究图（动态效应） | `dyn` | 直接输出各期效应 + 安慰剂 |
+| 要静态 ATT（单个汇总效应） | `stat` | 更简洁，支持 IV-DID |
+| 处理可逆 + 要滞后效应 | `dyn` | `stat` 假设过去处理不影响当前结局 |
+| 连续处理 + 有 stayers | `stat` | `stat` 支持连续处理的 IV 估计 |
+| 无 stayers（所有单位最终都处理） | `had` | 专为无 stayer 设计 |
+
+### 与 diff-diff 的对应关系
+
+`did_multiplegt (dyn)` ≈ diff-diff 的 `ChaisemartinDHaultfoeuille`（别名 `DCDH`）。diff-diff 用 `did_multiplegt` 作为 Stata 端的交叉验证锚点。
+
+## 6. 8 步 practitioner 工作流（Baker et al. 2025）
 
 跳过诊断步骤 = 不可靠结论。以下 8 步是 `igerber/diff-diff` 项目从学术最佳实践中凝练的工作流，**全部 8 步都能在 Stata + stataskills did 内执行**——`diff-diff` 只是把流程命名约定化了，Stata 生态每个命令都能映射。
 
@@ -535,6 +643,9 @@ estat trendplot                        // 图形诊断
 |---|---|---|
 | simple 2x2 | DiD / TWFE | `didregress` / `xtdidregress`（见 `stata-did` skill） |
 | staggered adoption | CS / SA / BJS（**不是** plain TWFE） | `hdidregress aipw` / `xthdidregress aipw`（见 `stata-did` skill） |
+| **可逆处理**（开关型） | DCDH | `ssc install did_multiplegt`（第 5 节） |
+| **非二元处理**（连续/多值） | DCDH | `ssc install did_multiplegt`（第 5 节） |
+| **无 stayers**（所有单位最终处理） | DCDH had | `did_multiplegt (had)`（第 5 节） |
 | staggered + 想做 DR/IPW/Reg 三方法对照 | CS 估计量 | `ssc install csdid`（第 1 节） |
 | staggered + 非线性结果变量（计数/二元） | ETWFE | `ssc install jwdid`（第 1 节） |
 | staggered + 想要 leaveout 方差修正 / 单位特定趋势 / 灵活 FE | BJS 插补法 | `ssc install did_imputation`（第 1 节） |
@@ -626,6 +737,9 @@ estat aggregation, dynamic graph
 |-------------|---------|------|
 | 处理单位只有 1 个或极少数 | `synth`（第 2 节）/ `sdid`（第 3 节） | 合成控制 / 合成 DID，从捐赠池构建合成对照 |
 | 简单 2x2 DID（一组处理、一组对照、单时点） | `didregress` / `xtdidregress`（见 `stata-did` skill） | 官方内置，最简单，estat 诊断丰富 |
+| **处理可逆**（可开启也可关闭，如工会/补贴/政策撤销） | `did_multiplegt (dyn)`（第 5 节） | **唯一**支持非吸收处理的 Stata DID 估计量 |
+| **处理非二元**（连续/离散多值，如最低工资幅度、补贴金额） | `did_multiplegt (dyn)` 或 `(stat)`（第 5 节） | 支持非二元处理 + 归一化效应 |
+| **无 stayers**（所有单位最终都处理） | `did_multiplegt (had)`（第 5 节） | 专为无 stayer 的异质性采用设计 |
 | 错时 DID + 结果变量是计数/二元（如就诊次数、是否住院） | `jwdid method(poisson)` 或 `jwdid method(logit)`（第 1 节） | **唯一**支持非线性模型 |
 | 错时 DID + 想要 `leaveout` 方差修正（有限样本更准确） | `did_imputation, leaveout`（第 1 节） | **唯一**实现 BJS 附录 A.9 |
 | 错时 DID + 想要单位特定趋势（unit-specific trends） | `did_imputation, unitcontrols(year)`（第 1 节） | `unitcontrols()` 选项 |
@@ -638,32 +752,39 @@ estat aggregation, dynamic graph
 
 ### 特征对照矩阵
 
-| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation |
-|------|-----------|-------------|-------|-------|----------------|
-| 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC |
-| 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ |
-| 非线性模型 | ❌ | ❌ | ❌ | ✅ poisson/logit | ❌ |
-| DR/IPW/Reg 方法 | ❌ | aipw | ✅ 三方法 | ❌ | ❌ |
-| leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
-| 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ |
-| 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ |
-| estat plot | ✅ | ✅ | ❌ | ✅ | ❌ |
-| pretrend 检验 | estat ptrends | estat ptrends | 手动 | ✅ estat | ✅ pretrends |
-| hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ |
-| 控制组选择 | — | notyet | notyet/never | notyet/never | — |
+| 特征 | didregress | hdidregress | csdid | jwdid | did_imputation | did_multiplegt (DCDH) |
+|------|-----------|-------------|-------|-------|----------------|----------------------|
+| 内置命令 | ✅ | ✅ | ❌ SSC | ❌ SSC | ❌ SSC | ❌ SSC |
+| 错时 DID | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **可逆处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** |
+| **非二元处理** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **无 stayer 设计** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ had 模式 |
+| 非线性模型 | ❌ | ❌ | ❌ | ✅ poisson/logit | ❌ | ❌ |
+| DR/IPW/Reg 方法 | ❌ | aipw | ✅ 三方法 | ❌ | ❌ | ❌ |
+| leaveout 方差修正 | ❌ | ❌ | ❌ | ❌ | ✅ **唯一** | ❌ |
+| 单位特定趋势 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| 灵活 FE 规格 | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| estat plot | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ dyn 自动出图 |
+| pretrend 检验 | estat ptrends | estat ptrends | 手动 | ✅ estat | ✅ pretrends | ✅ placebo 期 |
+| hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| 控制组选择 | — | notyet | notyet/never | notyet/never | — | not-yet-switchers |
+| 滞后效应 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ dyn 模式 |
 
 ### AI Agent 选择逻辑
 
 当用户描述 DID 场景时，按以下顺序检查：
 
 1. **处理单位数量**：只有 1 个或极少数？ → `synth` / `sdid`
-2. **处理时点**：单时点？ → `didregress` / `xtdidregress`（见 `stata-did` skill）
-3. **结果变量类型**：计数/二元？ → `jwdid method(poisson/logit)`
-4. **方差修正需求**：要 leaveout？ → `did_imputation, leaveout`
-5. **FE 需求**：要灵活 FE（如州×年）？ → `did_imputation, fe()`
-6. **估计方法需求**：要 DR/IPW/Reg？ → `csdid method(dr)`
-7. **出图需求**：要一键出图？ → `jwdid` + `estat plot`
-8. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
+2. **处理是否可逆**：处理可以开启/关闭（工会、补贴、政策撤销）？ → `did_multiplegt (dyn)`（第 5 节）
+3. **处理是否非二元**：连续或多值处理（最低工资幅度、补贴金额）？ → `did_multiplegt (dyn)` 或 `(stat)`（第 5 节）
+4. **无 stayers**：所有单位最终都处理？ → `did_multiplegt (had)`（第 5 节）
+5. **处理时点**：单时点？ → `didregress` / `xtdidregress`（见 `stata-did` skill）
+6. **结果变量类型**：计数/二元？ → `jwdid method(poisson/logit)`
+7. **方差修正需求**：要 leaveout？ → `did_imputation, leaveout`
+8. **FE 需求**：要灵活 FE（如州×年）？ → `did_imputation, fe()`
+9. **估计方法需求**：要 DR/IPW/Reg？ → `csdid method(dr)`
+10. **出图需求**：要一键出图？ → `jwdid` + `estat plot`
+11. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
 
 ## 事后命令速查
 
@@ -681,6 +802,11 @@ estat aggregation, dynamic graph
 | `horizons(0/5)` | did_imputation | 按事件期报告 ATT（直接在估计时指定） |
 | `pretrends(k)` | did_imputation | 平行趋势检验（k 个 pre-trend 系数 + F 检验） |
 | `leaveout` | did_imputation | 有限样本方差修正（BJS 附录 A.9，唯一实现） |
+| `effects(5)` | did_multiplegt (dyn) | 估计 5 期事件研究效应 |
+| `placebo(2)` | did_multiplegt (dyn) | 2 期安慰剂检验（处理前） |
+| `normalized` | did_multiplegt (dyn) | 归一化效应（可解释为"处理+1 单位"） |
+| `design(0.5, console)` | did_multiplegt (dyn) | 显示 ≥50% switchers 的处理路径 |
+| `by_path(all)` | did_multiplegt (dyn) | 按处理路径分别估计 |
 
 ## 关键陷阱速查
 
@@ -696,6 +822,14 @@ estat aggregation, dynamic graph
    **Fix**：`jwdid y x, ivar(id) tvar(t) gvar(g) method(poisson) group`；线性模型（默认 reghdfe）不需要 `group`，但加了也不报错。
 6. **`did_imputation` 的 `Ei` 编码**：从未处理单位的 `Ei` 必须是**缺失值**（`.`），不能用 `0` 或 `9999`——`did_imputation` 用 `missing(Ei)` 识别 never-treated；`0` 会被当作"在第 0 期处理"，结果完全错误。注意：这与 `csdid`/`jwdid` 的 `gvar` 编码（`0` = 从未处理）**不同**。
    **Fix**：`replace Ei = . if never_treated`；跑完 `tab Ei, missing` 确认 never-treated 组的编码是 `.`（缺失），不是 `0`。
+7. **`did_multiplegt` 的模式参数是位置参数，不是选项**：语法是 `did_multiplegt (dyn) Y G T D`——`(dyn)` 必须紧跟命令名，不能写成 `did_multiplegt Y G T D, mode(dyn)`。
+   **Fix**：固定写作 `did_multiplegt (dyn) Y G T D, ...`；`(stat)` / `(had)` / `(old)` 同理。
+8. **`did_multiplegt (dyn)` 的时间变量需等间距**：如果数据有缺失年份（如 2018 跳到 2020），命令会报错或结果错误。
+   **Fix**：先 `tsfill` 填充缺失期；或确认数据中所有组的时间变量都等间距。
+9. **`did_multiplegt (dyn)` 的 `placebo()` 不能超过 `effects()`**：`placebo(5) effects(3)` 会报错。
+   **Fix**：`placebo(#)` 的 `#` 必须 ≤ `effects(#)` 的 `#`。
+10. **`did_multiplegt (dyn)` 的 `bootstrap()` 参数用逗号分隔**：`bootstrap(100, 20260817)` 而不是 `bootstrap(100 seed(20260817))`；两个参数都必须写，即使留空也要保留逗号。
+    **Fix**：`bootstrap(reps,seed)`——如 `bootstrap(100,20260817)`；留空默认 50 次无 seed。
 
 ## 参考文献与延伸阅读
 
@@ -714,6 +848,10 @@ estat aggregation, dynamic graph
 - **Baker et al. (2025)** "How Practice Meets Theory in DiD: An 8-Step Practitioner's Workflow." — [diff-diff 仓库](https://github.com/igerber/diff-diff) 提炼的实操工作流。
 - **Rambachan & Roth (2023)** "A More Credible Approach to Parallel Trends." *Review of Economic Studies*. — Honest DiD（平行趋势违反下的稳健 CI）。
 - **Princeton DSS 教程**：https://libguides.princeton.edu/stata-did — wdipol.dta 案例数据来源。
+- **de Chaisemartin & D'Haultfoeuille (2020)** "Two-Way Fixed Effects Estimators with Heterogeneous Treatment Effects." *AER* 110(9). — `did_multiplegt` 的理论基础（静态 ATT）。
+- **de Chaisemartin & D'Haultfoeuille (2024a/2026)** "Difference-in-Differences Estimators of Intertemporal Treatment Effects." *REStud*. — `did_multiplegt_dyn` 的理论基础（事件研究估计量，支持可逆/非二元处理）。
+- **de Chaisemartin & D'Haultfoeuille (2024b)** "Two-way Fixed Effects and Differences-in-Differences Estimators in Heterogeneous Adoption Designs." — `did_multiplegt (had)` 模式的理论基础（无 stayer 设计）。
+- **de Chaisemartin et al. (2022)** "Difference-in-Differences for Continuous Treatments and Instruments with Stayers." — `did_multiplegt (stat)` 连续处理 + IV-DID 的理论基础。
 
 ## 验证
 
