@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建的 6 个 skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`），含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
+Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建的 7 个 skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`、`stata-did-community`），含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
 
 ## 目录
 

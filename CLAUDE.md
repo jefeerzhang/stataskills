@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-本仓库是基于《A Gentle Introduction to Stata》第 6 版构建的 4 个教材章节 skill + 2 个扩展 skill（`stata-coefplot`、`stata-did`），共 6 个 Stata skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`），含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
+本仓库是基于《A Gentle Introduction to Stata》第 6 版构建的 4 个教材章节 skill + 3 个扩展 skill（`stata-coefplot`、`stata-did`、`stata-did-community`），共 7 个 Stata skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`、`stata-did-community`），含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
 
 ## Agent skills
 

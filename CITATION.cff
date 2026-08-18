@@ -3,12 +3,13 @@ message: |-
   If you use stataskills in academic work, please cite both this skill
   collection and the underlying textbook (see `references` below).
 type: software
-title: "stataskills: 6 Stata Skills distilled from A Gentle Introduction to Stata (6th edition)"
+title: "stataskills: 7 Stata Skills distilled from A Gentle Introduction to Stata (6th edition)"
 abstract: |-
-  Six Agent skills — four (stata-basics, stata-descriptives, stata-regression,
+  Seven Agent skills — four (stata-basics, stata-descriptives, stata-regression,
   stata-advanced) that distill Alan C. Acock's "A Gentle Introduction to
-  Stata" (6th edition), plus two extensions (stata-coefplot for coefficient
-  plots, stata-did for the official difference-in-differences command family)
+  Stata" (6th edition), plus three extensions (stata-coefplot for coefficient
+  plots, stata-did for the official difference-in-differences command family,
+  stata-did-community for DID community packages: csdid/jwdid/did_imputation/synth/sdid)
   — callable from Claude Code, Codex, OpenClaw and other skill-compatible
   runtimes. Each skill ships with the full chapter-to-command mapping,
   interpretation logic, reporting conventions, and a pitfalls

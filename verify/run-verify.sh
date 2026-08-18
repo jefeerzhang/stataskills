@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# 验证 harness：为 6 个 skill 的验证脚本统一提供
+# 验证 harness：为 7 个 skill 的验证脚本统一提供
 # cd / 版本政策校验 / 批处理执行 / 结果判定 / 汇总。
 #
 # 用法：
-#   bash verify/run-verify.sh                  # 全量（六个 skill，默认模式）
+#   bash verify/run-verify.sh                  # 全量（七个 skill，默认模式）
 #   bash verify/run-verify.sh advanced         # 单个（basics/descriptives/regression/advanced/coefplot/did）
 #   bash verify/run-verify.sh --static         # 静态层（无需 Stata，供 CI 使用）
 #   bash verify/run-verify.sh --community      # 社区包强制模式（详见下方「社区包验证」段）
@@ -160,37 +160,27 @@ if [ "$STATIC_ONLY" -eq 1 ]; then
   fi
 fi
 
-for name in "${TARGETS[@]}"; do
-  dofile="$VERIFY_DIR/$name.do"
+# ---- 阶段函数 ----
 
-  if [ ! -f "$dofile" ]; then
-    bad "${name}（找不到 ${dofile}）"
-    continue
-  fi
-
-  # 版本政策：每份叶子首行必须是 version 19.5（Stata 的 version 是 session 内指令，
-  # 只能逐 do-file 声明；harness 在此校验它以钉住 policy）
+# 阶段 1：版本政策校验
+check_version() {
+  local name="$1" dofile="$2"
   if [ "$(head -n 1 "$dofile")" != "version 19.5" ]; then
     bad "${name}（首行缺 version 19.5，版本政策未钉住）"
-    continue
+    return 1
   fi
+  return 0
+}
 
-  # data readiness：该 skill 引用的数据集必须存在，且必须在某份
-  # manifest 清单内（AGIS6 用 manifest.txt；项目扩展用 manifest-extra.txt）。
-  # 新增数据集先改对应清单。
-  #
-  # use 形式支持两种：
-  #   use <basename>, clear               → 在 data/agis6/ 下查
-  #   use "../<subdir>/<basename>", clear → 在 data/<subdir>/ 下查
-  missing_data=""
-  unlisted_data=""
+# 阶段 2：数据就绪检查（use 语句引用的数据集必须存在且在 manifest 内）
+check_data_ready() {
+  local name="$1" dofile="$2"
+  local missing_data="" unlisted_data=""
   while IFS= read -r path; do
     [ -z "$path" ] && continue
-    # 去掉可能包裹的双引号
     path="${path%\"}"; path="${path#\"}"
     case "$path" in
       ../*)
-        # 形式 "../<subdir>/<base>.dta" —— 切出 subdir 和 base（去掉 .dta）
         rest="${path#../}"
         subdir="${rest%%/*}"
         base="${rest##*/}"; base="${base%.dta}"
@@ -211,67 +201,91 @@ for name in "${TARGETS[@]}"; do
   done < <(grep -oE '^use[[:space:]]+[^,[:space:]]+' "$dofile" | awk '{gsub(/"/,""); print $2}')
   if [ -n "$missing_data" ]; then
     bad "${name}（缺数据集：${missing_data}）"
-    continue
+    return 1
   fi
   if [ -n "$unlisted_data" ]; then
     bad "${name}（数据集未登记入 manifest：${unlisted_data}）"
-    continue
+    return 1
   fi
+  return 0
+}
 
-  # 静态模式到 data readiness 为止；执行层需要本机 Stata（见 stata.conf）
-  if [ "$STATIC_ONLY" -eq 1 ]; then
-    ok "${name}（static：version 政策 + data readiness）"
-    continue
-  fi
-
+# 阶段 3：执行 Stata 批处理
+run_stata() {
+  local name="$1" dofile="$2"
   echo "==> 运行 ${name}（${STATA_BIN}）..."
-  # shellcheck disable=SC1010  # "do" 是 stata -b 的子命令，非 bash 关键字
+  # shellcheck disable=SC1010
   (cd "$DATA_DIR" && "$STATA_BIN" -b do "$dofile")
+}
 
-  log="$DATA_DIR/$name.log"
+# 阶段 4：解析日志（错误码、静默错误、社区包 sentinel）
+parse_log() {
+  local name="$1"
+  local log="$DATA_DIR/$name.log"
+
   if [ ! -f "$log" ]; then
-    bad "${name}（无 log 生成，批处理未执行）"
-    continue
+    echo "NO_LOG"
+    return 1
   fi
 
-  ends=$(grep -c "end of do-file" "$log")
-  errs=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
-  # 捕获 cap 掩盖不住的静默错误（reshape 错位、变量不存在等），
-  # 避免只靠 end of do-file + r(NN) 漏掉 data-integrity 问题。
-  silent=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
+  PARSE_ENDS=$(grep -c "end of do-file" "$log")
+  PARSE_ERRS=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
+  PARSE_SILENT=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
+  PARSE_COMMUNITY_REQ=$(grep -oE '^[[:space:]]*__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__[[:space:]]*$' "$log" | sort -u | tr "\n" " ")
+  PARSE_COMMUNITY_OPT=$(grep -oE '^[[:space:]]*__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__[[:space:]]*$' "$log" | sort -u | tr "\n" " ")
+  return 0
+}
 
-  # 社区包缺失 sentinel（两种）：
-  #   display "__COMMUNITY_PACKAGE_MISSING__<pkg>__"           —— 必需包；--community 模式下报告 BAD
-  #   display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__<pkg>__" —— 可选包；仅警告，不影响 --community PASS
-  # 默认模式两者都静默 PASS（cap which 风格），但 ok 信息提示用户。
-  community_required=$(grep -oE '^[[:space:]]*__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__[[:space:]]*$' "$log" | sort -u | tr "\n" " ")
-  community_optional=$(grep -oE '^[[:space:]]*__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__[[:space:]]*$' "$log" | sort -u | tr "\n" " ")
+# 阶段 5：判定 PASS/BAD
+evaluate() {
+  local name="$1"
+  local log="$DATA_DIR/$name.log"
+  local local_bad=0
 
-  local_bad=0
-  if [ "$ends" -eq 1 ] && [ "$errs" -eq 0 ] && [ "$silent" -eq 0 ]; then
-    if [ -n "$community_required" ] && [ "$COMMUNITY_MODE" -eq 1 ]; then
-      bad "${name}（--community 模式下缺必需包：${community_required}，请 ssc install 后重跑）"
+  if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ]; then
+    if [ -n "$PARSE_COMMUNITY_REQ" ] && [ "$COMMUNITY_MODE" -eq 1 ]; then
+      bad "${name}（--community 模式下缺必需包：${PARSE_COMMUNITY_REQ}，请 ssc install 后重跑）"
       local_bad=1
-    elif [ -n "$community_required" ]; then
-      ok "${name}（end of do-file x1；必需社区包未装已 cap 跳过：${community_required}；用 --community 强制验证）"
-    elif [ -n "$community_optional" ]; then
-      ok "${name}（end of do-file x1；可选社区包未装已跳过：${community_optional}）"
+    elif [ -n "$PARSE_COMMUNITY_REQ" ]; then
+      ok "${name}（end of do-file x1；必需社区包未装已 cap 跳过：${PARSE_COMMUNITY_REQ}；用 --community 强制验证）"
+    elif [ -n "$PARSE_COMMUNITY_OPT" ]; then
+      ok "${name}（end of do-file x1；可选社区包未装已跳过：${PARSE_COMMUNITY_OPT}）"
     else
       ok "${name}（end of do-file x1，无错误码，无静默错误）"
     fi
   else
-    bad "${name}（end of do-file x${ends}，r(错误 x${errs}，静默错误 x${silent}）→ 见 ${log}"
+    bad "${name}（end of do-file x${PARSE_ENDS}，r(错误 x${PARSE_ERRS}，静默错误 x${PARSE_SILENT}）→ 见 ${log}"
     local_bad=1
   fi
 
   # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
   cp "$log" "$VERIFY_DIR/$name.log"
-  # 不留副本在数据目录（数据目录只放数据）
   rm -f "$log"
 
-  if [ "$local_bad" -eq 1 ]; then
-    overall_bad=1
+  return $local_bad
+}
+
+# ---- 主循环 ----
+for name in "${TARGETS[@]}"; do
+  dofile="$VERIFY_DIR/$name.do"
+
+  if [ ! -f "$dofile" ]; then
+    bad "${name}（找不到 ${dofile}）"
+    continue
   fi
+
+  check_version "$name" "$dofile" || continue
+  check_data_ready "$name" "$dofile" || continue
+
+  # 静态模式到 data readiness 为止
+  if [ "$STATIC_ONLY" -eq 1 ]; then
+    ok "${name}（static：version 政策 + data readiness）"
+    continue
+  fi
+
+  run_stata "$name" "$dofile"
+  parse_log "$name" || { bad "${name}（无 log 生成，批处理未执行）"; continue; }
+  evaluate "$name" || overall_bad=1
 done
 
 # --community 模式下任何验证失败都让 harness 以非零退出码结束

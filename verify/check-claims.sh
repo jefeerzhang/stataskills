@@ -13,13 +13,14 @@
 #   1. 每个 skill 目录恰有一份 SKILL.md，且 verify/ 有同名 verify-*.do
 #   2. docs/run-stata.md 首行计数「N 份」与 skill 数一致
 #   3. data/agis6/*.dta 数量与 manifest 登记条数一致
-#   4. demo/dofiles 与 demo/logs 数量一致且同名配对
-#   5. 每份 SKILL.md 含「运行 Stata 的方式」章节标题（独立分发约束）
-#   6. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
-#   7. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
-#   8. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅警告不 FAIL
-#   11. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性
-#   10. README 硬编码计数与文件系统事实一致性（skill/dta/PNG/dofile/prompt 数）
+#   4. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性
+#   5. demo/dofiles 与 demo/logs 数量一致且同名配对
+#   6. 每份 SKILL.md 含「运行 Stata 的方式」章节标题（独立分发约束）
+#   7. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
+#   8. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
+#   9. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅警告不 FAIL
+#   10. test-prompts.json：Agent 行为回归测试集覆盖全部 skill
+#   11. README 硬编码计数与文件系统事实一致性（skill/dta/PNG/dofile/prompt 数）
 #
 # facts（供人工比对，不自动断言）：
 #   - 各 skill 陷阱条目数
@@ -91,7 +92,7 @@ else
   bad ".dta 数（${N_DTA}）≠ manifest 条数（${N_MANIFEST}）"
 fi
 
-# ---- 11. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性 ----
+# ---- 4. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性 ----
 MANIFEST_EXTRA="$REPO_ROOT/data/manifest-extra.txt"
 if [ -f "$MANIFEST_EXTRA" ]; then
   # 统计 manifest-extra 中的条目数（排除注释和空行）
@@ -124,7 +125,7 @@ else
   ok "manifest-extra.txt 不存在（跳过扩展清单验证）"
 fi
 
-# ---- 4. demo dofiles 与 logs 数量一致且同名配对 ----
+# ---- 5. demo dofiles 与 logs 数量一致且同名配对 ----
 if [ "$N_DEMO_DO" -eq "$N_DEMO_LOG" ]; then
   ok "demo dofiles（${N_DEMO_DO}）与 logs（${N_DEMO_LOG}）数量一致"
 else
@@ -136,7 +137,7 @@ for d in "$REPO_ROOT"/demo/dofiles/*.do; do
   [ -f "$REPO_ROOT/demo/logs/${b}.log" ] || bad "demo log 缺失：demo/logs/${b}.log（对应 ${b}.do）"
 done
 
-# ---- 5. 每份 SKILL.md 含「运行 Stata 的方式」章节标题 ----
+# ---- 6. 每份 SKILL.md 含「运行 Stata 的方式」章节标题 ----
 for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   [ -e "$s" ] || continue
   if grep -q '^## 运行 Stata 的方式' "$s"; then
@@ -146,7 +147,7 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   fi
 done
 
-# ---- 6. 扩展节触发词完整性：「（扩展，教材未覆盖）」的关键词须出现在 frontmatter ----
+# ---- 7. 扩展节触发词完整性：「（扩展，教材未覆盖）」的关键词须出现在 frontmatter ----
 for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   [ -e "$s" ] || continue
   skill_name="$(basename "$(dirname "$s")")"
@@ -170,7 +171,7 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   done < <(grep '（扩展，教材未覆盖）' "$s" 2>/dev/null)
 done
 
-# ---- 7. 陷阱节标题统一：所有 SKILL.md 必须用「## 关键陷阱速查」----
+# ---- 8. 陷阱节标题统一：所有 SKILL.md 必须用「## 关键陷阱速查」----
 for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   [ -e "$s" ] || continue
   skill_name="$(basename "$(dirname "$s")")"
@@ -191,7 +192,7 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   echo "  ${skill_name}: ${pitfall_count} 条"
 done
 
-# ---- 8. demo↔verify 覆盖矩阵（ADR-0002）----
+# ---- 9. demo↔verify 覆盖矩阵（ADR-0002）----
 # ADR-0002 把 demo 定为独立全景层（第四层），不强制每个 skill 同时有 verify + demo，
 # 但允许"扩展节按需补 demo"。缺口（verify/demo 单边）必须显式标记为可接受的 debt，
 # 而非静默通过 CI。此处不覆盖 verify 缺 demo 的语义判定，由
@@ -224,15 +225,15 @@ done
 # 汇总：所有 demo 都有 verify 即视为覆盖
 ok "demo→verify 配对完整（${#demo_skills[@]} 个 demo do-file 均有 verify 脚本）"
 
-# ---- 9. test-prompts.json：Agent 行为回归测试集 ----
+# ---- 10. test-prompts.json：Agent 行为回归测试集 ----
 # 把"Skill 不只是文档，还能被 Agent 实际执行并产生期望锚点"这件事
-# 变成可验证的 CI 断言。覆盖 6 个 skill + 跨 skill 联动：
+# 变成可验证的 CI 断言。覆盖 7 个 skill + 跨 skill 联动：
 # - JSON 合法（用 python3 -m json.tool 自检，python3 失败即 FAIL）
 # - prompts 数组非空、含 id/skill/scenario/expected_actions 字段
 # - 每个 skill 至少有 1 条 prompt 覆盖（避免新 skill 漏登记）
 TEST_PROMPTS="$REPO_ROOT/test-prompts.json"
 if [ ! -f "$TEST_PROMPTS" ]; then
-  bad "test-prompts.json 缺失：repo 根目录应有 Agent 行为回归测试集（覆盖 6 个 skill）"
+  bad "test-prompts.json 缺失：repo 根目录应有 Agent 行为回归测试集（覆盖 7 个 skill）"
 elif ! python3 -m json.tool "$TEST_PROMPTS" >/dev/null 2>&1; then
   bad "test-prompts.json 不是合法 JSON"
 else
@@ -260,11 +261,11 @@ if missing:
 # 把覆盖详情写到 stderr，让 ok 行单独占据 stdout
 print(f"覆盖详情：{len(d['prompts'])} 条 prompt 含 {len(covered)} 个 skill", file=sys.stderr)
 PY
-    ok "test-prompts.json 覆盖全部 6 个 skill（python3 详情见 stderr）"
+    ok "test-prompts.json 覆盖全部 7 个 skill（python3 详情见 stderr）"
   } || bad "test-prompts.json 未覆盖全部 skill：见 stderr"
 fi
 
-# ---- 10. README 硬编码计数与文件系统事实一致性 ----
+# ---- 11. README 硬编码计数与文件系统事实一致性 ----
 # 提取 README 中的数字声明，与 facts 比对。模式：
 #   "N 个 Skill" / "N 个 skill" / "N 个数据集" / "N .dta" / "N 张 demo PNG"
 #   "N do-file" / "N 个 do-file" / "N 条 Agent" / "N 条 prompt"
