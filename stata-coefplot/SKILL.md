@@ -1,6 +1,6 @@
 ---
 name: stata-coefplot
-description: 帮助用户用 coefplot 画系数图（森林图）。Use when needing 回归系数可视化 / 多模型系数对比 / 置信区间图 / 按方程或子群分面 / 系数排序 / 矩阵结果绘图 / 边际效应图（margins post）/ OR 或标准化系数图 / 发表级系数图定制（recast bar、cismooth、headings、mlabel）。配套命令基于 Ben Jann coefplot 1.8.8，示例全部用 Stata 自带数据可复现。
+description: Stata coefplot 系数图（森林图）：多模型对比、置信区间、边际效应图、OR 图、发表级定制。触发词：coefplot / 森林图 / 系数图 / 置信区间 / 多模型对比 / margins 图。
 ---
 
 # Stata 系数图：coefplot（森林图与模型对比图）

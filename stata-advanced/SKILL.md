@@ -1,6 +1,6 @@
 ---
 name: stata-advanced
-description: 帮助用户做量表信效度与现代统计方法。Use when needing Cronbach α（含 item 分析，删条目提 α 是利用偶然性）/ 因子分析（PCF 与 PF 区别 / Varimax 与 Promax 旋转 / screeplot 碎石图）/ 结构方程（sem 线性 / gsem 含 logistic；mlmv 处理缺失，gsem 不支持 mlmv）/ 多重插补（mi set flong + MVN 或链式方程；交互与平方项须在插补前生成）/ 多层模型（mixed 随机截距与斜率；高层需 20–30 组以上）/ 项目反应理论（irt 1PL / 2PL / GRM Likert；信度看测验信息函数）。配套 38 个 AGIS6 数据集。
+description: Stata 高级方法：Cronbach α / 因子分析 / 结构方程 sem / 多重插补 mi / 多层模型 mixed / 项目反应理论 irt。对应教材第 12–16 章。触发词：信效度 / 因子分析 / SEM / 插补 / 多层模型 / IRT / Cronbach。
 ---
 
 # Stata 进阶测量与现代方法（本书第 12–16 章 + 附录 A）

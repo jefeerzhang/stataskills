@@ -1,6 +1,6 @@
 ---
 name: stata-basics
-description: 帮助用户在 Stata 中做数据录入、打标签、反向编码、构建量表、写可复现 do-file。Use when needing 录入新数据 / 清洗调研数据（NLSY97 风格大写变量名转小写）/ 处理缺失码（mvdecode 转 .a–.z）/ 反向编码负向题（recode 或算术法）/ 用 rowmean 构建量表 / 用 clonevar 保留值标签。配套 38 个 AGIS6 数据集可即时复现。
+description: Stata 数据清洗与基础操作：录入、打标签、反向编码、构建量表、写可复现 do-file。对应教材第 1–4 章。触发词：数据清洗 / recode / mvdecode / 缺失码 / 量表 / label / do-file 模板。
 ---
 
 # Stata 入门与数据管理（本书第 1–4 章）

@@ -1,6 +1,6 @@
 ---
 name: stata-did-community
-description: 帮助用户用 Stata 社区包做双重差分分析。Use when needing reghdfe 事件研究 / eventdd csdid eventstudyinteract 错时 DID 替代命令 / Callaway-Sant'Anna 估计量 / csdid notyet never method(dr ipw reg) / Wooldridge ETWFE / jwdid poisson logit hettype(twfe event cohort time) / BJS 插补法 / did_imputation leaveout autosample pretrends unitcontrols / 合成控制 synth / synth_runner placebo 置换推断 / 合成DID sdid / 少数处理单元 donor pool / synthetic control / synthetic difference-in-differences / 可逆处理 reversible treatment / 非二元处理 continuous treatment / DCDH de Chaisemartin D'Haultfoeuille / did_multiplegt dyn stat had / 无 stayer 异质性采用 / StackedDiD 堆叠 DID Wing Hollingsworth Freedman / stacked Q 权重 设计诊断 D 统计量 / LPDiD 局部投影 DID Dube Girardi Jorda Taylor / lpdid 长差分 干净对照 冲击型处理 nonabsorbing oneoff / 方法选择决策树。全部需 ssc install 或 GitHub net install。内置 DID 命令（didregress / xtdidregress / hdidregress / xthdidregress）见 stata-did skill。
+description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputation / synth / sdid / did_multiplegt(DCDH) / stacked / lpdid / reghdfe 事件研究。含决策树路由和特征对照矩阵。触发词：DID 社区包 / csdid / jwdid / 合成控制 / 可逆处理 / 局部投影 / 堆叠 DID。
 ---
 
 # Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid）

@@ -1,6 +1,6 @@
 ---
 name: stata-regression
-description: 帮助用户做方差分析、回归建模与功效分析。Use when needing 单因素 / 双因素 / 重复测量 ANOVA / ANCOVA（连续协变量必须加 c. 前缀，否则按分类处理）/ 多元回归诊断（VIF / Cook's D / 异方差稳健 SE / 中心化后再放二次项）/ 交互与非线性（margins + marginsplot 解读，不直接读主效应）/ 加权回归 [pweight=] / 逻辑回归（odds ratio 与 pseudo-R² 不是解释方差）/ margins 边际效应 / 嵌套模型 nestreg / 功效分析（power oneway / twoway / rsquared）/ 高维固定效应 reghdfe（2+ 层 FE / 面板双向 FE / 固定斜率 i.fe##c.var / 多向聚类 vce(cluster fe1 fe2) / Driscoll-Kraay vce(dkraay #) / IV-GMM 吸收 FE / 自动剔除单点组）/ IV 内生变量 ivreghdfe（IV / 2SLS / LIML / GMM2S + 多层 FE / 两向聚类 cluster(fe1 fe2)，注意 vce 只支持 cluster/robust/unadjusted）/ staggered DiD 偏差修正 fect（method(ife) 交互固定效应 / method(mc) 矩阵补全 / placeboTest / 解决 TWFE 负权重偏误）。配套 38 个 AGIS6 数据集。
+description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 / margins 边际效应 / reghdfe 高维固定效应 / ivreghdfe IV 估计 / fect 错时 DID 偏差修正。对应教材第 9–11 章。触发词：回归 / ANOVA / margins / reghdfe / ivreghdfe / fect / 逻辑回归 / 固定效应。
 ---
 
 # Stata 方差分析与回归建模（本书第 9–11 章）

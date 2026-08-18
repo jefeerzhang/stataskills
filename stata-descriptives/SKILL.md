@@ -1,6 +1,6 @@
 ---
 name: stata-descriptives
-description: 帮助用户做描述统计、图形与基础统计推断。Use when needing 频数表与直方图 / 箱线图与饼图 / 两分类变量交叉表与卡方（含 Cramér's V，V 必须大写）/ 比例检验（变量先 recode 成 0/1）/ 单双样本 t 检验与配对检验 / 效应量（cohensd / hedgesg）/ 相关与双变量回归 / 功效分析（power twomeans / twoproportions）/ 面板数据可视化 panelview（缺失模式 missing / 处理状态 treat / 因变量 outcome / 双变量 bivariate，跑 reghdfe / mixed / DiD 之前必看）。配套 38 个 AGIS6 数据集；记牢 Stata 报告惯例（p<0.001 不写 0.000；峰度正态值=3；统计显著不等于实质显著）。
+description: Stata 描述统计与基础推断：频数表、交叉表、t 检验、效应量、功效分析、面板数据可视化 panelview。对应教材第 5–8 章。触发词：描述统计 / 卡方 / t 检验 / 效应量 / 功效分析 / panelview / 直方图。
 ---
 
 # Stata 描述统计、表格与均值检验（本书第 5–8 章）

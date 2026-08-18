@@ -1,6 +1,6 @@
 ---
 name: stata-did
-description: 帮助用户用 Stata 内置 DID 命令族做双重差分分析。Use when needing 政策评估 / 双重差分 / DID / DiD / difference-in-differences / 平行趋势检验 / 事件研究 / 错时处理 staggered DID / 三重差分 DDD / 异质性处理效应 / ATET 估计 / wild bootstrap 推断 / 经典手工 DID（xtreg + 交互项）/ 字符串组变量 encode / 手工平行趋势图 / 平行趋势假设被拒的应对。覆盖 didregress（重复截面）、xtdidregress（面板）、hdidregress / xthdidregress（异质性稳健）四个内置估计命令与 trendplot / ptrends / granger / aggregation / atetplot / bdecomp 事后诊断。全部为内置命令，无需 ssc install。社区包（csdid / jwdid / did_imputation / synth / sdid）见 stata-did-community skill。
+description: Stata 内置 DID 命令族：didregress / xtdidregress / hdidregress / xthdidregress，含平行趋势检验、事件研究、DDD、wild bootstrap。全部内置，无需 ssc install。触发词：DID / 双重差分 / 政策评估 / 错时处理 / 平行趋势 / 事件研究。
 ---
 
 # Stata 双重差分：didregress 命令族（DID / DDD / 错时处理）
