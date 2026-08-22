@@ -4,7 +4,8 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建�
 
 ## 目录
 
-- `stata-*/SKILL.md` — 各 skill 主文档（含 frontmatter `name`/`description`、分节编号、陷阱速查、验证节）
+- `stata-*/SKILL.md` — 各 skill 主文档（含 frontmatter `name`/`description`、文首「强制路径」、分节编号、陷阱四件套、可执行禁令）
+- `CONTEXT.md` — 术语表（强制路径 / 可执行禁令 / 陷阱四件套 / 踢走）
 - `verify/verify-<skill>.do` — 对应验证脚本；`bash verify/run-verify.sh [skill名]` 运行，Stata 19.5 批处理模式
 - `docs/run-stata.md` — 各平台 Stata 批处理路径
 - `docs/adr/` — 架构决策记录
@@ -19,6 +20,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建�
   - 项目级扩展（社区包示例需要、非 AGIS6 来源）：`data/<子目录>/`，由 `data/manifest-extra.txt` 单一来源管理。两份清单由 harness 同时校验；扩展数据集必须有来源 README + 字节级下载脚本（如 `data/synth/download_synth_smoking.sh`）。
 - 中文作图需先询问用户；默认英文标签
 - 每个 SKILL.md 首行钉住 `version 19.5`
+- Agent 读 skill 时先执行文首「强制路径」（匹配到第一条就停），再查文末可执行禁令；教材章节不是执行入口。分数线 / 年龄门槛 / 地理边界踢走 DID，本仓库尚未覆盖 RDD。
 
 <!-- proma:knowledge-maintenance:start -->
 ## 协作知识演进（Proma 维护）

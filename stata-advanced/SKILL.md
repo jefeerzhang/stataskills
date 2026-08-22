@@ -13,6 +13,27 @@ description: Stata 高级方法：Cronbach α / 因子分析 / 结构方程 sem 
 - 数据在仓库 `data/agis6/`；示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录。
 - **中文作图规矩**：生成图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
+## 强制路径
+
+匹配到第一条就停。章节语法见下文；禁令见文末黑名单。
+
+**何时用**：Cronbach α、因子分析、SEM、多重插补、多层、IRT。
+**何时踢走**：还没反向编码 / 构建量表 → 先 `stata-basics`；只要描述统计或 α 当描述指标 → `stata-descriptives`；政策因果 → `stata-did`。`sem` 路径不是识别策略。
+
+因子分析（不要只报 α）：
+
+```stata
+factor items, pcf
+factor items, pf
+estat kaiser
+screeplot
+rotate, varimax
+rotate, promax
+alpha items, item
+```
+
+1. PCF 与 PF 都跑。2. 先 KMO / 碎石图再定因子数。3. `alpha, item` 只看病题，**不删条目提 α**。IRT 用 `irtgraph tif` 报 θ 区段信度，不用单一 α。
+
 ## 第 12 章 测量、信度与效度
 
 - 报告惯例：Stata 输出 0.0000 时报告 `p < 0.001`，绝不写 p=0.000。

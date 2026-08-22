@@ -12,6 +12,25 @@ description: Stata coefplot 系数图（森林图）：多模型对比、置信�
 - 批处理（无界面）：`stata-mp -b do "脚本.do"`，结束生成同名 `.log`。平台路径见 `docs/run-stata.md`。
 - **中文作图规矩**：需要图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
+## 强制路径
+
+匹配到第一条就停。第 1–7 章见下文；更细语法见 `references/`；禁令见文末黑名单。
+
+**何时用**：已经估完模型，要画系数图 / 森林图 / 多模型对比。
+**何时踢走**：还没回归 → 先 `stata-regression`；还没 DID → 先 `stata-did`。本 skill 只画图，不改识别策略。
+
+多模型森林图：
+
+```stata
+quietly regress y x1 x2
+estimates store m1
+quietly regress y x1 x2 x3
+estimates store m2
+coefplot m1 m2, drop(_cons) xline(0)
+```
+
+OR / 风险比图把 `xline(0)` 换成 `xline(1)`，并加 `eform`。`margins` 图必须先 `margins ..., post`。`bycoefs` 的 `headings()` 用整数编号，不用系数名。
+
 ## 安装与版本
 
 ```stata

@@ -13,6 +13,24 @@ description: Stata 数据清洗与基础操作：录入、打标签、反向编�
 - 本书配套数据位于仓库 `data/agis6/` 目录。示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录；若不在，用完整路径 `use "…/data/agis6/firstsurvey.dta", clear`。
 - **中文作图规矩**：需要生成图形命令（`graph *`、`histogram`、`twoway` 等）且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
+## 强制路径
+
+匹配到第一条就停。章节语法见下文；禁令见文末黑名单。
+
+**何时用**：录入、打标签、缺失码、反向编码、构建量表、写可复现 do-file。
+**何时踢走**：描述统计 / 卡方 / t 检验 → `stata-descriptives`；回归 / ANOVA → `stata-regression`；政策评估 / DID → `stata-did`。
+
+反向编码（本 skill 最高频任务）：
+
+```stata
+clonevar old_orig = old
+mvdecode old, mv(99=.a \ 98=.b)
+recode old (1=4) (2=3) (3=2) (4=1) (.a=.a) (.b=.b)
+tab old_orig old, miss
+```
+
+1. `clonevar` 留底。2. `mvdecode` 先转缺失码。3. `recode` 反向，显式保留 `.a`/`.b`。4. `tab old new, miss` 交叉核对。禁止 `gen new = 5 - old`。
+
 ## 核心语法
 
 ```

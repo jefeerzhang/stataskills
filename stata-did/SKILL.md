@@ -12,6 +12,28 @@ description: Stata 内置 DID 命令族：didregress / xtdidregress / hdidregres
 - 批处理（无界面）：`stata-mp -b do "脚本.do"`，结束生成同名 `.log`。平台路径见 `docs/run-stata.md`。
 - **中文作图规矩**：需要图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
+## 强制路径
+
+匹配到第一条就停。不要把 `didregress` / `hdidregress` / `xtreg` 交互项全跑一遍。禁令见文末黑名单。
+
+**何时用**：处理随**时间**开关，有处理组与对照组，要估计 ATET。本 skill 只走 Stata 内置命令。
+**何时踢走**：
+- 分数线 / 年龄门槛 / 地理边界（不是时间断点）→ 本仓库尚未覆盖 RDD，**不要改走 DID**
+- 截面匹配 / 可观测选择 → 不要冒充 DID
+- 需要 `csdid` / `jwdid` / `synth` / 可逆处理 / 非线性 DID → `stata-did-community`
+- 只要多层 FE 回归、不是政策评估 → `stata-regression`（`reghdfe`）。`fect` 是错时 DID，回到本 skill 或 `stata-did-community`，不要在回归 skill 里当主估计
+
+| 用户场景 | 最短命令链（按序，停在匹配行） |
+|---|---|
+| 单时点 × 重复截面 | `didregress (y) (treat), group(g) time(t)` → `estat trendplot` → `estat ptrends` |
+| 单时点 × 面板 | `xtset id t` → `xtdidregress (y) (treat), group(g) time(t)` → `estat trendplot` → `estat ptrends` |
+| 错时（≥2 个首次处理期） | `hdidregress aipw (y) (treat), group(id) time(t)`（面板用 `xthdidregress aipw`，先 `xtset`，**不要**写 `time()`）→ `estat aggregation, dynamic graph` → `estat atetplot` |
+| 错时且要诊断 TWFE 负权重 | 另起一份 `collapse (mean) y treat, by(g t)` → `didregress (y) (treat), group(g) time(t)` → `estat bdecomp, graph` |
+| 组数 < 5 | **不要** `wildbootstrap`；改 `aggregate(dlang)` |
+| 平行趋势被拒 | `estat trendplot` → 加**先验**协变量 → 改 `hdidregress aipw`；不要堆后处理控制 |
+
+默认错时估计量是 `hdidregress aipw`，不是 `didregress` 的 TWFE。第 8 节 `xtreg` 交互项只用于读老论文，不是新分析主路径。
+
 ## 安装与版本
 
 ```stata
@@ -262,6 +284,8 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 - ❌ **不要在 `estat bdecomp` 前不收缩到组×期均值**：报 `unbalanced data not allowed`。**替代**：先 `collapse (mean) y treat, by(group time)` 强平衡化。
 - ❌ **不要简单加更多控制变量平衡平行趋势**：可能引入 bad control。**替代**：看 `estat trendplot`；加**先验**协变量；改 `hdidregress aipw`；三角化论证。
 - ❌ **不要直接说 `reghdfe` 和 `hdidregress` 估计"一样的"**：代数上不等价（异质性估计 vs 平均 TWFE）。**替代**：报告方法节明示；保留 `reghdfe` 输出作对照；不混用同一政策效应的两个估计量。
+- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那不是时间断点，平行趋势框架套不上。**替代**：本仓库尚未覆盖 RDD；向用户说明识别策略不匹配，不要用 `didregress` / `hdidregress` 冒充。
+- ❌ **不要在错时设计默认跑 `didregress` 再「顺便」跑 `hdidregress`**：强制路径命中错时就只走 `hdidregress aipw`（+ 事件研究图）。**替代**：需要 TWFE 负权重诊断时另起 `collapse` + `estat bdecomp`，不要把工具箱全跑一遍。
 
 ## 验证
 

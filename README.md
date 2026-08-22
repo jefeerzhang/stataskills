@@ -64,9 +64,9 @@ bash verify/run-verify.sh
 
 ## 触发方式
 
-- **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced` · `/stata-coefplot` · `/stata-did`
+- **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced` · `/stata-coefplot` · `/stata-did` · `/stata-did-community`
 - **自然语言**：「用 Stata 帮我做多元回归诊断」/「演示 factor analysis」/「怎么做 IRT」
-- **路由表**：
+- **路由表**：每个 skill 文首有强制路径（匹配到第一条就停）。分数线 / 年龄门槛 / 地理边界 **不要** 路由到 DID——本仓库尚未覆盖 RDD。
 
 | 用户问题 | 路由到 |
 |---|---|
@@ -75,7 +75,9 @@ bash verify/run-verify.sh
 | ANOVA / 多元回归 / 逻辑回归 / 功效 / 多维 FE（reghdfe） | `stata-regression` |
 | 因子 / SEM / 多重插补 / 多层 / IRT | `stata-advanced` |
 | 系数图 / 森林图 / 多模型系数对比 / 发表级 coefplot | `stata-coefplot` |
-| 双重差分 / DID / 政策评估 / 平行趋势 / 错时处理 | `stata-did` |
+| 时间断点政策 / 平行趋势 / 错时 DID（内置命令） | `stata-did` |
+| 合成控制 / 可逆处理 / csdid / jwdid / 非线性 DID | `stata-did-community` |
+| 分数线 / 年龄门槛 / 地理边界 | **踢走**（尚未覆盖 RDD；禁止改走 DID 或回归冒充） |
 
 ## 示例
 

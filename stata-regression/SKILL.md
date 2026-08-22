@@ -13,6 +13,29 @@ description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 /
 - 数据在仓库 `data/agis6/`；示例命令中的 `use 文件名, clear` 假定已 `cd` 到该目录。
 - **中文作图规矩**：生成图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
+## 强制路径
+
+匹配到第一条就停。第 9–11 章与 `reghdfe` 语法见下文；禁令见文末黑名单。
+
+**何时用**：ANOVA / ANCOVA、多元回归诊断、逻辑回归、`margins`、多层 FE（`reghdfe`）、多层 FE 下的 2SLS（`ivreghdfe`）。
+**何时踢走**：
+- 政策评估 / 平行趋势 / 错时 DID → `stata-did`（默认 `hdidregress aipw`）
+- `fect` 是错时 DID 偏差修正，**不是**本 skill 的主估计；用户要 `fect` 时转到 `stata-did` / `stata-did-community`
+- 分数线 / 年龄门槛 / 地理边界 → 本仓库尚未覆盖 RDD，不要用回归或 DID 冒充
+- `ivreghdfe` 只是「吸收多层 FE 的 2SLS 语法」，不是完整 IV 识别（弱工具、排除限制、LATE）。没有识别策略就不要把系数写成因果
+- 只要系数图 → 估完后转 `stata-coefplot`
+
+| 用户场景 | 最短命令链 |
+|---|---|
+| ANCOVA（连续协变量） | `anova y i.group c.x`（`c.` 必写）或 `regress y i.group c.x` → `margins group, at(x=(...))` |
+| 多元回归 | `regress y x1 x2` → `rvfplot` / `estat vif` / `estat hettest` → 需要图时 `estimates store` 后转 `stata-coefplot` |
+| 逻辑回归 | `logit y x, or` → `margins, dydx(*)`；OR 不是风险比 |
+| 2+ 层 FE / 多向聚类 | `reghdfe y x, absorb(fe1 fe2) vce(cluster cl1 cl2)`；先 `ftools, compile` |
+| 多层 FE + 2SLS | `ivreghdfe y x (endog = iv), absorb(fe1 fe2)`；报告第一阶段，但不要把本命令当成 IV 设计本身 |
+| 显著交互 / 二次项 | 禁止读主效应；`margins, dydx(*) at(...)` → `marginsplot` |
+
+`fect` 节（10.7）仅作「错时 TWFE 有偏」的指针，新分析不要从这里起步。
+
 ## 第 9 章 方差分析（ANOVA）
 
 - 报告惯例：Stata 输出 0.0000 时报告 `p < 0.001`，绝不写 p=0.000。
@@ -733,3 +756,5 @@ nestreg: logistic drank30 (male) (age97) (dinner97 pdrink97)
 - ❌ **不要简单加更多控制变量平衡平行趋势**：可能引入 bad control（中介变量 / 后处理变量）。**替代**：按优先级：(1) `estat trendplot` 判断真趋势差；(2) 加**先验**协变量（非中介）；(3) 改 `hdidregress aipw`；(4) 三角化论证。
 - ❌ **不要比较 pseudo-R² 与 OLS R²**：pseudo-R² 不解释方差，仅作样本内拟合参考。**替代**：报告必明说"伪 R²，不与 OLS R² 比较"。
 - ❌ **不要在显著交互/二次项存在时读主效应/线性系数**：b1 失去意义。**替代**：`margins, dydx(*) at(...)` + `marginsplot`；解读只说"在某 X 取值下 Y 的变化"。
+- ❌ **不要在本 skill 里把 `fect` 当政策评估主估计**：`fect` 是错时 DID 偏差修正，识别假设不在回归章。**替代**：政策 / 平行趋势 / 错时 → `stata-did`（默认 `hdidregress aipw`）或 `stata-did-community`。
+- ❌ **不要把 `ivreghdfe` 写成完整 IV 识别**：它只吸收多层 FE 的 2SLS 语法，不检查弱工具、排除限制或 LATE。**替代**：报告第一阶段；没有识别策略就只解释为相关。分数线 / 年龄门槛不要用 IV 或回归冒充。

@@ -14,6 +14,30 @@ description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputati
 - 批处理（无界面）：`stata-mp -b do "脚本.do"`，结束生成同名 `.log`。平台路径见 `docs/run-stata.md`。
 - **中文作图规矩**：需要图形命令且图表文字可能含中文时，先询问用户是否确需中文；默认按英文标签作图。
 
+## 强制路径
+
+匹配到第一条就停。禁止把 9 个社区包都跑一遍当「稳健性」。详细签名见 `references/`；禁令见文末黑名单。
+
+**何时用**：内置 `didregress` / `hdidregress` 不够用——处理单位极少、可逆/非二元处理、非线性结果、leaveout、合成对照、堆叠诊断、冲击型处理。
+**何时踢走**：
+- 分数线 / 年龄门槛 / 地理边界 → 本仓库尚未覆盖 RDD，**不要改走 `csdid` / `synth`**
+- 简单 2×2 或默认错时 DID → 先 `stata-did`（`didregress` / `hdidregress aipw`）
+- 只要多层 FE、不是事件研究 → `stata-regression` 的 `reghdfe`
+
+默认错时（无下表特殊需求）→ **不要留在本 skill**，回 `stata-did` 跑 `hdidregress aipw`。
+
+| 用户场景（自上而下，命中即停） | 强制命令链 |
+|---|---|
+| 处理单位 1 个或极少数 + 长前期 | `synth` 或 `sdid` → placebo / jackknife，不要只报点估计 |
+| 处理可逆 / 非二元 / 无 stayers | `did_multiplegt (dyn)`（位置参数，不是 `, mode(dyn)`） |
+| 错时 + 计数/二元结果 | `jwdid y, ivar(id) tvar(t) gvar(g) method(poisson) group` → `estat event` → `estat plot` |
+| 错时 + leaveout / 单位趋势 / 灵活 FE | `replace Ei = . if never_treated` → `did_imputation y id t Ei, horizons(0/5) leaveout autosample` |
+| 错时 + 要 DR/IPW/Reg 三方法对照 | `csdid y, ivar(id) time(t) gvar(g) notyet method(dr)` → `estat simple` → `estat event` |
+| 错时 + TWFE 权重诊断 / 100M+ 行 | `save original.dta` → `stacked build` → `stacked kappa` → `stacked reg` |
+| 冲击型（只持续 1 期）或聚类 < 50 | `lpdid y, ... pre(5) post(#)`；少聚类加 `bootstrap(500)` |
+
+`gvar`/`Ei` 编码：`csdid`/`jwdid` 的从未处理用 `0` 或 `.`；`did_imputation` 的 `Ei` **必须是 `.`，不能是 `0`**。
+
 ## 命令选择表（社区包）
 
 | 数据结构 | 处理时点 | 推荐命令 | 说明 |
@@ -280,6 +304,8 @@ description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputati
 - ❌ **不要在 `stacked` 跑前不 `save original.dta`**：`stacked build` 替换内存数据。**替代**：`save original.dta, replace` → `stacked build ...` → `use original.dta, clear` 恢复。
 - ❌ **不要在 `synth` 预测变量混入处理后期信息**：让合成单位偷看未来，估计失效。**替代**：`beer(1984(1)1988)` 的上限 ≤ `trperiod()-1`；预测变量期段写法严格在处理前。
 - ❌ **不要只跑 `synth` 不跑 placebo 推断**：没有 SE / p 值，投稿会被打回。**替代**：`synth_runner ..., gen_vars` 跑 placebo 置换推断（ADH 2015 标准做法）。
+- ❌ **不要把 9 个社区包都跑一遍当稳健性**：强制路径命中第一条就停。**替代**：按下表只跑命中的那条命令链；默认错时回 `stata-did` 的 `hdidregress aipw`。
+- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 `csdid` / `synth`**：不是时间断点，合成对照也救不了。**替代**：本仓库尚未覆盖 RDD；向用户说明识别策略不匹配。
 
 ## 验证
 
