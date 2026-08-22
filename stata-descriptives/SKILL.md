@@ -309,19 +309,56 @@ power onecorrelation 0 0.20        // H0: r=0 vs Ha: r=0.20，功效 0.80，输�
 
 ## 关键陷阱速查
 
-1. p 值报告 `p<0.001`，不写 0.000。
-   **Fix**：写报告/论文时把 `0.000` 全局替换为 `<0.001`；用 `outreg2, pformat(%9.3f)` 或 `estout, cells(b(star fmt(%9.3f)))` 控制输出格式。
-2. 统计显著 ≠ 实质显著：卡方随样本量膨胀、r=0.1 大样本也显著、t 检验任何差异都可能显著——始终结合效应量（φ/V、OR、Cohen's d、R²、β）解读。
-   **Fix**：每个推断必报效应量：`esizetwoway` / `esizei` (Cohen's d) / `tabodds, or` (OR) / `phi` / `V` (Cramer's V)；解读时分"显著+大效应 / 显著+小效应"两档说人话。
-3. sktest 与 sdtest 大样本敏感、小样本迟钝，结合数值与图形判断。
-   **Fix**：先 `histogram x, normal` 叠加正态曲线直观判断；再跑 sktest/swilk；冲突时优先信图形 + Q-Q 图。
-4. `V` 是 Stata 少见的必须大写的选项。
-   **Fix**：写交叉表时永远加 `, chi2 V`；自检：`tab var1 var2, V`（小写 v 会报 unrecognized）。
-5. 比例检验前先把变量 recode 成 0/1。
-   **Fix**：`recode var (1=1) (2=0) (nonmissing=.)` 把分类压成 0/1；用 `tab newvar, miss` 验证编码无误。
-6. 随机数先 `set seed` 保证可复现；`sample ..., count` 无放回、`bsample` 有放回。
-   **Fix**：do-file 头部固定 `set seed 20260816`；自助法用 `bsample`、简单抽样用 `sample 50, count`；蒙特卡洛模拟必带 `set seed`。
-7. 大样本散点图用 binscatter 或 jitter。
-   **Fix**：`ssc install binscatter` → `binscatter y x, n(50)`；或 `twoway (scatter y x, jitter(3))` 加抖动；不要直接画 N>10k 的 raw scatter。
-8. 外部命令安装：`ssc install fre binscatter`（实测可装）；书的 `chitable`/`chi2power`（UCLA 概率表/卡方功效辅助命令）已随 UCLA 服务器下线无法安装，非核心命令；查卡方临界值可用 `display invchi2(df, 0.95)` 替代（如 `invchi2(1, 0.95)` = 3.84）。
-   **Fix**：UCLA 包（chitable/chi2power/powerreg/powerlog）2024 年起下线，安装报错直接放弃；等效命令：`display invchi2(df, p)` 查临界值、`power twoproportions` 算比例检验功效、`power rsquared` 算 R² 功效。
+> 统一格式：**陷阱 → 触发 → Fix → 验证** 四件套。每条陷阱都给出可执行的修复 + 验证；Agent 在 SKILL.md 读到警告时即拿到完整修复路径。
+
+1. p 值报告 `p<0.001`，不写 0.000
+   - **触发**：默认输出报 `Prob = 0.0000`；写报告时直接复制会不符合 APA/Sci 惯例。
+   - **Fix**：写报告/论文时把 `0.000` 全局替换为 `<0.001`；用 `outreg2, pformat(%9.3f)` 或 `estout, cells(b(star fmt(%9.3f)))` 控制输出格式。
+   - **验证**：跑完 `outreg2 using table.html, pformat(%9.3f) replace` 后查 p 列是否为 `<0.001`。
+
+2. 统计显著 ≠ 实质显著
+   - **触发**：卡方随样本量膨胀、r=0.1 大样本也显著、t 检验任何差异都可能显著——只看 p 值会导致"显著但实质无用"的结论。
+   - **Fix**：每个推断必报效应量：`esizetwoway` / `esizei` (Cohen's d) / `tabodds, or` (OR) / `phi` / `V` (Cramer's V)；解读时分"显著+大效应 / 显著+小效应"两档说人话。
+   - **验证**：报告必含效应量数值（如 Cramér's V = 0.63）+ p 值；只有 p 无效应量 = 不完整报告。
+
+3. sktest 与 sdtest 大样本敏感、小样本迟钝
+   - **触发**：大样本轻微偏离正态就报 p<0.05；小样本大偏离也报 p>0.05——单一检验不可靠。
+   - **Fix**：先 `histogram x, normal` 叠加正态曲线直观判断；再跑 sktest/swilk；冲突时优先信图形 + Q-Q 图。
+   - **验证**：图形 + Q-Q 图 + 数值检验三件齐备；只报一个 = 不充分。
+
+4. `V` 是 Stata 少见的必须大写的选项
+   - **触发**：写 `tab var1 var2, chi2 v`（小写 v）报 `option v not allowed`。
+   - **Fix**：写交叉表时永远加 `, chi2 V`；自检：`tab var1 var2, V`（小写 v 会报 unrecognized）。
+   - **验证**：`tab var1 var2, chi2 V` 应输出 Cramér's V 值；小写 v 报错。
+
+5. 比例检验前先把变量 recode 成 0/1
+   - **触发**：原始变量是 1/2 编码（"是/否"），直接跑 `prtest var, by(group)` 报变量非 0/1。
+   - **Fix**：`recode var (1=1) (2=0) (nonmissing=.)` 把分类压成 0/1；用 `tab newvar, miss` 验证编码无误。
+   - **验证**：`tab newvar, miss` 应只有 0/1/`.` 三类值；其他值表示 recode 漏写。
+
+6. 随机数先 `set seed` 保证可复现
+   - **触发**：蒙特卡洛模拟或自助法不写 `set seed`，每次跑结果都不一样，无法复现。
+   - **Fix**：do-file 头部固定 `set seed 20260816`；自助法用 `bsample`、简单抽样用 `sample 50, count`；蒙特卡洛模拟必带 `set seed`。
+   - **验证**：跑两次 `do sim.do`，结果数值应完全一致。
+
+7. 大样本散点图用 binscatter 或 jitter
+   - **触发**：N>10k 的 raw scatter 渲染出黑团，无法看出关系。
+   - **Fix**：`ssc install binscatter` → `binscatter y x, n(50)`；或 `twoway (scatter y x, jitter(3))` 加抖动；不要直接画 N>10k 的 raw scatter。
+   - **验证**：图形可识别 x 与 y 的关系；raw scatter 出黑团 = 未优化。
+
+8. UCLA 包下线（chitable / chi2power / powerreg / powerlog）
+   - **触发**：`ssc install chitable` 报 `package not found` 或 `connection failed`（2024 年起 UCLA 服务器下线）。
+   - **Fix**：UCLA 包（chitable/chi2power/powerreg/powerlog）2024 年起下线，安装报错直接放弃；等效命令：`display invchi2(df, p)` 查临界值、`power twoproportions` 算比例检验功效、`power rsquared` 算 R² 功效。
+   - **验证**：`ssc install chitable` 应报 connection failed；改用 `display invchi2(1, 0.95)` 应输出 3.841。
+
+## ❌ Agent 不该做的事（黑名单）
+
+> 与 ADR-0001 联动：本节是「**主动反模式**」清单——「关键陷阱速查」是被动警告，本节是主动规范。Agent 在写 do-file 前必查一遍。
+
+- ❌ **不要只报 p 值不报效应量**：显著 ≠ 实质显著——卡方随样本量膨胀、t 检验任何差异都可能显著。**替代**：每个推断必报效应量（Cramér's V / Cohen's d / OR / R² / β）+ 分"显著+大效应 / 显著+小效应"两档解读。
+- ❌ **不要对大样本（>10k）画 raw scatter**：渲染为黑团，无法识别关系。**替代**：`ssc install binscatter` → `binscatter y x, n(50)`；或 `twoway (scatter y x, jitter(3))` 加抖动。
+- ❌ **不要用 `ssc install chitable / chi2power / powerreg / powerlog`**：UCLA 已下线（2024 年起），安装报错 `connection failed`。**替代**：`display invchi2(df, p)` 查临界值；`power twoproportions` 算比例功效；`power rsquared` 算 R² 功效。
+- ❌ **不要在 prtest 前不 recode 0/1**：报"variable not 0/1"错。**替代**：`recode var (1=1) (2=0) (nonmissing=.)`；用 `tab newvar, miss` 验证。
+- ❌ **不要写 `tab var1 var2, chi2 v`（小写 v）**：报 `option v not allowed`。**替代**：永远加 `, chi2 V` 大写；自检 `tab var1 var2, V`。
+- ❌ **不要在 sktest 单一 p > 0.05 时说"分布正态"**：小样本迟钝、大样本敏感。**替代**：三件齐备（`histogram x, normal` + Q-Q 图 + sktest 数值）；冲突时优先信图形。
+- ❌ **不要在 prtest / ttest 后用 0.000 报 p 值**：不符合 APA/Sci 惯例。**替代**：`outreg2, pformat(%9.3f)` + 论文正文一律 `<0.001`。

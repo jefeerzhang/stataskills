@@ -192,28 +192,76 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 
 ## 关键陷阱速查
 
-1. **处理变量放错括号**：`(结局 协变量) (处理变量)`——把协变量放进第二对括号会报 `invalid treatment variable`。
-   **Fix**：固定写作 `(结局 [协变量]) (处理变量)`；写完后 `assert _did_tvar` 看处理变量是否被正确识别；多模型时用 `estimates table, b(%9.3f) star` 核对每模型 ATET。
-2. **`estat trends` 不存在**：事前趋势检验命令是 `estat ptrends`。
-   **Fix**：只可能输错；自检 `help estat ptrends`；找不到时报 `unrecognized command` —— 改写为 `estat ptrends` 即可。
-3. **`xthdidregress` 不接受 `time()`**：报 `option time() not allowed`，先 `xtset` 即可。
-   **Fix**：`xthdidregress (y) (treat), group(id)`——**不写 time()**；时间变量从 `xtset id month` 自动读取；写错就报 option not allowed。
-4. **wildbootstrap 种子是 `rseed()`**：写 `seed()` 报 `invalid 'reps'` 类错误。
-   **Fix**：`didregress ..., wildbootstrap(reps(99) rseed(20260816))`；不要写 `seed()`（那是 sample 命令的）；reps 默认 1000，但小样本演示用 99 / 120 也行（.025*reps 整数时更快）。
-5. **`estat bdecomp` 两前提**：处理时点 ≥ 2（错时设计）+ 数据强平衡（个体级先 `collapse` 到组×期均值）。
-   **Fix**：错时设计 + 先 `collapse (mean) y treat, by(group time)` 收缩到组×期均值；不足 2 个处理时点报 `insufficient treatment cohorts`；非平衡数据报 `unbalanced data not allowed`。
-6. **单时点 DID 用 TWFE 没问题，错时必须换稳健估计量**：`hdidregress` / `xthdidregress`，并配合 `estat aggregation, dynamic` 看事件研究图。
-   **Fix**：处理时点 ≥ 2 时禁止用 `didregress` 的 TWFE 结果；改跑 `hdidregress`（重复截面）或 `xthdidregress`（面板），必看 `estat aggregation, dynamic graph` 事件研究图；bacon 分解（`estat bdecomp`）诊断错时下 TWFE 负权重。
-7. **wild bootstrap 后 `estat vce` 不允许**：官方明确禁止。
-   **Fix**：wildbootstrap 后只能看原始估计表（CI 用 percentile）；要看 vce 必须去掉 `wildbootstrap()` 重跑——CI 自动回归到默认 robust。
-8. **2-cluster 时 wild bootstrap CI 不可识别**：当 `group()` 变量只有 2 个聚类（如 0/1 对照/处理），Stata 报告 `lower confidence bound not found`——这是 wild bootstrap 的已知边界，**不是错误**。
-   **Fix**：组数 < 5 时不用 wildbootstrap，改用 `aggregate(dlang)`（Donald-Lang 聚合，少组时更稳）；或合并同类小组合成 ≥ 5 个组；研究设计中应保证至少 5 个独立处理单元（policy group）。
-9. **`xtset` 字符串变量报错**：`xtset country year` 报 `country is string variable` —— xtset 只接受数值型组变量。
-   **Fix**：`encode country, gen(country_id)` 把字符串转数值（自动带值标签）；后面所有 `group()`/`absorb()`/`cluster()` 用 `country_id`。
-10. **平行趋势假设被拒的处理**：实操里 `estat ptrends` 报 p < 0.05 是常事——直接放弃 DID 是过度反应。
-   **Fix**：按优先级（详见第 11 节）：(1) 看 `estat trendplot` 判断是"真趋势差"还是"数据噪音"；(2) 加协变量平衡趋势差；(3) 改用 `hdidregress aipw` 或 `xthdidregress aipw`；(4) 诚实报告 + 三角化论证，**不要简单加更多控制变量**（可能引入 bad control）。
-11. **`reghdfe` 旧代码迁移到 `hdidregress`**：`reghdfe y (time_to_event*), absorb(...) cluster(...)` 是 Stata 17 主流写法；Stata 18+ 可改用 `hdidregress aipw (y) (treat), group(id) time(t)`，结果在代数上不等价（异质性估计 vs 平均 TWFE）——不能直接说"一样的"。
-   **Fix**：迁移时在论文方法节明示；保留旧 `reghdfe` 输出作对照；不要混用两套估计量报同一个政策效应。
+> 统一格式：**陷阱 → 触发 → Fix → 验证** 四件套。每条陷阱都给出可执行的修复 + 验证；Agent 在 SKILL.md 读到警告时即拿到完整修复路径。
+
+1. 处理变量放错括号
+   - **触发**：写 `(结局 协变量) (处理变量)` 把协变量放进第二对括号，报 `invalid treatment variable`。
+   - **Fix**：固定写作 `(结局 [协变量]) (处理变量)`；写完后 `assert _did_tvar` 看处理变量是否被正确识别；多模型时用 `estimates table, b(%9.3f) star` 核对每模型 ATET。
+   - **验证**：`assert _did_tvar` 应 PASS；跑完命令无 `invalid treatment variable`。
+
+2. `estat trends` 不存在
+   - **触发**：写 `estat trends` 报 `unrecognized command`。
+   - **Fix**：事前趋势检验命令是 `estat ptrends`；自检 `help estat ptrends`；找不到时报 `unrecognized command` —— 改写为 `estat ptrends` 即可。
+   - **验证**：`estat ptrends` 应输出平行趋势检验结果；`estat trends` 应报 unrecognized。
+
+3. `xthdidregress` 不接受 `time()`
+   - **触发**：写 `xthdidregress ..., time(month)` 报 `option time() not allowed`。
+   - **Fix**：`xthdidregress (y) (treat), group(id)`——**不写 time()**；时间变量从 `xtset id month` 自动读取；写错就报 option not allowed。
+   - **验证**：先 `xtset id month` → `xthdidregress (y) (treat), group(id)` 应正常跑；写 `time()` 应报 not allowed。
+
+4. wildbootstrap 种子是 `rseed()`
+   - **触发**：写 `didregress ..., wildbootstrap(reps(99) seed(20260816))` 报 `invalid 'reps'` 类错误。
+   - **Fix**：`didregress ..., wildbootstrap(reps(99) rseed(20260816))`；不要写 `seed()`（那是 sample 命令的）；reps 默认 1000，但小样本演示用 99 / 120 也行（.025*reps 整数时更快）。
+   - **验证**：跑两次 `didregress ..., wildbootstrap(reps(99) rseed(20260816))` 结果应一致；写 `seed()` 应报 invalid。
+
+5. `estat bdecomp` 两前提
+   - **触发**：错时设计但处理时点 < 2 报 `insufficient treatment cohorts`；非平衡数据报 `unbalanced data not allowed`。
+   - **Fix**：错时设计 + 先 `collapse (mean) y treat, by(group time)` 收缩到组×期均值；不足 2 个处理时点报 `insufficient treatment cohorts`；非平衡数据报 `unbalanced data not allowed`。
+   - **验证**：跑前 `tab time` 看处理时点数；`isid group time` 看数据是否强平衡。
+
+6. 单时点 DID 用 TWFE 没问题，错时必须换稳健估计量
+   - **触发**：错时 DID（处理时点 ≥ 2）跑 `didregress` 报 TWFE 系数，但有负权重偏误。
+   - **Fix**：处理时点 ≥ 2 时禁止用 `didregress` 的 TWFE 结果；改跑 `hdidregress`（重复截面）或 `xthdidregress`（面板），必看 `estat aggregation, dynamic graph` 事件研究图；bacon 分解（`estat bdecomp`）诊断错时下 TWFE 负权重。
+   - **验证**：`estat aggregation, dynamic graph` 应输出事件研究图；`estat bdecomp, graph` 应输出 Bacon 分解图（看到负权重分量 = 警告）。
+
+7. wild bootstrap 后 `estat vce` 不允许
+   - **触发**：wildbootstrap 后跑 `estat vce` 报 `vce not allowed after wildbootstrap`（官方明确禁止）。
+   - **Fix**：wildbootstrap 后只能看原始估计表（CI 用 percentile）；要看 vce 必须去掉 `wildbootstrap()` 重跑——CI 自动回归到默认 robust。
+   - **验证**：wildbootstrap 后看 `e(V)` 或估计表（CI 用 percentile）；跑 `estat vce` 应报错。
+
+8. 2-cluster 时 wild bootstrap CI 不可识别
+   - **触发**：`group()` 变量只有 2 个聚类（如 0/1 对照/处理）时，wild bootstrap 报 `lower confidence bound not found`——这是 wild bootstrap 的已知边界，**不是错误**。
+   - **Fix**：组数 < 5 时不用 wildbootstrap，改用 `aggregate(dlang)`（Donald-Lang 聚合，少组时更稳）；或合并同类小组合成 ≥ 5 个组；研究设计中应保证至少 5 个独立处理单元（policy group）。
+   - **验证**：`tab group` 看组数；< 5 时改用 `aggregate(dlang)`。
+
+9. `xtset` 字符串变量报错
+   - **触发**：`xtset country year` 报 `country is string variable` —— xtset 只接受数值型组变量。
+   - **Fix**：`encode country, gen(country_id)` 把字符串转数值（自动带值标签）；后面所有 `group()`/`absorb()`/`cluster()` 用 `country_id`。
+   - **验证**：`xtset country_id year` 应成功；`encode` 后 `country_id` 是数值。
+
+10. 平行趋势假设被拒的处理
+    - **触发**：实操里 `estat ptrends` 报 p < 0.05 是常事——直接放弃 DID 是过度反应。
+    - **Fix**：按优先级（详见第 11 节）：(1) 看 `estat trendplot` 判断是"真趋势差"还是"数据噪音"；(2) 加协变量平衡趋势差；(3) 改用 `hdidregress aipw` 或 `xthdidregress aipw`；(4) 诚实报告 + 三角化论证，**不要简单加更多控制变量**（可能引入 bad control）。
+    - **验证**：`estat ptrends` 报 p < 0.05 时看 `estat trendplot`；优先尝试协变量 + AIPW；不放弃 DID。
+
+11. `reghdfe` 旧代码迁移到 `hdidregress`
+    - **触发**：`reghdfe y (time_to_event*), absorb(...) cluster(...)` 是 Stata 17 主流写法；Stata 18+ 可改用 `hdidregress aipw (y) (treat), group(id) time(t)`，结果在代数上不等价（异质性估计 vs 平均 TWFE）——不能直接说"一样的"。
+    - **Fix**：迁移时在论文方法节明示；保留旧 `reghdfe` 输出作对照；不要混用两套估计量报同一个政策效应。
+    - **验证**：报告方法节应明说两套估计量的代数差异；不混用同一政策效应的两个估计量。
+
+## ❌ Agent 不该做的事（黑名单）
+
+> 与 ADR-0001 联动：本节是「**主动反模式**」清单——「关键陷阱速查」是被动警告，本节是主动规范。Agent 在写 DID do-file 前必查一遍。
+
+- ❌ **不要在错时 DID（处理时点 ≥ 2）跑 `didregress` 用 TWFE**：报 TWFE 系数但有负权重偏误。**替代**：改用 `hdidregress`（重复截面）/ `xthdidregress`（面板）；必看 `estat aggregation, dynamic graph` 事件研究图；Bacon 分解（`estat bdecomp`）诊断 TWFE 负权重。
+- ❌ **不要在 < 5 组时跑 `wildbootstrap`**：CI 不可识别（报 `lower confidence bound not found`）。**替代**：改用 `aggregate(dlang)`（Donald-Lang 聚合）；或合并同类小组合成 ≥ 5 组；研究设计保证 ≥ 5 个独立处理单元。
+- ❌ **不要把协变量放进第二对括号** `(结局 协变量) (处理变量)`：报 `invalid treatment variable`。**替代**：固定 `(结局 [协变量]) (处理变量)`；写完 `assert _did_tvar` 验证。
+- ❌ **不要在 `xthdidregress` 加 `time()` 选项**：报 `option time() not allowed`。**替代**：先 `xtset id month`，`xthdidregress (y) (treat), group(id)` 不写 time()。
+- ❌ **不要在 wildbootstrap 后跑 `estat vce`**：官方明确禁止。**替代**：wildbootstrap 后只能看原始估计表（CI 用 percentile）；要看 vce 必须去掉 `wildbootstrap()` 重跑。
+- ❌ **不要把 wildbootstrap 种子写 `seed()`**：报 `invalid 'reps'`。**替代**：`wildbootstrap(reps(99) rseed(20260816))`——rseed 是 didregress 的选项名。
+- ❌ **不要在 `estat bdecomp` 前不收缩到组×期均值**：报 `unbalanced data not allowed`。**替代**：先 `collapse (mean) y treat, by(group time)` 强平衡化。
+- ❌ **不要简单加更多控制变量平衡平行趋势**：可能引入 bad control。**替代**：看 `estat trendplot`；加**先验**协变量；改 `hdidregress aipw`；三角化论证。
+- ❌ **不要直接说 `reghdfe` 和 `hdidregress` 估计"一样的"**：代数上不等价（异质性估计 vs 平均 TWFE）。**替代**：报告方法节明示；保留 `reghdfe` 输出作对照；不混用同一政策效应的两个估计量。
 
 ## 验证
 

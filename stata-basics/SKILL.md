@@ -134,19 +134,56 @@ command varlist if/in, options
 
 ## 关键陷阱速查
 
-1. 漏掉选项前的逗号。
-   **Fix**：选项前永远先写逗号再接 `, option`；do-file 里 grep `^\s*[a-z]\+\s` 找无逗号行。
-2. `==` 与 `=` 混用；`&` 写成 and。
-   **Fix**：用 `==` 表相等、`&` 表与；`=` 仅在 `gen x = ...` 或选项赋值时用。`assert x==1` 是自检利器。
-3. if 条件漏掉 `& 变量 < .`（缺失值被误选）。
-   **Fix**：数值比较的 if 子句全部加 `& var < .`；或先 `mvdecode var, mv(99=.)` 把缺失码转 `.`。
-4. 反向编码前忘了 mvdecode，缺失代码参与算术出错。
-   **Fix**：`mvdecode var, mv(99=.a)` 在反向编码前先跑；用 `tab var, miss` 验证缺失码已合并。
-5. 生成新变量不验证（必须 tabulate 交叉核对）。
-   **Fix**：`assert inrange(newvar, min, max)` 或 `tab old new, miss` 交叉表核对；`codebook newvar` 查分布。
-6. 用算术法反向会丢失缺失原因的区别（.a/.b 都变 `.`），recode/clonevar 保留。
-   **Fix**：缺失码有区别时用 `recode var (1=4) (2=3) (3=2) (4=1) (.a=.a) (.b=.b)` 显式保留；先 `clonevar var_orig = var` 留底。
-7. 变量名 >8 字符显示被截断（如 `educat~n`），只是显示问题。
-   **Fix**：用 `label variable varname "全名"` 给长变量名加标签；导出表格时用 `estimates table, b(%9s)` 或 `outreg2`。
-8. 命令全小写（Stata 区分大小写）。
-   **Fix**：所有命令 lower-case；写完跑 `do myscript.do` 验证——不要依赖 IDE 高亮判断大小写。
+> 统一格式：**陷阱 → 触发 → Fix → 验证** 四件套。每条陷阱都给出可执行的修复 + 验证；Agent 在 SKILL.md 读到警告时即拿到完整修复路径。
+
+1. 漏掉选项前的逗号
+   - **触发**：Stata 报 `option not allowed` 或 `invalid syntax`；常见于把 `summarize varname, detail` 漏写逗号写成 `summarize varname detail`。
+   - **Fix**：选项前永远先写逗号再接 `, option`；do-file 里 `grep -nE '^\s*[a-z]+\s+[a-z]' myscript.do` 找无逗号行。
+   - **验证**：`do myscript.do` 应无 `option not allowed` 错误；grep 无匹配行。
+
+2. `==` 与 `=` 混用；`&` 写成 and
+   - **触发**：条件判断 `if x=1` 报 `invalid syntax`；逻辑与写 `if x==1 and y==2` 报 `and not found`。
+   - **Fix**：用 `==` 表相等、`&` 表与；`=` 仅在 `gen x = ...` 或选项赋值时用。`assert x==1` 是自检利器。
+   - **验证**：`assert x==1` 应 PASS；写错的 `assert x=1` 会报 `invalid syntax`。
+
+3. if 条件漏掉 `& 变量 < .`（缺失值被误选）
+   - **触发**：写 `if age > 64` 把缺失者也选进来（缺失值是巨大数值，比任何数字都大），导致回归样本量异常、结果偏。
+   - **Fix**：数值比较的 if 子句全部加 `& var < .`；或先 `mvdecode var, mv(99=.)` 把缺失码转 `.`。
+   - **验证**：跑完 `summarize age if age > 64` 看 N 是否包含缺失值；正确做法 `summarize age if age > 64 & age < .`。
+
+4. 反向编码前忘了 mvdecode，缺失代码参与算术出错
+   - **触发**：缺失码 `.a`/`.b` 参与 `recode` 或算术运算（如 `new = 5 - old`）时，结果变成 `.` 而非保留缺失码区分。
+   - **Fix**：`mvdecode var, mv(99=.a)` 在反向编码前先跑；用 `tab var, miss` 验证缺失码已合并。
+   - **验证**：`tab newvar, miss` 应能看到原 `.a`/`.b` 仍保留或正确合并。
+
+5. 生成新变量不验证（必须 tabulate 交叉核对）
+   - **触发**：写 `gen newvar = ...` 后直接进分析，结果异常但不自知。
+   - **Fix**：`assert inrange(newvar, min, max)` 或 `tab old new, miss` 交叉表核对；`codebook newvar` 查分布。
+   - **验证**：交叉表的边缘合计应与原变量一致；分布应在理论合理范围内。
+
+6. 用算术法反向会丢失缺失原因的区别（.a/.b 都变 `.`）
+   - **触发**：`gen new = 5 - old` 把原 `.a`/`.b` 都变成 `.`（缺失），丢失缺失原因信息。
+   - **Fix**：缺失码有区别时用 `recode var (1=4) (2=3) (3=2) (4=1) (.a=.a) (.b=.b)` 显式保留；先 `clonevar var_orig = var` 留底。
+   - **验证**：`tab old new, miss` 应显示 `.a` → `.a`、`.b` → `.b`（不是 → `.`）。
+
+7. 变量名 >8 字符显示被截断（如 `educat~n`）
+   - **触发**：输出表格时变量名被 Stata 截断为 `educat~n`，但变量本身无问题。
+   - **Fix**：用 `label variable varname "全名"` 给长变量名加标签；导出表格时用 `estimates table, b(%9s)` 或 `outreg2`。
+   - **验证**：`describe` 看变量标签是否完整；导出 CSV 后变量名应完整。
+
+8. 命令全小写（Stata 区分大小写）
+   - **触发**：写 `Summarize x` 报 `command Summarize not found`（Stata 命令区分大小写）。
+   - **Fix**：所有命令 lower-case；写完跑 `do myscript.do` 验证——不要依赖 IDE 高亮判断大小写。
+   - **验证**：`do myscript.do` 应无 `command ... not found`；报错行的命令首字母应为大写。
+
+## ❌ Agent 不该做的事（黑名单）
+
+> 与 ADR-0001 联动：本节是「**主动反模式**」清单——「关键陷阱速查」是被动警告，本节是主动规范。Agent 在写 do-file 前必查一遍。
+
+- ❌ **不要用算术法做反向编码**（`gen new = 5 - old`）：丢失缺失码区分（`.a`/`.b` 都变 `.`）。**替代**：`recode var (1=4) (2=3) (3=2) (4=1) (.a=.a) (.b=.b)`，先 `clonevar var_orig = var` 留底。
+- ❌ **不要在 if 条件里漏 `& var < .`**：缺失值是巨大数值（`> 任何数字`），会把缺失者误选进来。**替代**：数值比较的 if 子句全部加 `& var < .`；或先 `mvdecode var, mv(99=.)`。
+- ❌ **不要在 do-file 里写 `drop _all`**：会清空数据集且不可恢复。**替代**：用 `clear`（仅当不需要保留数据时）或 `preserve` / `restore`。
+- ❌ **不要把 `clear all` 当"重置"用**：会清空所有 `estimates store` 的模型、`matrix`、标签——不可恢复。**替代**：用 `estimates drop _all` 或选择性 `clear matrix` / `clear label`。
+- ❌ **不要复制 .dta 文件当变量名用**（如 `gen 教育年限 = ...`）：中文字段名在批处理模式可能渲染为乱码，且某些导出命令（`outreg2` / `estout`）不支持中文标签。**替代**：用拼音（如 `educ`）+ `label variable educ "教育年限"`。
+- ❌ **不要用 Excel 输入数据后不 `destring`**：误打字母会把变量变字符串，回归报错 `variable ... not found`。**替代**：导入后跑 `destring varlist, replace force`；或用 `import excel, cellrange(A2:I100) clear` 严格列范围。
+- ❌ **不要在 do-file 里用 `cd "~/..."` 绝对路径**：换机器就跑不了。**替代**：用相对路径（`cd data/agis6/`）+ 项目根目录约定。

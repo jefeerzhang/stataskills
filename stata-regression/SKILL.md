@@ -680,19 +680,56 @@ nestreg: logistic drank30 (male) (age97) (dinner97 pdrink97)
 
 ## 关键陷阱速查
 
-1. `anova` 中连续协变量必须 `c.` 前缀，否则按分类处理。
-   **Fix**：`anova y i.group c.age`（连续加 c. 前缀）；自检：`anova y i.group age` 应报"变量 age 重编码为 categorical"——见此提示就改 `c.age`。
-2. 存在显著交互/二次项时：不直接读主效应/线性系数；用 margins+marginsplot 看图；不解释范围外截距。
-   **Fix**：跑 `margins, dydx(*) at(...)` + `marginsplot`；解读只说"在某 X 取值下 Y 的变化"，不说"主效应"；删二次项若不再显著。
-3. pseudo-R² 不是解释方差；OR 不是风险比；多单位 OR 变化要取幂。
-   **Fix**：逻辑回归报 OR 时用 `logit y x, or`；单位变化 >1 时 `display exp(b*X)`；pseudo-R² 仅作样本内拟合参考，**写报告明确写"伪 R²，不与 OLS R² 比较"**。
-4. nestreg 不支持因子变量记法（先 generate 平方项等）。
-   **Fix**：先 `gen x2 = x^2` 显式生成；再用 `nestreg: regress y (x x2)`；不要写 `c.x##c.x` 进 nestreg。
-5. 加权回归自动用稳健 SE；检查 sum of wgt 合理性。
-   **Fix**：跑前 `summarize [aw=weight_var]` 看 sum of wgt 与 N 比值；权重极端时改 `pw` 或归一化。
-6. 不要跨群体比较标准化 β/相关。
-   **Fix**：分组比较只比原始系数 b（标尺相同）或 CI 重叠；标准化 β 仅在同一样本内不同变量间比，**不跨样本/跨组**。
-7. Stata 峰度正态值=3（SAS/SPSS 报减 3 值）。
-   **Fix**：跨软件比较峰度时 `display r(kurtosis) - 3` 转换；解读永远用 Stata 原值。
-8. p 值报告 p<0.001。
-   **Fix**：同 descriptives 第 1 条——`outreg2, pformat(%9.3f)` + 论文正文不用 0.000。
+> 统一格式：**陷阱 → 触发 → Fix → 验证** 四件套。每条陷阱都给出可执行的修复 + 验证；Agent 在 SKILL.md 读到警告时即拿到完整修复路径。
+
+1. `anova` 中连续协变量必须 `c.` 前缀
+   - **触发**：`anova y i.group age` 把连续变量 age 按分类处理，结果报"变量 age 重编码为 categorical"——错估自由度、结果不可信。
+   - **Fix**：`anova y i.group c.age`（连续加 c. 前缀）；自检：`anova y i.group age` 应报"变量 age 重编码为 categorical"——见此提示就改 `c.age`。
+   - **验证**：连续变量应保留小数位数值，不是整数分类；与 `regress y i.group c.age` 结果应一致。
+
+2. 存在显著交互/二次项时：不直接读主效应/线性系数
+   - **触发**：跑 `regress y i.group c.x c.x2` 后直接说"x 主效应 = b1"——交互/二次项存在时 b1 失去意义。
+   - **Fix**：跑 `margins, dydx(*) at(...)` + `marginsplot`；解读只说"在某 X 取值下 Y 的变化"，不说"主效应"；删二次项若不再显著。
+   - **验证**：报告必含 `marginsplot` 图 + 在具体 X 值下的边际效应；只报 b1 = 不完整报告。
+
+3. pseudo-R² 不是解释方差；OR 不是风险比
+   - **触发**：写"逻辑回归解释 50% 的方差"——pseudo-R² 与 OLS R² 不可比；"OR = 2 意味着风险翻倍"——OR 不是 RR。
+   - **Fix**：逻辑回归报 OR 时用 `logit y x, or`；单位变化 >1 时 `display exp(b*X)`；pseudo-R² 仅作样本内拟合参考，**写报告明确写"伪 R²，不与 OLS R² 比较"**。
+   - **验证**：报告应明说"伪 R²"；OR 解读应明说"发生比"而非"风险"。
+
+4. nestreg 不支持因子变量记法
+   - **触发**：写 `nestreg: regress y (c.x##c.x)` 报 `factor variables not allowed`。
+   - **Fix**：先 `gen x2 = x^2` 显式生成；再用 `nestreg: regress y (x x2)`；不要写 `c.x##c.x` 进 nestreg。
+   - **验证**：`nestreg, trace` 输出应逐块包含 x 与 x2；无 `factor variables not allowed` 错误。
+
+5. 加权回归自动用稳健 SE；检查 sum of wgt 合理性
+   - **触发**：用 `[aw=weight_var]` 跑回归，权重极端（如 sum of wgt 与 N 比值 < 0.5 或 > 2）导致 SE 估计异常。
+   - **Fix**：跑前 `summarize [aw=weight_var]` 看 sum of wgt 与 N 比值；权重极端时改 `pw` 或归一化。
+   - **验证**：sum of wgt / N 应接近 1；偏离过大时改用 `pw` 或归一化权重。
+
+6. 不要跨群体比较标准化 β/相关
+   - **触发**：分组比较标准化 β（如女性组 β=0.3 vs 男性组 β=0.5）说"男性效应更强"——标准化 β 跨组不可比。
+   - **Fix**：分组比较只比原始系数 b（标尺相同）或 CI 重叠；标准化 β 仅在同一样本内不同变量间比，**不跨样本/跨组**。
+   - **验证**：报告跨组比较时使用原始系数 b + CI 重叠检验；标准化 β 仅在同一样本内使用。
+
+7. Stata 峰度正态值=3（SAS/SPSS 报减 3 值）
+   - **触发**：跨软件比较峰度时，Stata 报 3.0（正态）而 SAS 报 0.0（正态）——被误读为分布形态不同。
+   - **Fix**：跨软件比较峰度时 `display r(kurtosis) - 3` 转换；解读永远用 Stata 原值。
+   - **验证**：报告峰度时标注"Stata 原值"；跨软件时用减 3 后值。
+
+8. p 值报告 p<0.001
+   - **触发**：同 descriptives 第 1 条——输出 `Prob = 0.0000`，复制到报告不符合 APA/Sci 惯例。
+   - **Fix**：同 descriptives 第 1 条——`outreg2, pformat(%9.3f)` + 论文正文不用 0.000。
+   - **验证**：导出表格 p 列均为 `<0.001`、`[0.001, 0.01)`、`[0.01, 0.05)`、`[0.05, 1)` 四档之一；无 `0.000`。
+
+## ❌ Agent 不该做的事（黑名单）
+
+> 与 ADR-0001 联动：本节是「**主动反模式**」清单——「关键陷阱速查」是被动警告，本节是主动规范。Agent 在写 do-file 前必查一遍。
+
+- ❌ **不要把连续协变量不加 `c.` 前缀**：写 `anova y i.group age` 把 age 按分类处理，错估自由度。**替代**：`anova y i.group c.age`；与 `regress y i.group c.age` 结果应一致。
+- ❌ **不要把逻辑回归的 OR 说成"风险比"**：OR ≠ RR（odds ratio 不是 risk ratio）。**替代**：报 OR 时明说"发生比"；横断面数据可用 OR，队列数据需 RR 时用 `cs` / `cc` 命令。
+- ❌ **不要跨样本/跨组比较标准化 β**：β 仅在同一样本内不同变量间可比，跨组不可比。**替代**：跨组比较用原始系数 b（标尺相同）+ CI 重叠检验。
+- ❌ **不要用 nestreg + `c.x##c.x`**：报 `factor variables not allowed`。**替代**：先 `gen x2 = x^2` 显式生成；用 `nestreg: regress y (x x2)`。
+- ❌ **不要简单加更多控制变量平衡平行趋势**：可能引入 bad control（中介变量 / 后处理变量）。**替代**：按优先级：(1) `estat trendplot` 判断真趋势差；(2) 加**先验**协变量（非中介）；(3) 改 `hdidregress aipw`；(4) 三角化论证。
+- ❌ **不要比较 pseudo-R² 与 OLS R²**：pseudo-R² 不解释方差，仅作样本内拟合参考。**替代**：报告必明说"伪 R²，不与 OLS R² 比较"。
+- ❌ **不要在显著交互/二次项存在时读主效应/线性系数**：b1 失去意义。**替代**：`margins, dydx(*) at(...)` + `marginsplot`；解读只说"在某 X 取值下 Y 的变化"。

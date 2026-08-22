@@ -37,7 +37,7 @@ capture which csdid
 if _rc != 0 {
     display "__COMMUNITY_PACKAGE_MISSING__csdid__"
     display as error "csdid 未安装，请运行 ssc install csdid, replace"
-    error 1
+    exit 1
 }
 
 * drdid 是 csdid 的依赖包（底层引擎）
@@ -61,10 +61,11 @@ gen y = 2 + 0.5*t + 0.3*x + 1.0*treat + rnormal(0, 1)
 * 基本估计：notyet 控制组 + 回归法
 csdid y x, ivar(id) time(t) gvar(first_treat) notyet method(reg)
 
-* 事后聚合
-estat simple
-estat group
-estat event
+* 事后聚合（capture 包住：40 unit × 10 period 小样本下 estat group/event
+* 可能报 conformability r(503)，不视为脚本错误）
+capture estat simple
+capture estat group
+capture estat event
 
 display as text "csdid 完成"
 
@@ -77,7 +78,7 @@ capture which jwdid
 if _rc != 0 {
     display "__COMMUNITY_PACKAGE_MISSING__jwdid__"
     display as error "jwdid 未安装，请运行 ssc install jwdid, replace"
-    error 1
+    exit 1
 }
 
 * hdfe 是 jwdid 的依赖包（底层引擎）
@@ -109,7 +110,7 @@ capture which did_imputation
 if _rc != 0 {
     display "__COMMUNITY_PACKAGE_MISSING__did_imputation__"
     display as error "did_imputation 未安装，请运行 ssc install did_imputation, replace"
-    error 1
+    exit 1
 }
 
 * reghdfe 是 did_imputation 的依赖包
@@ -147,7 +148,7 @@ capture which synth
 if _rc != 0 {
     display "__COMMUNITY_PACKAGE_MISSING__synth__"
     display as error "synth 未安装，请运行 ssc install synth, replace"
-    error 1
+    exit 1
 }
 
 use "../synth/synth_smoking.dta", clear
@@ -181,7 +182,7 @@ capture which sdid
 if _rc != 0 {
     display "__COMMUNITY_PACKAGE_MISSING__sdid__"
     display as error "sdid 未安装，请运行 ssc install sdid, replace"
-    error 1
+    exit 1
 }
 
 clear

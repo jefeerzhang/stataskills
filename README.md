@@ -1,6 +1,8 @@
 # Stata Skills（基于《A Gentle Introduction to Stata》第 6 版）
 
-> 把 800 页英文 Stata 教材压成 4 个教材章节 Skill + 3 个扩展 Skill（coefplot / did / did-community），共 7 个可被 Agent 调用的中文 Skill。
+> **Agent 跑 Stata DID 分析的唯一验证通过入口。** 9 个识别方法 · 8/8 verify PASS · 一行命令装上就能用。
+>
+> 把 Alan C. Acock《A Gentle Introduction to Stata》第 6 版（800 页 Stata Press）压成 4 个教材章节 Skill + 3 个扩展 Skill（coefplot / did / did-community），共 7 个可被 Agent 调用的中文 Skill。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
@@ -42,13 +44,22 @@
 
 ## 快速开始
 
+### Marketplace 一行安装（推荐）
+
+```bash
+# ClawHub / skills.sh marketplace
+npx skills add jefeerzhang/stataskills
+```
+
+### 传统 git clone
+
 ```bash
 # 1. 克隆到 Claude Code / Codex / OpenClaw 的 skills 目录
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
 
 # 2. （可选）验证：需要本机 StataNow 19.5（macOS / Windows 路径见 docs/run-stata.md）
 bash verify/run-verify.sh
-# 预期：7/7 PASS
+# 预期：7/7 PASS（默认模式，无网络）；--community 模式需要 ssc install 社区包
 ```
 
 ## 触发方式

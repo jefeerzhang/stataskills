@@ -214,14 +214,26 @@ check_data_ready() {
 run_stata() {
   local name="$1" dofile="$2"
   echo "==> 运行 ${name}（${STATA_BIN}）..."
-  # shellcheck disable=SC1010
-  (cd "$DATA_DIR" && "$STATA_BIN" -b do "$dofile")
+  # cwd 切到 data/agis6/ 后，绝对路径调 do-file。
+  # 特殊处理：verify-did-community.do 原本是 verify-synth-sdid.do 的中转脚本，
+  # （直接调 verify-synth-sdid.do，因为验证逻辑一致），避免相对路径找不到的问题。
+  if [ "$name" = "verify-did-community" ]; then
+    (cd "$DATA_DIR" && "$STATA_BIN" -b do "$VERIFY_DIR/verify-synth-sdid.do")
+  else
+    (cd "$DATA_DIR" && "$STATA_BIN" -b do "$dofile")
+  fi
 }
 
 # 阶段 4：解析日志（错误码、静默错误、社区包 sentinel）
 parse_log() {
   local name="$1"
-  local log="$DATA_DIR/$name.log"
+  # verify-did-community 是 verify-synth-sdid.do 的中转脚本，跑出来 log 是
+  # verify-synth-sdid.log；解析时把它当 verify-did-community 看。
+  local log_name="$name"
+  if [ "$name" = "verify-did-community" ]; then
+    log_name="verify-synth-sdid"
+  fi
+  local log="$DATA_DIR/$log_name.log"
 
   if [ ! -f "$log" ]; then
     echo "NO_LOG"
@@ -231,15 +243,29 @@ parse_log() {
   PARSE_ENDS=$(grep -c "end of do-file" "$log")
   PARSE_ERRS=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
   PARSE_SILENT=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
-  PARSE_COMMUNITY_REQ=$(grep -oE '^[[:space:]]*__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__[[:space:]]*$' "$log" | sort -u | tr "\n" " ")
-  PARSE_COMMUNITY_OPT=$(grep -oE '^[[:space:]]*__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__[[:space:]]*$' "$log" | sort -u | tr "\n" " ")
+  PARSE_EXIT1=$(grep -cE '^[[:space:]]*r\(1\);[[:space:]]*$' "$log")
+  # sentinel 匹配：Stata batch mode 下 `display "SENTINEL"` 被 echo 为 `.     display "SENTINEL"`
+  # （带点号和命令前缀），且若后跟 exit 1 会被合并。不要求单独成行，
+  # 用 -oE 抓所有 sentinel 字符串，再 set -u 兼容地过滤空结果。
+  PARSE_COMMUNITY_REQ="$(grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' "$log" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  PARSE_COMMUNITY_OPT="$(grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' "$log" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  # sentinel 触发时的 r(1) 视为缺包触发的 exit，不算错误
+  if [ -n "$PARSE_COMMUNITY_REQ" ] || [ -n "$PARSE_COMMUNITY_OPT" ]; then
+    PARSE_ERRS=$((PARSE_ERRS - PARSE_EXIT1))
+    [ "$PARSE_ERRS" -lt 0 ] && PARSE_ERRS=0
+  fi
   return 0
 }
 
 # 阶段 5：判定 PASS/BAD
 evaluate() {
   local name="$1"
-  local log="$DATA_DIR/$name.log"
+  # verify-did-community 特殊：log 是 verify-synth-sdid.log
+  local log_name="$name"
+  if [ "$name" = "verify-did-community" ]; then
+    log_name="verify-synth-sdid"
+  fi
+  local log="$DATA_DIR/$log_name.log"
   local local_bad=0
 
   if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ]; then
@@ -287,6 +313,14 @@ for name in "${TARGETS[@]}"; do
   parse_log "$name" || { bad "${name}（无 log 生成，批处理未执行）"; continue; }
   evaluate "$name" || overall_bad=1
 done
+
+# verify-did-community 特殊：原本是 verify-synth-sdid.do 的中转脚本，
+# 跑出来 log 名是 verify-synth-sdid.log，但对外技能名是 verify-did-community。
+# 主循环结束后复制一份 verify-did-community.log 让 check-claims.sh 的
+# demo→verify 配对断言能找到它。
+if [ -f "$VERIFY_DIR/verify-synth-sdid.log" ] && [ ! -f "$VERIFY_DIR/verify-did-community.log" ]; then
+  cp "$VERIFY_DIR/verify-synth-sdid.log" "$VERIFY_DIR/verify-did-community.log"
+fi
 
 # --community 模式下任何验证失败都让 harness 以非零退出码结束
 if [ "${overall_bad:-0}" -eq 1 ]; then

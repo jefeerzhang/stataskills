@@ -261,19 +261,58 @@ predict confidence, latent
 
 ## 关键陷阱速查
 
-1. 评分者一致性命令是 `kap`，不是 `kappa`（后者是录入专用）。
-   **Fix**：一致性分析用 `kap rater1 rater2`；kappa（录入命令）只用于问卷录入冲突排查。跑错时 `kap` 会报 `variable not found` 反向指引。
-2. 删条目提 α 是 capitalizing on chance。
-   **Fix**：不删条目提 α；按理论保留；用 `alpha, item` 看每条目 α，**只删理论缺陷条目**（如反向题未反向编码）。报告里说明删条理由，不报"提 α 后数值"。
-3. gsem 不能用 method(mlmv)；交互/平方项要在插补前生成。
-   **Fix**：`sem` 走 `method(mlmv)` 处理缺失；`gsem` 含 logistic 等非线性 → 缺失值用 `mi estimate: gsem ...`；交互项 `gen int_x_z = x*z` 必须在 `mi set` 之前生成。
-4. 插补出"不可能值"不要修正。
-   **Fix**：跑 `mi predict imputed_*` 后**不修改**插补值（如负收入、年龄>120）；保留并 `summarize imputed_*` 报告分布即可；事后修会引入人为偏差。
-5. mi 假设 MAR；靠辅助变量支撑假设。
-   **Fix**：`mi impute chained ..., include(aux_vars)` 必须包含辅助变量（如同一理论框架下其他题目）；自检：`mi xeq: ...` 看辅助变量系数，若与插补项相关性强 → MAR 假设成立。
-6. 多层模型高层需 20–30 组以上；时间编码避免大数字。
-   **Fix**：跑 `mixed y x || group: x` 前 `tab group` 看组数；< 20 组用 `xtset id time` 转 panel 或换 `regress, cluster(group)` 稳健 SE；时间变量大数先 `egen time_c = std(time)` 中心化。
-7. 路径模型≠因果模型。
-   **Fix**：`sem` 路径图只反映变量间协变结构；写报告避免"X 导致 Y"，用"X 与 Y 在控制 Z 后仍显著相关"；因果推断需额外识别策略（IV、RCT、DiD）。
-8. IRT 用测验信息函数看信度，不用单一 α。
-   **Fix**：跑 `irt 2pl items` 后用 `irtgraph tif` 看测验信息函数；不同 θ 区段信度不同，**报告"θ ∈ [-1, 1] 区段信度 > 0.8"**而不是单一 α。
+> 统一格式：**陷阱 → 触发 → Fix → 验证** 四件套。每条陷阱都给出可执行的修复 + 验证；Agent 在 SKILL.md 读到警告时即拿到完整修复路径。
+
+1. 评分者一致性命令是 `kap`，不是 `kappa`
+   - **触发**：写 `kappa rater1 rater2` 报 `kappa not an estimation command` 或只报录入冲突（kappa 是录入专用命令）。
+   - **Fix**：一致性分析用 `kap rater1 rater2`；kappa（录入命令）只用于问卷录入冲突排查。跑错时 `kap` 会报 `variable not found` 反向指引。
+   - **验证**：`kap rater1 rater2` 应输出 κ 系数 + SE；`kappa` 应报录入冲突列表。
+
+2. 删条目提 α 是 capitalizing on chance
+   - **触发**：看到 α < 0.7 就删条目（"提 α"），多次重复后 α 被人为推高，但结果不可复现。
+   - **Fix**：不删条目提 α；按理论保留；用 `alpha, item` 看每条目 α，**只删理论缺陷条目**（如反向题未反向编码）。报告里说明删条理由，不报"提 α 后数值"。
+   - **验证**：报告只报最终 α + 删条的理论理由；无"删条目提 α"操作。
+
+3. gsem 不能用 method(mlmv)；交互/平方项要在插补前生成
+   - **触发**：`gsem ... , method(mlmv)` 报 `method mlmv not allowed with gsem`；`mi set` 之后生成 `gen int_x_z = x*z` 在插补时不见交互项。
+   - **Fix**：`sem` 走 `method(mlmv)` 处理缺失；`gsem` 含 logistic 等非线性 → 缺失值用 `mi estimate: gsem ...`；交互项 `gen int_x_z = x*z` 必须在 `mi set` 之前生成。
+   - **验证**：交互项在插补数据集 `mi xeq` 输出中存在；`sem` 走 `method(mlmv)`，`gsem` 走 `mi estimate`。
+
+4. 插补出"不可能值"不要修正
+   - **触发**：跑 `mi predict imputed_*` 后看到负收入、年龄>120 等"不可能值"，直觉改成 `.`——但事后修改引入人为偏差。
+   - **Fix**：跑 `mi predict imputed_*` 后**不修改**插补值（如负收入、年龄>120）；保留并 `summarize imputed_*` 报告分布即可；事后修会引入人为偏差。
+   - **验证**：报告插补分布（`summarize imputed_income, detail`）+ 明说"保留插补原值，不事后修正"。
+
+5. mi 假设 MAR；靠辅助变量支撑假设
+   - **触发**：`mi impute chained` 不加辅助变量，MAR 假设无支撑，结果偏。
+   - **Fix**：`mi impute chained ..., include(aux_vars)` 必须包含辅助变量（如同一理论框架下其他题目）；自检：`mi xeq: ...` 看辅助变量系数，若与插补项相关性强 → MAR 假设成立。
+   - **验证**：`mi xeq: regress imputed_var aux_vars` 应有显著系数；不显著则 MAR 假设弱。
+
+6. 多层模型高层需 20–30 组以上；时间编码避免大数字
+   - **触发**：跑 `mixed y x || group: x` 但 group 数 < 20，组级 SE 估计不稳；时间变量用 2010–2020 的大数导致收敛慢。
+   - **Fix**：跑 `mixed y x || group: x` 前 `tab group` 看组数；< 20 组用 `xtset id time` 转 panel 或换 `regress, cluster(group)` 稳健 SE；时间变量大数先 `egen time_c = std(time)` 中心化。
+   - **验证**：跑前 `tab group` 看组数；< 20 时改用 `cluster(group)` 稳健 SE。
+
+7. 路径模型≠因果模型
+   - **触发**：写 `sem` 路径图后说"X 导致 Y"——sem 仅反映协变结构，不是因果识别。
+   - **Fix**：`sem` 路径图只反映变量间协变结构；写报告避免"X 导致 Y"，用"X 与 Y 在控制 Z 后仍显著相关"；因果推断需额外识别策略（IV、RCT、DiD）。
+   - **验证**：报告必含"相关""关联"等词；"导致""因果"仅在有识别策略时使用。
+
+8. IRT 用测验信息函数看信度，不用单一 α
+   - **触发**：跑 `irt 2pl items` 后报单一 α（如 Cronbach α = 0.85） 作为测验信度——IRT 假设下信度因 θ 而异。
+   - **Fix**：跑 `irt 2pl items` 后用 `irtgraph tif` 看测验信息函数；不同 θ 区段信度不同，**报告"θ ∈ [-1, 1] 区段信度 > 0.8"**而不是单一 α。
+   - **验证**：报告必含测验信息函数图 + θ 区段信度；无单一 α 报告。
+
+## ❌ Agent 不该做的事（黑名单）
+
+> 与 ADR-0001 联动：本节是「**主动反模式**」清单——「关键陷阱速查」是被动警告，本节是主动规范。Agent 在写 do-file 前必查一遍。
+
+- ❌ **不要用 `kappa` 做评分者一致性**：`kappa` 是问卷录入命令，不是一致性分析。**替代**：一致性用 `kap rater1 rater2`；kappa 仅用于问卷录入冲突排查。
+- ❌ **不要删条目提 α**：capitalizing on chance——多次重复后 α 被人为推高，结果不可复现。**替代**：用 `alpha, item` 看每条目 α，**只删理论缺陷条目**（如反向题未反向编码）；报告删条理由，不报"提 α 后数值"。
+- ❌ **不要在 `gsem` 用 `method(mlmv)`**：报 `method mlmv not allowed with gsem`。**替代**：`sem` 走 `method(mlmv)`；`gsem` 含非线性用 `mi estimate: gsem ...`。
+- ❌ **不要在 mi set 之后生成交互项**：插补时不见交互项。**替代**：交互项 `gen int_x_z = x*z` 必须在 `mi set` 之前生成。
+- ❌ **不要事后修正插补值**（如负收入改为 0、年龄>120 改为 .）：引入人为偏差。**替代**：保留 `mi predict imputed_*` 原值，`summarize imputed_*` 报告分布，明说"不事后修正"。
+- ❌ **不要在 < 20 组的数据跑 `mixed` 高层效应**：组级 SE 估计不稳。**替代**：< 20 组用 `xtset id time` 转 panel 或 `regress, cluster(group)` 稳健 SE；时间变量大数先 `egen time_c = std(time)` 中心化。
+- ❌ **不要把 sem 路径系数说成"因果"**：sem 仅反映协变结构，不是因果识别。**替代**：报告用"X 与 Y 在控制 Z 后仍显著相关"；"导致""因果"仅在有识别策略（IV/RCT/DiD）时使用。
+- ❌ **不要用单一 α 报 IRT 测验信度**：信度因 θ 而异，单一 α 误导。**替代**：用 `irtgraph tif` 看测验信息函数；报告"θ ∈ [-1, 1] 区段信度 > 0.8"。
+- ❌ **不要在因子分析前不做 KMO / Bartlett 球形检验**：可能因子结构不适用。**替代**：`estat kaiser` / `factortest`（SSC）；KMO > 0.6 + Bartlett p < 0.05 才适合因子分析。
