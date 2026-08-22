@@ -1,12 +1,12 @@
 # Stata Skills（基于《A Gentle Introduction to Stata》第 6 版）
 
-> **Agent 跑 Stata DID 分析的唯一验证通过入口。** 9 个识别方法 · 8/8 verify PASS · 一行命令装上就能用。
+> **Agent 跑 Stata DID 分析的唯一验证通过入口。** 9 个识别方法 · 7/7 verify PASS · 一行命令装上就能用。
 >
 > 把 Alan C. Acock《A Gentle Introduction to Stata》第 6 版（800 页 Stata Press）压成 4 个教材章节 Skill + 3 个扩展 Skill（coefplot / did / did-community），共 7 个可被 Agent 调用的中文 Skill。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
-> 🎯 **7 个 Skill · 38 个数据集 · 27 张 demo PNG · 8/8 verify PASS · 11 条 Agent 行为回归 prompt**
+> 🎯 **7 个 Skill · 38 个数据集 · 27 张 demo PNG · 7/7 verify PASS · 11 条 Agent 行为回归 prompt**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
@@ -25,7 +25,7 @@
 - **4 个教材分章节 Skill + 2 个扩展**：basics / descriptives / regression / advanced 严格对应教材第 1–16 章 + 附录 A；coefplot 覆盖系数图（森林图）；did 覆盖 Stata 官方 DID 命令族（didregress / xtdidregress / hdidregress / xthdidregress）
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，SKILL.md 行数 144（basics）至 1077（coefplot）
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
-- **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 8/8 PASS（7 个 skill + 社区包章节）
+- **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 7/7 PASS（7 个 skill 验证入口）
 - **真实 demo** 报告：8 个 do-file + 27 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + Bacon 分解图）
 - **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
@@ -59,7 +59,7 @@ git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
 
 # 2. （可选）验证：需要本机 StataNow 19.5（macOS / Windows 路径见 docs/run-stata.md）
 bash verify/run-verify.sh
-# 预期：7/7 PASS（默认模式，无网络）；--community 模式需要 ssc install 社区包
+# 预期：7/7 PASS（7 个 skill 验证入口全部通过，默认模式，无网络）；--community 模式需要 ssc install 社区包
 ```
 
 ## 触发方式
@@ -97,7 +97,7 @@ bash verify/run-verify.sh
 |---|---|---|---|
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 `.dta` 入库 | ❌ | ❌ |
-| 验证 harness | ✅ 一行命令 + 7/7 PASS 实测 | ❌ | ⚠️ log 验证 |
+| 验证 harness | ✅ 一行命令 + 7/7 PASS 实测（7 个 skill 验证入口） | ❌ | ⚠️ log 验证 |
 | Agent 行为回归 | ✅ `test-prompts.json` 11 条 prompt + check-claims 自动覆盖断言 | ❌ | ❌ |
 | Demo 报告 | ✅ 7 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 / ADR-0002 | ❌ | ❌ |
@@ -139,11 +139,11 @@ stataskills/
 │   ├── adr/0001-do-not-execute-skill-code-fences.md
 │   └── agents/                     ← Agent 工作流
 ├── verify/                         ← 验证 harness
-│   ├── run-verify.sh               ← 8/8 PASS 判定（7 skill + 社区包章节）
+│   ├── run-verify.sh               ← 7/7 PASS 判定（7 个 skill 验证入口）
 │   ├── check-claims.sh             ← 文档断言检查（facts vs 计数）
 │   ├── test-harness.sh             ← 判定逻辑回归测试
 │   ├── stata.conf                  ← 平台路径（单一来源）
-│   └── verify-{basics,descriptives,regression,advanced,coefplot,did}.{do,log}
+│   └── verify-{basics,descriptives,regression,advanced,coefplot,did,did-community,synth-sdid}.{do,log}
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 8 个 do-file（含 did）
@@ -166,7 +166,7 @@ skill/数据/demo 计数，抓声明漂移）。
 执行层（真实跑 do-file）需本机 Stata，由 `bash verify/run-verify.sh` 承担。
 
 **判定标准**：日志恰好一次 `end of do-file` 且无 `r(错误码)` → PASS。
-当前实测：**8/8 PASS**（7 个 skill 的 `verify-*.do` + 社区包章节 `verify-synth-sdid.do`，log 均为 `end_of_dofile=1, r_err=0`）。
+当前实测：**7/7 PASS**（7 个 skill 验证入口，含社区包章节 `stata-did-community` 委托 `verify-synth-sdid.do`，log 均为 `end_of_dofile=1, r_err=0`）。
 
 ## 本地开发
 
@@ -217,7 +217,7 @@ bash verify/run-verify.sh
 | `stata-coefplot` | extension | coefficient plots/forest plots: multi-model comparison, subgraphs, bycoefs, sorting, matrix input, margins/at, recast, cismooth, labelling, markers |
 | `stata-did` | extension | difference-in-differences: didregress (repeated cross-section / DDD), xtdidregress (panel), hdidregress / xthdidregress (heterogeneity-robust, staggered), parallel-trends diagnostics (trendplot / ptrends / granger / aggregation / bdecomp) |
 
-Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist (now with **Fix** action lines). The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **8/8 PASS** on StataNow 19.5 MP (7 skills + community-package chapters, e.g. synthetic control). Agent behavior is regression-tested via `test-prompts.json` (8 prompts covering all 7 skills + 2 cross-skill scenarios).
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist (now with **Fix** action lines). The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **7/7 PASS** on StataNow 19.5 MP (7 verification entry points). Agent behavior is regression-tested via `test-prompts.json` (11 prompts covering all 7 skills + 2 cross-skill scenarios).
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/

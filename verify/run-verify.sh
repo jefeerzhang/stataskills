@@ -108,7 +108,10 @@ else
   for d in "$VERIFY_DIR"/verify-*.do; do
     [ -e "$d" ] || continue
     b="$(basename "$d" .do)"
-    case "$b" in verify-zz*) continue ;; esac
+    # verify-synth-sdid 是社区包附加验证脚本，由 verify-did-community.do
+    # 委托调用（两者逻辑一致）；全量枚举排除它，避免同一份社区包验证
+    # 逻辑执行两遍。显式 `run-verify.sh synth-sdid` 仍可单跑。
+    case "$b" in verify-zz*|verify-synth-sdid) continue ;; esac
     TARGETS+=("$b")
   done
 fi
@@ -215,8 +218,10 @@ run_stata() {
   local name="$1" dofile="$2"
   echo "==> 运行 ${name}（${STATA_BIN}）..."
   # cwd 切到 data/agis6/ 后，绝对路径调 do-file。
-  # 特殊处理：verify-did-community.do 原本是 verify-synth-sdid.do 的中转脚本，
-  # （直接调 verify-synth-sdid.do，因为验证逻辑一致），避免相对路径找不到的问题。
+  # 特殊处理：verify-did-community 委托 verify-synth-sdid.do（两者验证逻辑
+  # 一致，社区包章节由 did-community 承载），直接调后者避免中转 do-file 的
+  # 相对路径解析问题。全量枚举已排除 verify-synth-sdid，故只在 did-community
+  # 这一 target 下执行一次。
   if [ "$name" = "verify-did-community" ]; then
     (cd "$DATA_DIR" && "$STATA_BIN" -b do "$VERIFY_DIR/verify-synth-sdid.do")
   else
@@ -227,7 +232,7 @@ run_stata() {
 # 阶段 4：解析日志（错误码、静默错误、社区包 sentinel）
 parse_log() {
   local name="$1"
-  # verify-did-community 是 verify-synth-sdid.do 的中转脚本，跑出来 log 是
+  # verify-did-community 委托 verify-synth-sdid.do，跑出来的 log 是
   # verify-synth-sdid.log；解析时把它当 verify-did-community 看。
   local log_name="$name"
   if [ "$name" = "verify-did-community" ]; then
@@ -260,7 +265,7 @@ parse_log() {
 # 阶段 5：判定 PASS/BAD
 evaluate() {
   local name="$1"
-  # verify-did-community 特殊：log 是 verify-synth-sdid.log
+  # verify-did-community 委托 verify-synth-sdid.do，其 log 名是 verify-synth-sdid.log
   local log_name="$name"
   if [ "$name" = "verify-did-community" ]; then
     log_name="verify-synth-sdid"
@@ -313,14 +318,6 @@ for name in "${TARGETS[@]}"; do
   parse_log "$name" || { bad "${name}（无 log 生成，批处理未执行）"; continue; }
   evaluate "$name" || overall_bad=1
 done
-
-# verify-did-community 特殊：原本是 verify-synth-sdid.do 的中转脚本，
-# 跑出来 log 名是 verify-synth-sdid.log，但对外技能名是 verify-did-community。
-# 主循环结束后复制一份 verify-did-community.log 让 check-claims.sh 的
-# demo→verify 配对断言能找到它。
-if [ -f "$VERIFY_DIR/verify-synth-sdid.log" ] && [ ! -f "$VERIFY_DIR/verify-did-community.log" ]; then
-  cp "$VERIFY_DIR/verify-synth-sdid.log" "$VERIFY_DIR/verify-did-community.log"
-fi
 
 # --community 模式下任何验证失败都让 harness 以非零退出码结束
 if [ "${overall_bad:-0}" -eq 1 ]; then

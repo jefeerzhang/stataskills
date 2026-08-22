@@ -46,7 +46,7 @@ versioned by Stata compatibility).
 - docs(readme): 首屏加钩子句「**Agent 跑 Stata DID 分析的唯一验证通过入口。**」；
   快速开始节补 `npx skills add jefeerzhang/stataskills` marketplace 安装入口。
 - refactor(架构): 拆分 stata-did-community SKILL.md 为 references/ 模式——
-  主文件 1219 → 277 行，详细方法签名下沉到 8 个 references/<method>.md
+  主文件 1219 → 293 行，详细方法签名下沉到 8 个 references/<method>.md
   （仿 stata-coefplot 已有 references/ 目录）。陷阱表统一在主文件一份。
 - docs(skills): 7 个 SKILL.md 的「关键陷阱速查」节统一为「**陷阱 → 触发 → Fix → 验证**」
   四件套格式；为每个 Skill 末尾新增「## ❌ Agent 不该做的事（黑名单）」节，
