@@ -18,7 +18,7 @@ description: Stata 内置 DID 命令族：didregress / xtdidregress / hdidregres
 
 **何时用**：处理随**时间**开关，有处理组与对照组，要估计 ATET。本 skill 只走 Stata 内置命令。
 **何时踢走**：
-- 分数线 / 年龄门槛 / 地理边界（不是时间断点）→ 本仓库尚未覆盖 RDD，**不要改走 DID**
+- 分数线 / 年龄门槛 / 地理边界（不是时间断点）→ `stata-rdd`，**不要改走 DID**
 - 截面匹配 / 可观测选择 → 不要冒充 DID
 - 需要 `csdid` / `jwdid` / `synth` / 可逆处理 / 非线性 DID → `stata-did-community`
 - 只要多层 FE 回归、不是政策评估 → `stata-regression`（`reghdfe`）。`fect` 是错时 DID，回到本 skill 或 `stata-did-community`，不要在回归 skill 里当主估计
@@ -284,7 +284,7 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 - ❌ **不要在 `estat bdecomp` 前不收缩到组×期均值**：报 `unbalanced data not allowed`。**替代**：先 `collapse (mean) y treat, by(group time)` 强平衡化。
 - ❌ **不要简单加更多控制变量平衡平行趋势**：可能引入 bad control。**替代**：看 `estat trendplot`；加**先验**协变量；改 `hdidregress aipw`；三角化论证。
 - ❌ **不要直接说 `reghdfe` 和 `hdidregress` 估计"一样的"**：代数上不等价（异质性估计 vs 平均 TWFE）。**替代**：报告方法节明示；保留 `reghdfe` 输出作对照；不混用同一政策效应的两个估计量。
-- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那不是时间断点，平行趋势框架套不上。**替代**：本仓库尚未覆盖 RDD；向用户说明识别策略不匹配，不要用 `didregress` / `hdidregress` 冒充。
+- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那不是时间断点，平行趋势框架套不上。**替代**：转到 `stata-rdd`，不要用 `didregress` / `hdidregress` 冒充。
 - ❌ **不要在错时设计默认跑 `didregress` 再「顺便」跑 `hdidregress`**：强制路径命中错时就只走 `hdidregress aipw`（+ 事件研究图）。**替代**：需要 TWFE 负权重诊断时另起 `collapse` + `estat bdecomp`，不要把工具箱全跑一遍。
 
 ## 验证

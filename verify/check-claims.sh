@@ -109,6 +109,7 @@ if [ -f "$MANIFEST_EXTRA" ]; then
   # 反向：每个 manifest-extra 条目必须在 data/*/ 下存在对应 .dta
   extra_missing=""
   while IFS= read -r ds; do
+    ds="${ds%$'\r'}"
     case "$ds" in \#*|"") continue ;; esac
     found=0
     while IFS= read -r f; do
@@ -229,23 +230,26 @@ ok "demo→verify 配对完整（${#demo_skills[@]} 个 demo do-file 均有 veri
 
 # ---- 10. test-prompts.json：Agent 行为回归测试集 ----
 # 把"Skill 不只是文档，还能被 Agent 实际执行并产生期望锚点"这件事
-# 变成可验证的 CI 断言。覆盖 7 个 skill + 跨 skill 联动：
-# - JSON 合法（用 python3 -m json.tool 自检，python3 失败即 FAIL）
+# 变成可验证的 CI 断言。覆盖 8 个 skill + 跨 skill 联动：
+# - JSON 合法（兼容 python3 / python；解释器缺失与 JSON 无效分别报错）
 # - prompts 数组非空、含 id/skill/scenario/expected_actions 字段
 # - 每个 skill 至少有 1 条 prompt 覆盖（避免新 skill 漏登记）
 TEST_PROMPTS="$REPO_ROOT/test-prompts.json"
+PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
 if [ ! -f "$TEST_PROMPTS" ]; then
-  bad "test-prompts.json 缺失：repo 根目录应有 Agent 行为回归测试集（覆盖 7 个 skill）"
-elif ! python3 -m json.tool "$TEST_PROMPTS" >/dev/null 2>&1; then
+  bad "test-prompts.json 缺失：repo 根目录应有 Agent 行为回归测试集（覆盖 8 个 skill）"
+elif [ -z "$PYTHON_BIN" ]; then
+  bad "无法校验 test-prompts.json：需要 python3 或 python"
+elif ! "$PYTHON_BIN" -m json.tool "$TEST_PROMPTS" >/dev/null 2>&1; then
   bad "test-prompts.json 不是合法 JSON"
 else
-  N_PROMPTS=$(python3 -c "import json; print(len(json.load(open('$TEST_PROMPTS'))['prompts']))")
+  N_PROMPTS=$("$PYTHON_BIN" -c 'import json, sys; print(len(json.load(open(sys.argv[1], encoding="utf-8"))["prompts"]))' "$TEST_PROMPTS")
   ok "test-prompts.json 合法，含 ${N_PROMPTS} 条 prompt"
   # 每个 skill 至少 1 条 prompt（用 awk 提取 skill 字段做覆盖矩阵）
-  python3 - "$REPO_ROOT" <<'PY' && {
+  "$PYTHON_BIN" - "$REPO_ROOT" <<'PY' && {
 import json, sys, os, glob
 repo_root = sys.argv[1]
-with open(os.path.join(repo_root, "test-prompts.json")) as f:
+with open(os.path.join(repo_root, "test-prompts.json"), encoding="utf-8") as f:
     d = json.load(f)
 covered = set()
 for p in d["prompts"]:
@@ -261,9 +265,9 @@ if missing:
     print(f"FAIL  test-prompts 未覆盖以下 skill：{', '.join(missing)}", file=sys.stderr)
     sys.exit(1)
 # 把覆盖详情写到 stderr，让 ok 行单独占据 stdout
-print(f"覆盖详情：{len(d['prompts'])} 条 prompt 含 {len(covered)} 个 skill", file=sys.stderr)
+print(f"coverage: {len(d['prompts'])} prompts, {len(covered)} skills", file=sys.stderr)
 PY
-    ok "test-prompts.json 覆盖全部 7 个 skill（python3 详情见 stderr）"
+    ok "test-prompts.json 覆盖全部 8 个 skill（Python 详情见 stderr）"
   } || bad "test-prompts.json 未覆盖全部 skill：见 stderr"
 fi
 
@@ -299,6 +303,12 @@ else
   readme_dofiles=$(grep -oE '[0-9]+ (个 )?do-file' "$README" | head -1 | grep -oE '^[0-9]+')
   if [ -n "$readme_dofiles" ] && [ "$readme_dofiles" -ne "$N_DEMO_DO" ]; then
     readme_drift="${readme_drift} demo do-file 计数：README 写 ${readme_dofiles}，实际 ${N_DEMO_DO};"
+  fi
+
+  # demo log 计数（匹配 "N 个 Stata log" / "N 个 log"）
+  readme_logs=$(grep -oE '[0-9]+ 个 (Stata )?log' "$README" | head -1 | grep -oE '^[0-9]+')
+  if [ -n "$readme_logs" ] && [ "$readme_logs" -ne "$N_DEMO_LOG" ]; then
+    readme_drift="${readme_drift} demo log 计数：README 写 ${readme_logs}，实际 ${N_DEMO_LOG};"
   fi
 
   # Agent 行为回归 prompt 计数（匹配 "8 条 Agent" / "8 条 prompt"）

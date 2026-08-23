@@ -25,6 +25,7 @@ AGENTS.md 沿用至今的硬性约定：
 - 双数据清单（`data/manifest.txt` + `data/manifest-extra.txt`）——AGIS6 与项目扩展数据严格分离；
 - `--community` 模式标志——默认模式静默 PASS（cap which 风格，CI 友好），`--community` 模式下必需包未装即 BAD；
 - 双 sentinel（`__COMMUNITY_PACKAGE_MISSING__` 必需 / `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__` 可选）——脚本可在缺包分支精确区分必需/可选，避免误报。
+- 缺包分支只输出 sentinel 并跳过对应命令，不产生 `r(N)`；harness 对任何 Stata 错误码都保持 fail-closed，避免 sentinel 掩盖真实失败。
 
 第一份使用此模式的脚本是 `verify/verify-synth-sdid.do`，覆盖 `stata-did` 第 14–15 节。`synth_smoking.dta` 由 `data/synth/download_synth_smoking.sh` 下载并含字节级校验（`EXPECTED_SIZE=47045`，差异时拒绝覆盖并报错）。
 

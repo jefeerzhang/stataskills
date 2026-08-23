@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 7 个 skill + 2 个跨 skill 联动场景。配合 verify/check-claims.sh 第 9 条断言使用（见 verify/check-claims.sh 注释）。",
+  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
   "version": "1.0.0",
   "prompts": [
     {

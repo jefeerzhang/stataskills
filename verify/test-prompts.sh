@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# Agent 行为回归测试 harness：把 test-prompts.json 的 11 条 prompt
+# Agent 行为回归测试 harness：把 test-prompts.json 的 12 条 prompt
 # 从 spec 升级为可执行测试。
 #
 # 三模式（仿 verify/test-harness.sh 套路 + check-claims.sh 的 docs 层）：
@@ -45,12 +45,56 @@ done
 
 # ---- 前置检查 ----
 [ -f "$TEST_PROMPTS_JSON" ] || { echo "ERROR: 找不到 $TEST_PROMPTS_JSON" >&2; exit 1; }
-command -v python3 >/dev/null 2>&1 || { echo "ERROR: 需要 python3" >&2; exit 1; }
-command -v jq >/dev/null 2>&1 || { echo "ERROR: 需要 jq（解析 test-prompts.json）" >&2; exit 1; }
+PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
+if command -v jq >/dev/null 2>&1; then
+  JSON_BACKEND="jq"
+elif [ -n "$PYTHON_BIN" ]; then
+  JSON_BACKEND="python"
+else
+  echo "ERROR: 解析 test-prompts.json 需要 jq、python3 或 python" >&2
+  exit 1
+fi
 
-PROMPT_COUNT="$(jq '.prompts | length' "$TEST_PROMPTS_JSON")"
+json_prompt_count() {
+  if [ "$JSON_BACKEND" = "jq" ]; then
+    jq '.prompts | length' "$TEST_PROMPTS_JSON"
+  else
+    "$PYTHON_BIN" -X utf8 -c 'import json,sys; print(len(json.load(open(sys.argv[1], encoding="utf-8"))["prompts"]))' "$TEST_PROMPTS_JSON"
+  fi
+}
+
+json_skill_count() {
+  if [ "$JSON_BACKEND" = "jq" ]; then
+    jq -r '[.prompts[].skill | split(" ") | .[] | select(. != "+")] | unique | length' "$TEST_PROMPTS_JSON"
+  else
+    "$PYTHON_BIN" -X utf8 -c 'import json,re,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); print(len({s.strip() for p in d["prompts"] for s in re.split(r"\s*\+\s*", p["skill"])}))' "$TEST_PROMPTS_JSON"
+  fi
+}
+
+json_missing_skills() {
+  if [ "$JSON_BACKEND" = "jq" ]; then
+    jq -r '["stata-basics","stata-descriptives","stata-regression","stata-advanced","stata-coefplot","stata-did","stata-did-community","stata-rdd"] - ([.prompts[].skill | split(" ") | .[] | select(. != "+")] | unique) | .[]' "$TEST_PROMPTS_JSON"
+  else
+    "$PYTHON_BIN" -X utf8 -c 'import json,re,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); expected={"stata-basics","stata-descriptives","stata-regression","stata-advanced","stata-coefplot","stata-did","stata-did-community","stata-rdd"}; covered={s.strip() for p in d["prompts"] for s in re.split(r"\s*\+\s*", p["skill"])}; print("\n".join(sorted(expected-covered)))' "$TEST_PROMPTS_JSON"
+  fi
+}
+
+json_prompt_field() {
+  local index="$1" field="$2" separator="${3:-}"
+  if [ "$JSON_BACKEND" = "jq" ]; then
+    if [ -n "$separator" ]; then
+      jq -r ".prompts[$index].$field | join(\"$separator\")" "$TEST_PROMPTS_JSON"
+    else
+      jq -r ".prompts[$index].$field" "$TEST_PROMPTS_JSON"
+    fi
+  else
+    "$PYTHON_BIN" -X utf8 -c 'import json,sys; v=json.load(open(sys.argv[1], encoding="utf-8"))["prompts"][int(sys.argv[2])][sys.argv[3]]; print(sys.argv[4].join(v) if isinstance(v,list) else v)' "$TEST_PROMPTS_JSON" "$index" "$field" "$separator"
+  fi
+}
+
+PROMPT_COUNT="$(json_prompt_count)"
 # skill 字段可能是 "skill-a + skill-b" 跨 skill 形式（如 cross-*），split 后过滤掉 "+" 取 unique
-SKILL_COUNT="$(jq -r '[.prompts[].skill | split(" ") | .[] | select(. != "+")] | unique | length' "$TEST_PROMPTS_JSON")"
+SKILL_COUNT="$(json_skill_count)"
 
 echo "test-prompts harness · mode=$MODE · prompts=$PROMPT_COUNT · skills=$SKILL_COUNT"
 echo
@@ -62,7 +106,7 @@ run_docs_mode() {
   local pass=0 fail=0
 
   # 1. JSON 合法
-  if jq -e '.prompts | length > 0' "$TEST_PROMPTS_JSON" >/dev/null 2>&1; then
+  if [ "$PROMPT_COUNT" -gt 0 ]; then
     echo "PASS  test-prompts.json 合法，含 $PROMPT_COUNT 条 prompt"
     pass=$((pass+1))
   else
@@ -72,7 +116,7 @@ run_docs_mode() {
 
   # 2. 覆盖全部 8 skill
   local missing_skills
-  missing_skills="$(jq -r '[.prompts[].skill | split(" ") | .[] | select(. != "+")] | unique | . - ["stata-basics","stata-descriptives","stata-regression","stata-advanced","stata-coefplot","stata-did","stata-did-community","stata-rdd"] | .[]' "$TEST_PROMPTS_JSON")"
+  missing_skills="$(json_missing_skills)"
   if [ -z "$missing_skills" ]; then
     echo "PASS  test-prompts 覆盖全部 8 skill"
     pass=$((pass+1))
@@ -87,9 +131,9 @@ run_docs_mode() {
   local i=0
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
     local pid skill expected_outputs
-    pid="$(jq -r ".prompts[$i].id" "$TEST_PROMPTS_JSON")"
-    skill="$(jq -r ".prompts[$i].skill" "$TEST_PROMPTS_JSON")"
-    expected_outputs="$(jq -r ".prompts[$i].expected_outputs | join(\" | \")" "$TEST_PROMPTS_JSON")"
+    pid="$(json_prompt_field "$i" id)"
+    skill="$(json_prompt_field "$i" skill)"
+    expected_outputs="$(json_prompt_field "$i" expected_outputs " | ")"
 
     # 关键词提取：取每个 expected_output 元素的子串（去掉连接词），grep 任意一处出现即可
     local keyword_hit=0
@@ -166,20 +210,9 @@ PROMPT_GREP_KEYWORDS=(
 run_prompts_mode() {
   local pass=0 fail=0
 
-  # 加载 stata.conf 获取 STATA_MAC（设到当前 shell 变量，不自动 export）
-  # shellcheck disable=SC1091
-  . "$VERIFY_DIR/stata.conf"
-  export STATA_MAC
-
-  # 前置：需要 Stata 二进制
-  if ! command -v stata-mp >/dev/null 2>&1 && [ -z "${STATA_MAC:-}" ]; then
-    echo "ERROR: --prompts 模式需要本机 Stata（stata-mp 或 STATA_MAC 环境变量）" >&2
-    exit 1
-  fi
-
   local pid i=0
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
-    pid="$(jq -r ".prompts[$i].id" "$TEST_PROMPTS_JSON")"
+    pid="$(json_prompt_field "$i" id)"
     local verify_target="${PROMPT_VERIFY_SCRIPT[$i]:-}"
     local keywords="${PROMPT_GREP_KEYWORDS[$i]:-}"
 
@@ -242,8 +275,8 @@ run_llm_mode() {
   local pass=0 fail=0 i=0
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
     local pid scenario
-    pid="$(jq -r ".prompts[$i].id" "$TEST_PROMPTS_JSON")"
-    scenario="$(jq -r ".prompts[$i].scenario" "$TEST_PROMPTS_JSON")"
+    pid="$(json_prompt_field "$i" id)"
+    scenario="$(json_prompt_field "$i" scenario)"
 
     echo "RUN  $pid · 调用 claude -p 跑 prompt..."
     local response
@@ -258,7 +291,7 @@ run_llm_mode() {
 
     # 断言 expected_actions 关键词至少一个出现在 response 中
     local expected_actions
-    expected_actions="$(jq -r ".prompts[$i].expected_actions | join(\" \")" "$TEST_PROMPTS_JSON")"
+    expected_actions="$(json_prompt_field "$i" expected_actions " ")"
     local hit=0 kw
     for kw in $expected_actions; do
       # 取关键词（如 "load stata-basics" → "stata-basics"）

@@ -12,7 +12,7 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
 
 Stata license: Single-user 16-core  perpetual
 Serial number: 3851871377
-  Licensed to: jefeerzhang
+  Licensed to: 张剑
                sicau
 
 Notes:
@@ -22,8 +22,7 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do /Users/jefeerzhang/Downloads/stataskills-demo/stataskills-repo/verify/veri
-> fy-descriptives.do 
+. do C:/Users/jefee/Downloads/stataskills/verify/verify-descriptives.do 
 
 . version 19.5
 
@@ -73,8 +72,8 @@ never married |        708       25.61      100.00
 95%            6              7       Skewness      -.1509408
 99%            7              7       Kurtosis       2.693351
 
-. tabstat wwwhr, statistics(mean median sd iqr skewness kurtosis) by(sex) colum
-> ns(statistics)
+. tabstat wwwhr, statistics(mean median sd iqr skewness kurtosis) by(sex) columns
+> (statistics)
 
 Summary for variables: wwwhr
 Group variable: sex (respondents sex)

@@ -21,7 +21,7 @@ description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 /
 **何时踢走**：
 - 政策评估 / 平行趋势 / 错时 DID → `stata-did`（默认 `hdidregress aipw`）
 - `fect` 是错时 DID 偏差修正，**不是**本 skill 的主估计；用户要 `fect` 时转到 `stata-did` / `stata-did-community`
-- 分数线 / 年龄门槛 / 地理边界 → 本仓库尚未覆盖 RDD，不要用回归或 DID 冒充
+- 分数线 / 年龄门槛 / 地理边界 → `stata-rdd`，不要用普通回归或 DID 冒充
 - `ivreghdfe` 只是「吸收多层 FE 的 2SLS 语法」，不是完整 IV 识别（弱工具、排除限制、LATE）。没有识别策略就不要把系数写成因果
 - 只要系数图 → 估完后转 `stata-coefplot`
 
@@ -229,6 +229,8 @@ Stata 社区包，实现 Correia (2017) 的估计器。它是 `areg` / `xtreg` �
 ### 安装（必须先 compile ftools）
 ```stata
 * ===== 推荐：6.x 开发版（含最新改进）=====
+* 0) 新版依赖管理器
+ssc install require, replace
 * 1) 装 ftools（首次或更新都要走一遍）
 cap ado uninstall ftools
 net install ftools, from("https://raw.githubusercontent.com/sergiocorreia/ftools/master/src/")

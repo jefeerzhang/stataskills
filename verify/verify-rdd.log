@@ -12,7 +12,7 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
 
 Stata license: Single-user 16-core  perpetual
 Serial number: 3851871377
-  Licensed to: jefeerzhang
+  Licensed to: 张剑
                sicau
 
 Notes:
@@ -22,8 +22,7 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do /Users/jefeerzhang/Downloads/stataskills-demo/stataskills-repo/verify/veri
-> fy-rdd.do 
+. do C:/Users/jefee/Downloads/stataskills/verify/verify-rdd.do 
 
 . version 19.5
 
@@ -69,14 +68,15 @@ Notes:
 . 
 . if !`has_rdrobust' {
 .     display "__COMMUNITY_PACKAGE_MISSING__rdrobust__"
+__COMMUNITY_PACKAGE_MISSING__rdrobust__
 .     display as error "rdrobust 未安装，请运行 ssc install rdrobust, replace"
+rdrobust 未安装，请运行 ssc install rdrobust, replace
 . }
 
 . if !`has_rddensity' {
 .     display "__COMMUNITY_PACKAGE_MISSING__rddensity__"
 __COMMUNITY_PACKAGE_MISSING__rddensity__
-.     display as error "rddensity 未安装，请运行 ssc install rddensity, replace
-> "
+.     display as error "rddensity 未安装，请运行 ssc install rddensity, replace"
 rddensity 未安装，请运行 ssc install rddensity, replace
 . }
 
@@ -132,8 +132,8 @@ below_cuto |    (Yes = 1, No=0)
 . local n_treat = r(N)
 
 . 
-. display "below cutoff & treated: " `n_treated_below' "（应 = " `n_treat' "，s
-> harp）"
+. display "below cutoff & treated: " `n_treated_below' "（应 = " `n_treat' "，sha
+> rp）"
 below cutoff & treated: 241（应 = 241，sharp）
 
 . 
@@ -160,49 +160,17 @@ sharp 设计确认（100% 合规）
 . 
 . if `has_rdrobust' {
 .     capture noisily rdplot exit_exam entrance_exam, c(70) p(1)
-Mass points detected in the running variable.
-
-RD Plot with evenly spaced mimicking variance number of bins using polynomial r
-> egression.
-
-        Cutoff c = 70 | Left of c  Right of c        Number of obs  =       100
-> 0
-----------------------+----------------------        Kernel         =    Unifor
-> m
-        Number of obs |       237         763
-   Eff. Number of obs |       237         763
-  Order poly. fit (p) |         1           1
-     BW poly. fit (h) |    41.200      29.800
- Number of bins scale |     1.000       1.000
-
-Outcome: exit_exam. Running variable: entrance_exam.
----------------------------------------------
-                      | Left of c  Right of c
-----------------------+----------------------
-        Bins selected |        38          29
-   Average bin length |     1.084       1.028
-    Median bin length |     1.084       1.028
-----------------------+----------------------
-    IMSE-optimal bins |         8           9
-  Mimicking Var. bins |        38          29
-----------------------+----------------------
-Rel. to IMSE-optimal: | 
-        Implied scale |     4.750       3.222
-    WIMSE var. weight |     0.009       0.029
-    WIMSE bias weight |     0.991       0.971
----------------------------------------------
-
 .     if _rc != 0 {
 .         display as text "rdplot 执行异常（_rc=" _rc "），忽略继续"
 .     }
 .     else {
 .         display as text "rdplot 完成"
-rdplot 完成
 .     }
 . }
 
 . else {
 .     display as text "rdrobust 未装，跳过 rdplot"
+rdrobust 未装，跳过 rdplot
 . }
 
 . 
@@ -215,38 +183,6 @@ rdplot 完成
 . 
 . if `has_rdrobust' {
 .     rdrobust exit_exam entrance_exam, c(70)
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 70 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       237         763            Kernel        = Triangula
-> r
-Eff. Number of obs |       144         256            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     9.984       9.984
-       BW bias (b) |    14.578      14.578
-         rho (h/b) |     0.685       0.685
-        Unique obs |       155         262
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect | -8.5793       | -4.3034       0.000    -12.1422    -4.5429
-> 7
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
 . 
 .     if e(tau_cl) == . {
 .         display as error "e(tau_cl) 为缺失值：rdrobust 主估计失败"
@@ -254,92 +190,22 @@ Estimates adjusted for mass points in the running variable.
 .     }
 . 
 .     display "RD Estimate (robust): " %9.3f e(tau_cl)
-RD Estimate (robust):    -8.579
 .     display "Robust SE:            " %9.3f e(se_tau_cl)
-Robust SE:                1.617
 .     display "Robust p-value:       " %6.4f e(pv_cl)
-Robust p-value:       0.0000
 .     display "Bandwidth:            " %9.3f e(h_l)
-Bandwidth:                9.984
 .     display "Effective N (L/R):    " e(N_h_l) " / " e(N_h_r)
-Effective N (L/R):    144 / 256
 . 
 .     display as text "--- 核函数对比 ---"
---- 核函数对比 ---
 .     capture noisily rdrobust exit_exam entrance_exam, c(70) kernel(uniform)
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 70 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       237         763            Kernel        =    Unifor
-> m
-Eff. Number of obs |       119         173            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     7.223       7.223
-       BW bias (b) |    12.422      12.422
-         rho (h/b) |     0.582       0.582
-        Unique obs |       155         262
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect | -8.2003       | -4.0141       0.000    -11.7749    -4.0486
-> 7
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-.     capture noisily rdrobust exit_exam entrance_exam, c(70) kernel(epanechnik
-> ov)
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 70 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       237         763            Kernel        = Epanechni
-> kov
-Eff. Number of obs |       129         200            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     8.179       8.179
-       BW bias (b) |    12.680      12.680
-         rho (h/b) |     0.645       0.645
-        Unique obs |       155         262
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect | -8.3882       | -4.0224       0.000    -12.1749    -4.1973
-> 5
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
+.     capture noisily rdrobust exit_exam entrance_exam, c(70) kernel(epanechnikov
+> )
 . 
 .     display as text "rdrobust 完成"
-rdrobust 完成
 . }
 
 . else {
 .     display as text "rdrobust 未装，跳过主估计"
+rdrobust 未装，跳过主估计
 . }
 
 . 
@@ -352,50 +218,12 @@ rdrobust 完成
 . 
 . if `has_rdrobust' {
 .     capture noisily rdbwselect exit_exam entrance_exam, c(70) all
-Mass points detected in the running variable.
-
-Bandwidth estimators for sharp RD local polynomial regression.
-
-       Cutoff c =  | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            Kernel        = Triangula
-> r
-     Number of obs |       237         763            VCE method    =         N
-> N
-Min of entrance_exam |    28.800    70.000
-Max of entrance_exam |    69.900    99.800
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-        Unique obs |       155         262
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   |         BW est. (h)          |        BW bias (b)
-            Method | Left of c         Right of c | Left of c        Right of c
--------------------+------------------------------+----------------------------
-> -
-             mserd |     9.984              9.984 |    14.578            14.578
-            msetwo |    11.558             10.041 |    17.057            14.759
-            msesum |    12.058             12.058 |    17.552            17.552
-          msecomb1 |     9.984              9.984 |    14.578            14.578
-          msecomb2 |    11.558             10.041 |    17.057            14.759
--------------------+------------------------------+----------------------------
-> -
-             cerrd |     7.068              7.068 |    14.578            14.578
-            certwo |     8.182              7.109 |    17.057            14.759
-            cersum |     8.536              8.536 |    17.552            17.552
-          cercomb1 |     7.068              7.068 |    14.578            14.578
-          cercomb2 |     8.182              7.109 |    17.057            14.759
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
 .     display as text "rdbwselect 完成"
-rdbwselect 完成
 . }
 
 . else {
 .     display as text "rdrobust 未装，跳过 rdbwselect"
+rdrobust 未装，跳过 rdbwselect
 . }
 
 . 
@@ -435,250 +263,18 @@ rddensity 未装，跳过密度检验
 .     foreach c in 55 60 65 70 75 80 85 {
   2.         capture noisily rdrobust exit_exam entrance_exam, c(`c')
   3.         if _rc == 0 {
-  4.             display "cutoff `c': tau=" %9.3f e(tau_cl) "  p=" %6.3f e(pv_c
-> l)
+  4.             display "cutoff `c': tau=" %9.3f e(tau_cl) "  p=" %6.3f e(pv_cl)
   5.         }
   6.         else {
   7.             display "cutoff `c': (跳过)"
   8.         }
   9.     }
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 55 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |        53         947            Kernel        = Triangula
-> r
-Eff. Number of obs |        26          67            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     7.940       7.940
-       BW bias (b) |    12.872      12.872
-         rho (h/b) |     0.617       0.617
-        Unique obs |        50         367
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect |   .5565       | 0.0670        0.947     -6.7499     7.2276
-> 3
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 55: tau=    0.557  p= 0.855
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 60 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |        92         908            Kernel        = Triangula
-> r
-Eff. Number of obs |        50          85            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     6.636       6.636
-       BW bias (b) |    12.775      12.775
-         rho (h/b) |     0.519       0.519
-        Unique obs |        76         341
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect |    .569       | -0.1186       0.906    -7.90943     7.0071
-> 2
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 60: tau=    0.569  p= 0.859
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 65 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       155         845            Kernel        = Triangula
-> r
-Eff. Number of obs |        83         136            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     7.545       7.545
-       BW bias (b) |    11.456      11.456
-         rho (h/b) |     0.659       0.659
-        Unique obs |       113         304
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect |  3.2962       | 1.6705        0.095    -.603376     7.5666
-> 3
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 65: tau=    3.296  p= 0.058
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 70 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       237         763            Kernel        = Triangula
-> r
-Eff. Number of obs |       144         256            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     9.984       9.984
-       BW bias (b) |    14.578      14.578
-         rho (h/b) |     0.685       0.685
-        Unique obs |       155         262
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect | -8.5793       | -4.3034       0.000    -12.1422    -4.5429
-> 7
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 70: tau=   -8.579  p= 0.000
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 75 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       346         654            Kernel        = Triangula
-> r
-Eff. Number of obs |        90         120            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     4.177       4.177
-       BW bias (b) |     7.756       7.756
-         rho (h/b) |     0.539       0.539
-        Unique obs |       202         215
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect | -1.5484       | -1.2838       0.199    -6.09429     1.2702
-> 8
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 75: tau=   -1.548  p= 0.360
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 80 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       493         507            Kernel        = Triangula
-> r
-Eff. Number of obs |       183         219            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     6.661       6.661
-       BW bias (b) |    10.153      10.153
-         rho (h/b) |     0.656       0.656
-        Unique obs |       249         168
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect | -1.0947       | -0.7670       0.443    -4.84008     2.1173
-> 6
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 80: tau=   -1.095  p= 0.457
-Mass points detected in the running variable.
-
-Sharp RD estimates using local polynomial regression.
-
-     Cutoff c = 85 | Left of c  Right of c            Number of obs =       100
-> 0
--------------------+----------------------            BW type       =      mser
-> d
-     Number of obs |       650         350            Kernel        = Triangula
-> r
-Eff. Number of obs |       127         135            VCE method    =         N
-> N
-    Order est. (p) |         1           1
-    Order bias (q) |         2           2
-       BW est. (h) |     4.023       4.023
-       BW bias (b) |     6.001       6.001
-         rho (h/b) |     0.670       0.670
-        Unique obs |       294         123
-
-Outcome: exit_exam. Running variable: entrance_exam.
--------------------------------------------------------------------------------
-> -
-                   | Point         | Robust Inference
-                   | Estimate      | z-stat        P>|z|    [95% Conf. Interval
-> ]
--------------------+-----------------------------------------------------------
-> -
-         RD Effect |  .81669       | 0.3864        0.699    -3.08856     4.6052
-> 9
--------------------------------------------------------------------------------
-> -
-Estimates adjusted for mass points in the running variable.
-cutoff 85: tau=    0.817  p= 0.611
 .     display as text "placebo cutoff 完成"
-placebo cutoff 完成
 . }
 
 . else {
 .     display as text "rdrobust 未装，跳过 placebo"
+rdrobust 未装，跳过 placebo
 . }
 
 . 

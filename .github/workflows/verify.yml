@@ -28,7 +28,7 @@ jobs:
       - name: Check doc claims
         run: bash verify/check-claims.sh
 
-      # Agent 行为回归测试（docs 层，默认模式）：test-prompts.json 合法 + 覆盖 7 skill
+      # Agent 行为回归测试（docs 层，默认模式）：test-prompts.json 合法 + 覆盖 8 skill
       # + expected_outputs 关键词出现在 README/REPORT/SKILL.md
       - name: Test prompts (docs layer)
         run: bash verify/test-prompts.sh

@@ -24,7 +24,7 @@
 
 ## 特性
 
-- **4 个教材分章节 Skill + 3 个扩展**：basics / descriptives / regression / advanced 严格对应教材第 1–16 章 + 附录 A；coefplot 覆盖系数图（森林图）；did 覆盖 Stata 官方 DID 命令族（didregress / xtdidregress / hdidregress / xthdidregress）；rdd 覆盖断点回归（rdrobust / rdplot / rddensity）
+- **4 个教材分章节 Skill + 4 个扩展**：basics / descriptives / regression / advanced 严格对应教材第 1–16 章 + 附录 A；coefplot 覆盖系数图（森林图）；did 覆盖 Stata 官方 DID 命令族；did-community 覆盖社区 DID / 合成控制命令；rdd 覆盖断点回归（rdrobust / rdplot / rddensity）
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，SKILL.md 行数 144（basics）至 1077（coefplot）
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 8/8 PASS（8 个 skill 验证入口）
@@ -68,7 +68,7 @@ bash verify/run-verify.sh
 
 - **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced` · `/stata-coefplot` · `/stata-did` · `/stata-did-community` · `/stata-rdd`
 - **自然语言**：「用 Stata 帮我做多元回归诊断」/「演示 factor analysis」/「怎么做 IRT」
-- **路由表**：每个 skill 文首有强制路径（匹配到第一条就停）。分数线 / 年龄门槛 / 地理边界 **不要** 路由到 DID——本仓库尚未覆盖 RDD。
+- **路由表**：每个 skill 文首有强制路径（匹配到第一条就停）。分数线 / 年龄门槛 / 地理边界 **不要** 路由到 DID，改走 `stata-rdd`。
 
 | 用户问题 | 路由到 |
 |---|---|
@@ -153,7 +153,7 @@ stataskills/
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 8 个 do-file（含 did）
-    ├── logs/                       ← 7 个 Stata log（exit=0）
+    ├── logs/                       ← 8 个 Stata log（exit=0）
     └── output/                     ← 27 张真实 PNG
 ```
 

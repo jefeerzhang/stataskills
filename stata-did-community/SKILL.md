@@ -20,7 +20,7 @@ description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputati
 
 **何时用**：内置 `didregress` / `hdidregress` 不够用——处理单位极少、可逆/非二元处理、非线性结果、leaveout、合成对照、堆叠诊断、冲击型处理。
 **何时踢走**：
-- 分数线 / 年龄门槛 / 地理边界 → 本仓库尚未覆盖 RDD，**不要改走 `csdid` / `synth`**
+- 分数线 / 年龄门槛 / 地理边界 → `stata-rdd`，**不要改走 `csdid` / `synth`**
 - 简单 2×2 或默认错时 DID → 先 `stata-did`（`didregress` / `hdidregress aipw`）
 - 只要多层 FE、不是事件研究 → `stata-regression` 的 `reghdfe`
 
@@ -305,7 +305,7 @@ description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputati
 - ❌ **不要在 `synth` 预测变量混入处理后期信息**：让合成单位偷看未来，估计失效。**替代**：`beer(1984(1)1988)` 的上限 ≤ `trperiod()-1`；预测变量期段写法严格在处理前。
 - ❌ **不要只跑 `synth` 不跑 placebo 推断**：没有 SE / p 值，投稿会被打回。**替代**：`synth_runner ..., gen_vars` 跑 placebo 置换推断（ADH 2015 标准做法）。
 - ❌ **不要把 9 个社区包都跑一遍当稳健性**：强制路径命中第一条就停。**替代**：按下表只跑命中的那条命令链；默认错时回 `stata-did` 的 `hdidregress aipw`。
-- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 `csdid` / `synth`**：不是时间断点，合成对照也救不了。**替代**：本仓库尚未覆盖 RDD；向用户说明识别策略不匹配。
+- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 `csdid` / `synth`**：不是时间断点，合成对照也救不了。**替代**：转到 `stata-rdd`。
 
 ## 验证
 
@@ -316,4 +316,4 @@ description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputati
     - `bash verify/run-verify.sh did --community`：缺任一必需包（csdid / jwdid / did_imputation / synth / sdid）即 BAD，强制本地"真验证"。
     - `synth_runner` / `drdid` / `hdfe` 标记为可选——缺包仅打 sentinel，不影响 PASS。
   - 网络受限时本节方法与 `synthdid` R 包 / diff-diff 的 `SyntheticDiD` 同源，可跨语言替代。
-- 运行：`bash verify/run-verify.sh did`（默认）/ `bash verify/run-verify.sh did --community`（强制）；全量七个 skill：`bash verify/run-verify.sh`。
+- 运行：`bash verify/run-verify.sh did-community`（默认）/ `bash verify/run-verify.sh did-community --community`（强制）；全量 8 个 skill：`bash verify/run-verify.sh`。

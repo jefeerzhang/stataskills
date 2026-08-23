@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-# 验证 harness：为 7 个 skill 的验证脚本统一提供
+# 验证 harness：为 8 个 skill 的验证脚本统一提供
 # cd / 版本政策校验 / 批处理执行 / 结果判定 / 汇总。
 #
 # 用法：
-#   bash verify/run-verify.sh                  # 全量（七个 skill，默认模式）
-#   bash verify/run-verify.sh advanced         # 单个（basics/descriptives/regression/advanced/coefplot/did）
+#   bash verify/run-verify.sh                  # 全量（8 个 skill，默认模式）
+#   bash verify/run-verify.sh advanced         # 单个（basics/descriptives/regression/advanced/coefplot/did/did-community/rdd）
 #   bash verify/run-verify.sh --static         # 静态层（无需 Stata，供 CI 使用）
 #   bash verify/run-verify.sh --community      # 社区包强制模式（详见下方「社区包验证」段）
 #
@@ -68,6 +68,7 @@ done
 if [ "$STATIC_ONLY" -eq 0 ]; then
   case "$(uname -s)" in
     Darwin)
+      STATA_PLATFORM="macos"
       if command -v stata-mp >/dev/null 2>&1; then
         STATA_BIN="$(command -v stata-mp)"
       elif [ -n "${STATA_MAC:-}" ] && [ -x "$STATA_MAC" ]; then
@@ -78,6 +79,7 @@ if [ "$STATIC_ONLY" -eq 0 ]; then
       fi
       ;;
     MINGW*|MSYS*|CYGWIN*)
+      STATA_PLATFORM="windows"
       if [ -n "${STATA_WIN:-}" ]; then
         STATA_BIN="$STATA_WIN"
       else
@@ -137,6 +139,7 @@ if [ "$STATIC_ONLY" -eq 1 ]; then
   # 在 data/ 树下能找到对应 .dta 文件"
   if [ -f "$MANIFEST_EXTRA" ]; then
     while IFS= read -r ds; do
+      ds="${ds%$'\r'}"
       # 跳过注释/空行
       case "$ds" in \#*|"") continue ;; esac
       # 在 data/<任意子目录>/ 下搜
@@ -222,10 +225,16 @@ run_stata() {
   # 一致，社区包章节由 did-community 承载），直接调后者避免中转 do-file 的
   # 相对路径解析问题。全量枚举已排除 verify-synth-sdid，故只在 did-community
   # 这一 target 下执行一次。
+  local run_dofile="$dofile"
   if [ "$name" = "verify-did-community" ]; then
-    (cd "$DATA_DIR" && "$STATA_BIN" -b do "$VERIFY_DIR/verify-synth-sdid.do")
+    run_dofile="$VERIFY_DIR/verify-synth-sdid.do"
+  fi
+  if [ "$STATA_PLATFORM" = "windows" ]; then
+    # Stata for Windows 用 /e 运行并在完成后退出。仅排除 /e 的 MSYS 路径
+    # 转换；run_dofile 仍需由 Git Bash 转成 Windows 路径。
+    (cd "$DATA_DIR" && MSYS2_ARG_CONV_EXCL='/e' "$STATA_BIN" /e do "$run_dofile")
   else
-    (cd "$DATA_DIR" && "$STATA_BIN" -b do "$dofile")
+    (cd "$DATA_DIR" && "$STATA_BIN" -b do "$run_dofile")
   fi
 }
 
@@ -248,21 +257,15 @@ parse_log() {
   PARSE_ENDS=$(grep -c "end of do-file" "$log")
   PARSE_ERRS=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
   PARSE_SILENT=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
-  PARSE_EXIT1=$(grep -cE '^[[:space:]]*r\(1\);[[:space:]]*$' "$log")
   # sentinel 匹配：Stata batch mode 会把 do 文件里的 `display "SENTINEL"` 命令
   # 文本回显成 `.     display "SENTINEL"`（行首带点号 + display 前缀），导致
   # "包从未缺失但命令被回显"时误匹配。用 grep -v 剔除回显行（行首 `. display`），
-  # 再在剩余行里匹配 sentinel。这样既排除回显、又能抓到后跟 `exit 1` 而未独占
-  # 一行的真实输出（缺包分支常让 sentinel 与 exit 1 同帧合并）。
+  # 再在剩余行里匹配 sentinel。缺包分支只输出 sentinel 并跳过对应命令，
+  # 不产生错误码；任何 r(N) 都必须保留为真实失败，不能因 sentinel 被豁免。
   local sentinel_lines
   sentinel_lines="$(grep -vE '^[.][[:space:]]*display' "$log" 2>/dev/null)"
   PARSE_COMMUNITY_REQ="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
   PARSE_COMMUNITY_OPT="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-  # sentinel 触发时的 r(1) 视为缺包触发的 exit，不算错误
-  if [ -n "$PARSE_COMMUNITY_REQ" ] || [ -n "$PARSE_COMMUNITY_OPT" ]; then
-    PARSE_ERRS=$((PARSE_ERRS - PARSE_EXIT1))
-    [ "$PARSE_ERRS" -lt 0 ] && PARSE_ERRS=0
-  fi
   return 0
 }
 

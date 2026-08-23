@@ -20,7 +20,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建�
   - 项目级扩展（社区包示例需要、非 AGIS6 来源）：`data/<子目录>/`，由 `data/manifest-extra.txt` 单一来源管理。两份清单由 harness 同时校验；扩展数据集必须有来源 README + 字节级下载脚本（如 `data/synth/download_synth_smoking.sh`）。
 - 中文作图需先询问用户；默认英文标签
 - 每个 SKILL.md 首行钉住 `version 19.5`
-- Agent 读 skill 时先执行文首「强制路径」（匹配到第一条就停），再查文末可执行禁令；教材章节不是执行入口。分数线 / 年龄门槛 / 地理边界踢走 DID，本仓库尚未覆盖 RDD。
+- Agent 读 skill 时先执行文首「强制路径」（匹配到第一条就停），再查文末可执行禁令；教材章节不是执行入口。分数线 / 年龄门槛 / 地理边界踢走 DID，改走 `stata-rdd`。
 
 <!-- proma:knowledge-maintenance:start -->
 ## 协作知识演进（Proma 维护）

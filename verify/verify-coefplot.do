@@ -362,7 +362,14 @@ else {
 }
 
 * ---- 24. mlogit margins 老版本循环 ----
-webuse sysdsn1, clear
+* 原示例 webuse sysdsn1 依赖网络；用确定性模拟数据验证相同语法。
+clear
+set seed 20260823
+set obs 600
+gen byte insure = mod(_n-1, 3) + 1
+gen byte male = mod(_n, 2)
+gen byte nonwhite = mod(floor((_n-1)/2), 2)
+gen byte site = mod(floor((_n-1)/4), 3) + 1
 mlogit insure i.male i.nonwhite i.site
 estimates store mlogit
 forvalues o = 1/3 {
@@ -391,7 +398,21 @@ estimates store foreign
 coefplot domestic foreign, drop(_cons) xline(0) levels(95 50) ciopts(recast(. rcap))
 
 * ---- 26. svy：V_srs 未修正/修正 df ----
-webuse nhanes2f, clear
+* 原示例 webuse nhanes2f 依赖网络；本地模拟分层整群样本保留 e(V_srs)。
+clear
+set seed 20260823
+set obs 1000
+gen int psuid = ceil(_n/10)
+gen byte stratid = ceil(psuid/10)
+gen double finalwgt = 1 + runiform()
+gen double age = 20 + 50*runiform()
+gen double age2 = age^2
+gen double weight = 45 + 45*runiform()
+gen byte female = mod(_n, 2)
+gen byte black = mod(floor((_n-1)/2), 2)
+gen byte orace = mod(floor((_n-1)/4), 2)
+gen byte rural = mod(floor((_n-1)/8), 2)
+gen double zinc = 50 + 0.2*age + 0.1*weight - 2*female + rnormal()
 svyset psuid [pweight=finalwgt], strata(stratid)
 svy: regress zinc age age2 weight female black orace rural
 coefplot (., label(design-based)) (., v(V_srs) label(SRS-based)) ///
