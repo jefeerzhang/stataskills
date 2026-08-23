@@ -159,6 +159,7 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
     # 从标题中提取关键词：去掉编号和修饰语，取反引号包裹的词或冒号后的首词
     kw=$(echo "$line" | sed 's/^##[[:space:]]*[0-9.]*[[:space:]]*//' | sed 's/（.*//')
     # 优先取反引号包裹的词
+    # shellcheck disable=SC2016  # 反引号是 Markdown 字面分隔符，不是命令替换
     kw_backtick=$(echo "$kw" | grep -oE '`[^`]+`' | head -1 | tr -d '`')
     if [ -n "$kw_backtick" ]; then
       kw_clean="$kw_backtick"
@@ -246,7 +247,7 @@ else
   N_PROMPTS=$("$PYTHON_BIN" -c 'import json, sys; print(len(json.load(open(sys.argv[1], encoding="utf-8"))["prompts"]))' "$TEST_PROMPTS")
   ok "test-prompts.json 合法，含 ${N_PROMPTS} 条 prompt"
   # 每个 skill 至少 1 条 prompt（用 awk 提取 skill 字段做覆盖矩阵）
-  "$PYTHON_BIN" - "$REPO_ROOT" <<'PY' && {
+  if "$PYTHON_BIN" - "$REPO_ROOT" <<'PY'
 import json, sys, os, glob
 repo_root = sys.argv[1]
 with open(os.path.join(repo_root, "test-prompts.json"), encoding="utf-8") as f:
@@ -267,8 +268,11 @@ if missing:
 # 把覆盖详情写到 stderr，让 ok 行单独占据 stdout
 print(f"coverage: {len(d['prompts'])} prompts, {len(covered)} skills", file=sys.stderr)
 PY
+  then
     ok "test-prompts.json 覆盖全部 8 个 skill（Python 详情见 stderr）"
-  } || bad "test-prompts.json 未覆盖全部 skill：见 stderr"
+  else
+    bad "test-prompts.json 未覆盖全部 skill：见 stderr"
+  fi
 fi
 
 # ---- 11. README 硬编码计数与文件系统事实一致性 ----

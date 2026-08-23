@@ -41,7 +41,6 @@ VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATIC_ONLY=0
 COMMUNITY_MODE=0
 TARGET_ARG=""
-ARGS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --static)   STATIC_ONLY=1 ;;
@@ -232,9 +231,9 @@ run_stata() {
   if [ "$STATA_PLATFORM" = "windows" ]; then
     # Stata for Windows 用 /e 运行并在完成后退出。仅排除 /e 的 MSYS 路径
     # 转换；run_dofile 仍需由 Git Bash 转成 Windows 路径。
-    (cd "$DATA_DIR" && MSYS2_ARG_CONV_EXCL='/e' "$STATA_BIN" /e do "$run_dofile")
+    (cd "$DATA_DIR" && MSYS2_ARG_CONV_EXCL='/e' "$STATA_BIN" /e "do" "$run_dofile")
   else
-    (cd "$DATA_DIR" && "$STATA_BIN" -b do "$run_dofile")
+    (cd "$DATA_DIR" && "$STATA_BIN" -b "do" "$run_dofile")
   fi
 }
 
