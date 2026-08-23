@@ -70,11 +70,11 @@ run_docs_mode() {
     fail=$((fail+1))
   fi
 
-  # 2. 覆盖全部 7 skill
+  # 2. 覆盖全部 8 skill
   local missing_skills
-  missing_skills="$(jq -r '[.prompts[].skill | split(" ") | .[] | select(. != "+")] | unique | . - ["stata-basics","stata-descriptives","stata-regression","stata-advanced","stata-coefplot","stata-did","stata-did-community"] | .[]' "$TEST_PROMPTS_JSON")"
+  missing_skills="$(jq -r '[.prompts[].skill | split(" ") | .[] | select(. != "+")] | unique | . - ["stata-basics","stata-descriptives","stata-regression","stata-advanced","stata-coefplot","stata-did","stata-did-community","stata-rdd"] | .[]' "$TEST_PROMPTS_JSON")"
   if [ -z "$missing_skills" ]; then
-    echo "PASS  test-prompts 覆盖全部 7 skill"
+    echo "PASS  test-prompts 覆盖全部 8 skill"
     pass=$((pass+1))
   else
     echo "FAIL  test-prompts 缺 skill: $missing_skills"
@@ -141,6 +141,7 @@ PROMPT_VERIFY_SCRIPT=(
   "synth-sdid"          # did-04-did-imputation
   "basics+descriptives" # cross-01-clean-then-descriptives
   "regression+coefplot" # cross-02-regression-then-coefplot
+  "rdd"                 # rdd-01-sharp-tutoring
 )
 
 # prompt_id → grep 关键词列表（断言 expected_actions 在 verify log 中执行过）
@@ -159,6 +160,7 @@ PROMPT_GREP_KEYWORDS=(
   "did_imputation"                # did-04-did-imputation · verify-synth-sdid.do
   "mvdecode recode"               # cross-01-clean-then-descriptives · verify-basics.do（harness 跑 basics）
   "regress logit"                 # cross-02-regression-then-coefplot · verify-regression.do（harness 跑 regression）
+  "rdrobust rddensity"            # rdd-01-sharp-tutoring · verify-rdd.do
 )
 
 run_prompts_mode() {

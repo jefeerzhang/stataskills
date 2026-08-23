@@ -249,11 +249,15 @@ parse_log() {
   PARSE_ERRS=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
   PARSE_SILENT=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
   PARSE_EXIT1=$(grep -cE '^[[:space:]]*r\(1\);[[:space:]]*$' "$log")
-  # sentinel 匹配：Stata batch mode 下 `display "SENTINEL"` 被 echo 为 `.     display "SENTINEL"`
-  # （带点号和命令前缀），且若后跟 exit 1 会被合并。不要求单独成行，
-  # 用 -oE 抓所有 sentinel 字符串，再 set -u 兼容地过滤空结果。
-  PARSE_COMMUNITY_REQ="$(grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' "$log" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-  PARSE_COMMUNITY_OPT="$(grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' "$log" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  # sentinel 匹配：Stata batch mode 会把 do 文件里的 `display "SENTINEL"` 命令
+  # 文本回显成 `.     display "SENTINEL"`（行首带点号 + display 前缀），导致
+  # "包从未缺失但命令被回显"时误匹配。用 grep -v 剔除回显行（行首 `. display`），
+  # 再在剩余行里匹配 sentinel。这样既排除回显、又能抓到后跟 `exit 1` 而未独占
+  # 一行的真实输出（缺包分支常让 sentinel 与 exit 1 同帧合并）。
+  local sentinel_lines
+  sentinel_lines="$(grep -vE '^[.][[:space:]]*display' "$log" 2>/dev/null)"
+  PARSE_COMMUNITY_REQ="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  PARSE_COMMUNITY_OPT="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
   # sentinel 触发时的 r(1) 视为缺包触发的 exit，不算错误
   if [ -n "$PARSE_COMMUNITY_REQ" ] || [ -n "$PARSE_COMMUNITY_OPT" ]; then
     PARSE_ERRS=$((PARSE_ERRS - PARSE_EXIT1))

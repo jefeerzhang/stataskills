@@ -201,6 +201,24 @@
         "每步新增系数显著性的对比"
       ],
       "verify_script": "verify/verify-regression.do + verify/verify-coefplot.do"
+    },
+    {
+      "id": "rdd-01-sharp-tutoring",
+      "skill": "stata-rdd",
+      "scenario": "用户问题：学校对入学成绩 ≤70 的学生自动提供辅导，想估计辅导对期末成绩的因果效应（sharp 断点回归）。",
+      "expected_actions": [
+        "load stata-rdd SKILL.md（分数线 → 1 验设计 2 看图 3 主估计 4 密度检验 5 带宽敏感 6 placebo）",
+        "用 rdrobust / rdplot / rddensity 而非 didregress（这是阈值处理，不是时间处理）",
+        "先 tab 验 sharp（100% 合规）再 rdrobust exit_exam entrance_exam, c(70)",
+        "读 e(tau_cl)（robust 版）而非 e(tau)；说明符号是左→右跳跃，不是政策方向",
+        "rddensity 密度操纵检验 + placebo cutoff + 带宽敏感性"
+      ],
+      "expected_outputs": [
+        "rdrobust 估计 + robust CI",
+        "rddensity 操纵检验 p 值",
+        "placebo cutoff 图（只有真 cutoff 显著）"
+      ],
+      "verify_script": "verify/verify-rdd.do"
     }
   ]
 }
