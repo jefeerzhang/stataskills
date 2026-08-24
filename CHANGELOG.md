@@ -23,6 +23,7 @@ versioned by Stata compatibility).
   三个扩展（reghdfe / ivreghdfe / fect）下沉到 6 个
   references/<章节|方法>.md（仿 stata-coefplot / stata-did-community 范式）。
   四件套陷阱统一在主文件一份。
+- docs(adr-0005): 记录「保留完整 verify log、不替换为稳定摘要」的决策（架构评审候选 4 的取舍），详见 docs/adr/0005-keep-raw-verify-logs.md。
 
 ### Added
 - feat(验证): 新增 `verify/check-claims.sh` 文档断言检查器（架构评审
