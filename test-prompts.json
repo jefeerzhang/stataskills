@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "prompts": [
     {
       "id": "basics-01-reverse-coding",
@@ -18,7 +18,11 @@
         "反向编码后的 dta 文件",
         "缺失码区别保留的证据（tab 输出）"
       ],
-      "verify_script": "verify/verify-basics.do"
+      "verify_keywords": [
+        "mvdecode",
+        "recode",
+        "clonevar"
+      ]
     },
     {
       "id": "descriptives-01-crosstab-effect-size",
@@ -35,7 +39,9 @@
         "p < 0.001",
         "Cramér's V ∈ [0, 1]"
       ],
-      "verify_script": "verify/verify-descriptives.do"
+      "verify_keywords": [
+        "chi2"
+      ]
     },
     {
       "id": "regression-01-ancova-with-covariate",
@@ -52,7 +58,10 @@
         "ANCOVA F/p",
         "控制 weight 后 foreign 的边际均值差"
       ],
-      "verify_script": "verify/verify-regression.do"
+      "verify_keywords": [
+        "anova",
+        "margins"
+      ]
     },
     {
       "id": "advanced-01-factor-not-just-alpha",
@@ -70,7 +79,9 @@
         "保留因子数 + 各因子方差贡献",
         "旋转对比表"
       ],
-      "verify_script": "verify/verify-advanced.do"
+      "verify_keywords": [
+        "factor"
+      ]
     },
     {
       "id": "coefplot-01-multiple-models-forest",
@@ -87,7 +98,9 @@
         "森林图 PNG（含 OR + 95% CI）",
         "两模型系数对比"
       ],
-      "verify_script": "verify/verify-coefplot.do"
+      "verify_keywords": [
+        "coefplot"
+      ]
     },
     {
       "id": "did-01-staggered-twowfe-bias",
@@ -107,7 +120,9 @@
         "Bacon 分解图",
         "含「已处理当对照」负权重分量的诊断"
       ],
-      "verify_script": "verify/verify-did.do"
+      "verify_keywords": [
+        "hdidregress"
+      ]
     },
     {
       "id": "did-02-csdid-staggered",
@@ -127,7 +142,9 @@
         "事件研究系数表",
         "与 hdidregress aipw 对照一致"
       ],
-      "verify_script": "verify/verify-synth-sdid.do"
+      "verify_keywords": [
+        "csdid"
+      ]
     },
     {
       "id": "did-03-jwdid-etwfe",
@@ -149,7 +166,9 @@
         "平行趋势检验 p 值",
         "事件研究图"
       ],
-      "verify_script": "verify/verify-synth-sdid.do"
+      "verify_keywords": [
+        "jwdid"
+      ]
     },
     {
       "id": "did-04-did-imputation",
@@ -169,7 +188,9 @@
         "平行趋势检验 F/p",
         "与 hdidregress/csdid 对照一致"
       ],
-      "verify_script": "verify/verify-synth-sdid.do"
+      "verify_keywords": [
+        "did_imputation"
+      ]
     },
     {
       "id": "cross-01-clean-then-descriptives",
@@ -184,7 +205,10 @@
         "清洗后的 .dta",
         "量表描述 + α（不删条目）"
       ],
-      "verify_script": "verify/verify-basics.do + verify/verify-descriptives.do"
+      "verify_keywords": [
+        "mvdecode",
+        "recode"
+      ]
     },
     {
       "id": "cross-02-regression-then-coefplot",
@@ -200,7 +224,10 @@
         "嵌套模型森林图 PNG",
         "每步新增系数显著性的对比"
       ],
-      "verify_script": "verify/verify-regression.do + verify/verify-coefplot.do"
+      "verify_keywords": [
+        "regress",
+        "logit"
+      ]
     },
     {
       "id": "rdd-01-sharp-tutoring",
@@ -218,7 +245,10 @@
         "rddensity 操纵检验 p 值",
         "placebo cutoff 图（只有真 cutoff 显著）"
       ],
-      "verify_script": "verify/verify-rdd.do"
+      "verify_keywords": [
+        "rdrobust",
+        "rddensity"
+      ]
     }
   ]
 }

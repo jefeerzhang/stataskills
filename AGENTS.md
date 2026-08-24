@@ -15,6 +15,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建�
 
 - SKILL.md 中 Stata 内置命令的示例语法必须经 `verify/` 脚本实测通过
 - 社区包（`ssc install`，如 reghdfe / csdid / jwdid / did_imputation / synth / sdid）：**部分章节的示例语法现在已纳入验证**（见 `stata-did/SKILL.md` 第 13–15 节 / `verify/verify-synth-sdid.do`）。机制：`run-verify.sh` 默认模式静默 PASS（cap which 风格，CI 不被网络绑定）；`--community` 模式强制要求必需包安装齐全才 PASS。可选包用 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__` sentinel，与必需包 `__COMMUNITY_PACKAGE_MISSING__` 区分。
+- 验证目标解析单一来源：`verify/lib/targets.sh`。每个 skill `stata-<name>` 对应验证入口 `verify-<name>`（默认 1:1）；`did-community` 委托 `verify-synth-sdid.do`（社区包验证）。改委托只改 `targets.sh`，`run-verify.sh` 与 `check-claims.sh` 都经它解析 run do-file / raw log，不各自硬编码别名。
 - 验证脚本数据的两种来源：
   - AGIS6 教材配套：`data/agis6/`，由 `data/manifest.txt` 单一来源管理。
   - 项目级扩展（社区包示例需要、非 AGIS6 来源）：`data/<子目录>/`，由 `data/manifest-extra.txt` 单一来源管理。两份清单由 harness 同时校验；扩展数据集必须有来源 README + 字节级下载脚本（如 `data/synth/download_synth_smoking.sh`）。

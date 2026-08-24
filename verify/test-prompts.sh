@@ -172,59 +172,29 @@ run_docs_mode() {
 # 模式 B: --prompts（Stata 子集）
 # ============================================================
 
-# prompt_id → verify_script（顺序与 test-prompts.json 一致；macOS bash 3.2 不支持关联数组，用两个平行数组）
-PROMPT_VERIFY_SCRIPT=(
-  "basics"              # basics-01-reverse-coding
-  "descriptives"        # descriptives-01-crosstab-effect-size
-  "regression"          # regression-01-ancova-with-covariate
-  "advanced"            # advanced-01-factor-not-just-alpha
-  "coefplot"            # coefplot-01-multiple-models-forest
-  "did"                 # did-01-staggered-twowfe-bias
-  "synth-sdid"          # did-02-csdid-staggered
-  "synth-sdid"          # did-03-jwdid-etwfe
-  "synth-sdid"          # did-04-did-imputation
-  "basics+descriptives" # cross-01-clean-then-descriptives
-  "regression+coefplot" # cross-02-regression-then-coefplot
-  "rdd"                 # rdd-01-sharp-tutoring
-)
-
-# prompt_id → grep 关键词列表（断言 expected_actions 在 verify log 中执行过）
-# 关键词与 verify-<skill>.do 实际跑的命令对齐（prompt 中的示例命令如
-# price/weight/foreign 是教学示例，verify 脚本实际跑 ch9-11 章节的真实数据
-# 命令如 anova/margins/logit）
-PROMPT_GREP_KEYWORDS=(
-  "mvdecode recode clonevar"    # basics-01-reverse-coding · verify-basics.do
-  "chi2"                          # descriptives-01-crosstab-effect-size · verify-descriptives.do
-  "anova margins"                 # regression-01-ancova-with-covariate · verify-regression.do
-  "factor"                        # advanced-01-factor-not-just-alpha · verify-advanced.do
-  "coefplot"                      # coefplot-01-multiple-models-forest · verify-coefplot.do
-  "hdidregress"                   # did-01-staggered-twowfe-bias · verify-did.do
-  "csdid"                         # did-02-csdid-staggered · verify-synth-sdid.do
-  "jwdid"                         # did-03-jwdid-etwfe · verify-synth-sdid.do
-  "did_imputation"                # did-04-did-imputation · verify-synth-sdid.do
-  "mvdecode recode"               # cross-01-clean-then-descriptives · verify-basics.do（harness 跑 basics）
-  "regress logit"                 # cross-02-regression-then-coefplot · verify-regression.do（harness 跑 regression）
-  "rdrobust rddensity"            # rdd-01-sharp-tutoring · verify-rdd.do
-)
-
+# 模式 B 的数据全部来自 test-prompts.json（单一来源，不再用平行数组）：
+#   - verify_keywords → grep 关键词（断言 verify log 执行了对应命令）
+#   - skill 字段取首个、去 "stata-" 前缀 → run-verify.sh 的目标名
 run_prompts_mode() {
   local pass=0 fail=0
 
-  local pid i=0
+  local pid skill keywords first_skill verify_log i=0
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
     pid="$(json_prompt_field "$i" id)"
-    local verify_target="${PROMPT_VERIFY_SCRIPT[$i]:-}"
-    local keywords="${PROMPT_GREP_KEYWORDS[$i]:-}"
+    skill="$(json_prompt_field "$i" skill)"
+    keywords="$(json_prompt_field "$i" verify_keywords " ")"
 
-    if [ -z "$verify_target" ] || [ -z "$keywords" ]; then
-      echo "SKIP  $pid · 无 verify target 映射"
+    if [ -z "$keywords" ]; then
+      echo "SKIP  $pid · 无 verify_keywords"
       i=$((i+1))
       continue
     fi
 
-    # 跨 skill 联动 prompt（如 cross-01）只取第一个 skill 跑
-    local first_skill="${verify_target%%+*}"
-    local verify_log="$VERIFY_DIR/verify-${first_skill}.log"
+    # 目标名 = 首个 skill 去 "stata-" 前缀（registry 按此解析 do-file）；
+    # 跨 skill 联动 prompt（如 cross-01）只跑第一个 skill。
+    first_skill="${skill%% *}"
+    first_skill="${first_skill#stata-}"
+    verify_log="$VERIFY_DIR/verify-${first_skill}.log"
 
     # 跑 verify-<skill>.do（用 run-verify.sh harness）
     if ! bash "$VERIFY_DIR/run-verify.sh" "$first_skill" >/dev/null 2>&1; then

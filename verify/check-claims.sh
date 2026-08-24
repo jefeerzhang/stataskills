@@ -10,7 +10,7 @@
 #   bash verify/check-claims.sh
 #
 # 核心集断言（每条均可 red-capable）：
-#   1. 每个 skill 目录恰有一份 SKILL.md，且 verify/ 有同名 verify-*.do
+#   1. 每个 skill 目录恰有一份 SKILL.md，且经注册表解析出的 verify do-file 存在
 #   2. docs/run-stata.md 首行计数「N 份」与 skill 数一致
 #   3. data/agis6/*.dta 数量与 manifest 登记条数一致
 #   4. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性
@@ -36,6 +36,8 @@ REPO_ROOT="$(cd "$VERIFY_DIR/.." && pwd)"
 
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/report.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/targets.sh"
 
 count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
   local n=0 f
@@ -47,7 +49,7 @@ count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
 
 # ---- facts：文件系统真相 ----
 N_SKILLS=$(count "$REPO_ROOT"/stata-*/SKILL.md)
-N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # zz 探针与 verify-synth-sdid 在下方排除
+N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # 原始 verify-*.do 计数（含委托脚本），仅供 facts 展示
 N_DTA=$(count "$REPO_ROOT"/data/agis6/*.dta)
 N_MANIFEST=$(grep -cE '^[^#[:space:]]' "$REPO_ROOT/data/manifest.txt")
 N_DEMO_DO=$(count "$REPO_ROOT"/demo/dofiles/*.do)
@@ -56,28 +58,27 @@ N_DEMO_PNG=$(count "$REPO_ROOT"/demo/output/*.png)
 
 echo "facts: skills=${N_SKILLS} verify=${N_VERIFY} dta=${N_DTA} manifest=${N_MANIFEST} demo_do=${N_DEMO_DO} demo_log=${N_DEMO_LOG} demo_png=${N_DEMO_PNG}"
 
-# ---- 1. skill ↔ verify 脚本一一对应（排除 test-harness 的 zz 探针与
-#      verify-synth-sdid.do——后者是社区包附加验证脚本，被
-#      verify-did-community.do 委托调用，不构成独立 skill 的 verify 入口。
-#      新增 skill 时只需放入 verify-<skill-name>.do，此处自动计入。----
-N_VERIFY_REAL=0
+# ---- 1. skill ↔ 验证入口一一对应：每个 skill 经注册表解析出 run do-file
+#      且该 do-file 存在；反向，每个 verify-*.do 要么是某 skill 入口的
+#      do-file、要么是注册表登记的委托（delegate），否则为孤儿。----
+entry_dofs=""
+for s in "$REPO_ROOT"/stata-*; do
+  [ -d "$s" ] || continue
+  name="$(basename "$s")"                        # stata-<name>
+  dof="$(targets_run_dofile "verify-${name#stata-}")"
+  entry_dofs="${entry_dofs} ${dof}"
+  [ -f "$VERIFY_DIR/$dof.do" ] || bad "缺验证脚本：verify/$dof.do（对应 ${name}）"
+done
+delegates="$(targets_delegates)"
 for d in "$REPO_ROOT"/verify/verify-*.do; do
   [ -e "$d" ] || continue
   b="$(basename "$d" .do)"
-  # verify-synth-sdid 是社区包验证脚本，由 verify-did-community.do 委托调用
-  case "$b" in verify-zz*|verify-synth-sdid) continue ;; esac
-  N_VERIFY_REAL=$((N_VERIFY_REAL+1))
+  case " ${entry_dofs} ${delegates} " in
+    *" ${b} "*) ;;
+    *) bad "孤儿 verify 脚本：verify/${b}.do（非任何 skill 入口，也非注册表委托）" ;;
+  esac
 done
-if [ "$N_VERIFY_REAL" -eq "$N_SKILLS" ]; then
-  ok "skill 数（${N_SKILLS}）与 verify-*.do 数（${N_VERIFY_REAL}，排除 zz 探针与 verify-synth-sdid）一致"
-else
-  bad "skill 数（${N_SKILLS}）≠ verify-*.do 数（${N_VERIFY_REAL}）：加 skill 须配 verify 脚本"
-fi
-for s in "$REPO_ROOT"/stata-*; do
-  [ -d "$s" ] || continue
-  name="$(basename "$s")"
-  [ -f "$VERIFY_DIR/verify-${name#stata-}.do" ] || bad "缺验证脚本：verify/verify-${name#stata-}.do（对应 ${name}）"
-done
+ok "skill ↔ verify 入口映射完整（委托：${delegates:-无}）"
 
 # ---- 2. docs/run-stata.md 首行「N 份」与 skill 数一致 ----
 doc_n=$(grep -oE '^[0-9]+ 份' "$REPO_ROOT/docs/run-stata.md" | head -1 | cut -d' ' -f1)

@@ -61,6 +61,8 @@ done
 . "$VERIFY_DIR/stata.conf"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/report.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/targets.sh"
 
 # ---- 解析 Stata 可执行文件（macOS：PATH 优先；Windows：config 直取）----
 # 静态模式不执行 do-file，无需 Stata（CI runner 上也没有）
@@ -101,19 +103,15 @@ DATA_EXTRA_DIR="$(cd "$VERIFY_DIR/../data" && pwd)"
 # ---- extra 子目录枚举（每个 data/<name>-extra/ 子目录一个，名称=目录名，
 # 例如 data/synth/ -> manifest-extra 中的"路径前缀"synth/）。当前 manifest-extra
 # 实现是平铺（基名不分子目录），但允许脚本 use "../<subdir>/<file>" 写法 ----
-# ---- 目标：全部或指定一个（glob 枚举，新增 skill 只需放入 verify-*.do）----
+# ---- 目标：全部或指定一个（按 skill 枚举入口；委托关系由 lib/targets.sh 解析）----
 if [ -n "$TARGET_ARG" ]; then
   TARGETS=("verify-$TARGET_ARG")
 else
   TARGETS=()
-  for d in "$VERIFY_DIR"/verify-*.do; do
-    [ -e "$d" ] || continue
-    b="$(basename "$d" .do)"
-    # verify-synth-sdid 是社区包附加验证脚本，由 verify-did-community.do
-    # 委托调用（两者逻辑一致）；全量枚举排除它，避免同一份社区包验证
-    # 逻辑执行两遍。显式 `run-verify.sh synth-sdid` 仍可单跑。
-    case "$b" in verify-zz*|verify-synth-sdid) continue ;; esac
-    TARGETS+=("$b")
+  for s in "$VERIFY_DIR"/../stata-*/SKILL.md; do
+    [ -e "$s" ] || continue
+    d="$(basename "$(dirname "$s")")"     # stata-<name>
+    TARGETS+=("verify-${d#stata-}")
   done
 fi
 
@@ -219,15 +217,9 @@ check_data_ready() {
 run_stata() {
   local name="$1" dofile="$2"
   echo "==> 运行 ${name}（${STATA_BIN}）..."
-  # cwd 切到 data/agis6/ 后，绝对路径调 do-file。
-  # 特殊处理：verify-did-community 委托 verify-synth-sdid.do（两者验证逻辑
-  # 一致，社区包章节由 did-community 承载），直接调后者避免中转 do-file 的
-  # 相对路径解析问题。全量枚举已排除 verify-synth-sdid，故只在 did-community
-  # 这一 target 下执行一次。
+  # cwd 切到 data/agis6/ 后，绝对路径调 do-file。dofile 已由主循环经
+  # targets_run_dofile 解析（did-community → synth-sdid 的委托在此发生）。
   local run_dofile="$dofile"
-  if [ "$name" = "verify-did-community" ]; then
-    run_dofile="$VERIFY_DIR/verify-synth-sdid.do"
-  fi
   if [ "$STATA_PLATFORM" = "windows" ]; then
     # Stata for Windows 用 /e 运行并在完成后退出。仅排除 /e 的 MSYS 路径
     # 转换；run_dofile 仍需由 Git Bash 转成 Windows 路径。
@@ -240,12 +232,10 @@ run_stata() {
 # 阶段 4：解析日志（错误码、静默错误、社区包 sentinel）
 parse_log() {
   local name="$1"
-  # verify-did-community 委托 verify-synth-sdid.do，跑出来的 log 是
-  # verify-synth-sdid.log；解析时把它当 verify-did-community 看。
-  local log_name="$name"
-  if [ "$name" = "verify-did-community" ]; then
-    log_name="verify-synth-sdid"
-  fi
+  # raw log 名 = run do-file 基名（Stata 批处理按 do-file 命名 log）；
+  # 委托关系由 targets_run_dofile 解析。
+  local log_name
+  log_name="$(targets_run_dofile "$name")"
   local log="$DATA_DIR/$log_name.log"
 
   if [ ! -f "$log" ]; then
@@ -271,11 +261,9 @@ parse_log() {
 # 阶段 5：判定 PASS/BAD
 evaluate() {
   local name="$1"
-  # verify-did-community 委托 verify-synth-sdid.do，其 log 名是 verify-synth-sdid.log
-  local log_name="$name"
-  if [ "$name" = "verify-did-community" ]; then
-    log_name="verify-synth-sdid"
-  fi
+  # raw log 名 = run do-file 基名（委托关系由 targets_run_dofile 解析）。
+  local log_name
+  log_name="$(targets_run_dofile "$name")"
   local log="$DATA_DIR/$log_name.log"
   local local_bad=0
 
@@ -304,7 +292,7 @@ evaluate() {
 
 # ---- 主循环 ----
 for name in "${TARGETS[@]}"; do
-  dofile="$VERIFY_DIR/$name.do"
+  dofile="$VERIFY_DIR/$(targets_run_dofile "$name").do"
 
   if [ ! -f "$dofile" ]; then
     bad "${name}（找不到 ${dofile}）"

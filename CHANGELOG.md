@@ -7,6 +7,23 @@ versioned by Stata compatibility).
 
 ## [Unreleased]
 
+### Changed
+- refactor(验证): 新增 `verify/lib/targets.sh` 验证目标注册表，把
+  `did-community → synth-sdid` 的委托关系收敛为单一来源；`run-verify.sh`
+  全量枚举改为按 `stata-*/SKILL.md` 驱动，`check-claims.sh` 第 1 条改为
+  注册表驱动的「skill ↔ 入口」双向断言（含孤儿检测），删除占位
+  `verify-did-community.do`。详见 ADR-0004。
+- refactor(验证): `test-prompts.json` 成为 `--prompts` 模式的单一来源——
+  新增 `verify_keywords` 字段，删除 `verify_script`（重复注册表的委托知识），
+  `test-prompts.sh` 删除两个按位置配对的平行数组，验证目标名从 `skill`
+  字段推导（取首个、去 `stata-` 前缀）。`did-02/03/04` 目标随之收敛为
+  `did-community`（由注册表解析到 synth-sdid）。
+- refactor(架构): 拆分 stata-regression SKILL.md 为 references/ 模式——
+  主文件 762 → 111 行，三个教材章节（ANOVA / 多元回归 / 逻辑回归）与
+  三个扩展（reghdfe / ivreghdfe / fect）下沉到 6 个
+  references/<章节|方法>.md（仿 stata-coefplot / stata-did-community 范式）。
+  四件套陷阱统一在主文件一份。
+
 ### Added
 - feat(验证): 新增 `verify/check-claims.sh` 文档断言检查器（架构评审
   candidate 1）：从文件系统数出 facts（skill 数 / .dta 数 / manifest 条数 /

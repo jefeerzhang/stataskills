@@ -25,7 +25,7 @@
 ## 特性
 
 - **4 个教材分章节 Skill + 4 个扩展**：basics / descriptives / regression / advanced 严格对应教材第 1–16 章 + 附录 A；coefplot 覆盖系数图（森林图）；did 覆盖 Stata 官方 DID 命令族；did-community 覆盖社区 DID / 合成控制命令；rdd 覆盖断点回归（rdrobust / rdplot / rddensity）
-- **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，SKILL.md 行数 144（basics）至 1077（coefplot）
+- **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，SKILL.md 行数 110（regression）至 379（descriptives）
 - **38 个配套数据集**：AGIS6 完整版（含每章 do-file），用 manifest.txt 作单一来源
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 当前实测 8/8 PASS（8 个 skill 验证入口）
 - **真实 demo** 报告：8 个 do-file + 27 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + Bacon 分解图）
@@ -149,7 +149,8 @@ stataskills/
 │   ├── check-claims.sh             ← 文档断言检查（facts vs 计数）
 │   ├── test-harness.sh             ← 判定逻辑回归测试
 │   ├── stata.conf                  ← 平台路径（单一来源）
-│   └── verify-{basics,descriptives,regression,advanced,coefplot,did,did-community,synth-sdid,rdd}.{do,log}
+│   ├── lib/                        ← 共享 shell 库（report.sh 判定协议 / targets.sh 目标注册表）
+│   └── verify-<skill>.{do,log}     ← 8 个验证入口（did-community 委托 verify-synth-sdid.do）
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 8 个 do-file（含 did）
