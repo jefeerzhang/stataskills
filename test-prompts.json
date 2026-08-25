@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。每条 prompt 新增三个元字段：difficulty（easy/medium/hard）、gotchas（对应陷阱速查编号）、requires_package（前置 SSC 包列表；null=全部内置）。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "prompts": [
     {
       "id": "basics-01-reverse-coding",
@@ -70,6 +70,61 @@
       "verify_keywords": [
         "anova",
         "margins"
+      ]
+    },
+    {
+      "id": "regression-02-iv-command-selection",
+      "skill": "stata-regression",
+      "difficulty": "medium",
+      "requires_package": ["ivreg2", "ivreghdfe"],
+      "gotchas": ["two_stage_manual_predict_wrong_se", "endog_sq_term_must_be_in_parens"],
+      "scenario": "用户问题：公司面板（id × year）想跑 x1 内生、x2 x3 外生控制、z1 排除性工具的 2SLS；同时报告第一阶段 F、KP rk LM、Hansen J、内生性检验；不要手搓两阶段；x1_sq 也要当内生进括号。",
+      "expected_actions": [
+        "load stata-regression SKILL.md → references/iv.md",
+        "xtset id year",
+        "ivreghdfe y x2 x3 (x1 x1_sq = z1 z1_sq), absorb(id year) cluster(id) first ffirst savefirst savefprefix(fs_) endog(x1)",
+        "或同变量改跑 ivreg2 y x2 x3 i.year (x1 x1_sq = z1 z1_sq), cluster(id) first ffirst endog(x1)（验证脚本会检查这条命令能跑通）",
+        "不要手搓两阶段（先 reg x1 z1 再 predict x1hat 再 reg y x1hat），SE 偏小",
+        "x1_sq 必须进括号左侧并配 z1_sq 当工具；不能写 ivreg2 y (x1 = z1 z1_sq)",
+        "聚类下读 KP rk Wald F 而不是 Cragg-Donald F；脚注 e(widstat) / e(j) / e(estat)"
+      ],
+      "expected_outputs": [
+        "ivreghdfe/ivreg2 第二阶段系数 + 聚类 SE",
+        "脚注：KP rk LM (拒绝)、KP rk Wald F (过 Stock-Yogo 临界值)、Hansen J (L>K 才报)、endog() p",
+        "第一阶段排除性工具系数 + 标准误 + 排除性 F"
+      ],
+      "verify_keywords": [
+        "ivreghdfe",
+        "ivreg2"
+      ]
+    },
+    {
+      "id": "regression-03-iv-diagnostics-reading",
+      "skill": "stata-regression",
+      "difficulty": "hard",
+      "requires_package": ["ivreg2", "weakivtest"],
+      "gotchas": ["f_gt_10_not_universal_safe_line", "cluster_vce_use_kp_f_not_cd_f"],
+      "scenario": "用户问题：ivreg2 跑完报「KP rk Wald F = 3.2, p = 0.04；Hansen J p = 0.31；endog p = 0.02」。1 内生 1 工具聚类到 id。下一步怎么写？",
+      "expected_actions": [
+        "load stata-regression SKILL.md → references/iv-testing.md",
+        "不要把 KP F=3.2 当强工具：1 内生 1 工具时 10% maximal IV size 临界值是 16.38，远大于 3.2；属于弱工具",
+        "主估计改 LIML：ivreg2 y x2 x3 (x1 = z1), cluster(id) liml first",
+        "或 fuller(1)：ivreg2 ..., fuller(1) first",
+        "跑 weakivtest 看 effective F：quiet ivreg2 ...; weakivtest → r(F_eff)，不要拿 Stock-Yogo 的 16.38 卡它",
+        "正文报 Anderson-Rubin：ivreg2 ..., ffirst → 读脚注 Anderson-Rubin Wald F / p",
+        "恰好识别时 Hansen J 没自由度（脚注写 equation exactly identified），J=0.31 这一行从表里删掉",
+        "endog p=0.02 拒绝 → IV 相对 OLS 有必要，留在表里"
+      ],
+      "expected_outputs": [
+        "LIML / Fuller(1) 主结果",
+        "Anderson-Rubin 检验 p",
+        "weakivtest effective F + TSLS/LIML 临界值",
+        "表注里没有「F>10 工具够」这种陈词",
+        "Hansen J 行被删掉（恰好识别）"
+      ],
+      "verify_keywords": [
+        "ivreg2",
+        "weakivtest"
       ]
     },
     {
