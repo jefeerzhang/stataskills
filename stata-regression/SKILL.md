@@ -1,6 +1,6 @@
 ---
 name: stata-regression
-description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 / margins 边际效应 / reghdfe 高维固定效应 / ivreghdfe IV 估计 / 工具变量五命令（ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe）+ 全套检验（KP F / Hansen J / 弱工具稳健推断）/ fect 错时 DID 偏差修正。对应教材第 9–11 章（IV 为教材未覆盖扩展）。触发词：回归 / ANOVA / margins / reghdfe / ivregress / ivreg2 / xtivreg / ivreghdfe / 工具变量 / 内生性 / 弱工具 / 过度识别 / fect / 逻辑回归 / 固定效应。
+description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 / margins 边际效应 / reghdfe 高维固定效应 / ivreghdfe IV 估计 / 工具变量五命令（ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe）+ 全套检验（KP F / Hansen J / 弱工具稳健推断）+ IV 识别与论文解释（联合秩条件 / LATE / complier / 第一阶段-简约式-2SLS 结果三角 / Wald ratio）/ fect 错时 DID 偏差修正。对应教材第 9–11 章（IV 为教材未覆盖扩展）。触发词：回归 / ANOVA / margins / reghdfe / ivregress / ivreg2 / xtivreg / ivreghdfe / 工具变量 / 内生性 / 弱工具 / 过度识别 / LATE / complier / 简约式 / 识别假设 / fect / 逻辑回归 / 固定效应。
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
   触发即读本文，无需联网加载其他文件。reghdfe / ivreghdfe / ivreg2 / xtivreg2 / ranktest / weakivtest / avar / fect 需 ssc install；ivregress / xtivreg / margins / anova / regress 内置。
@@ -38,6 +38,7 @@ compatibility: >-
 | 2+ 层 FE / 多向聚类 | `reghdfe y x, absorb(fe1 fe2) vce(cluster cl1 cl2)`；先 `ftools, compile` |
 | 多层 FE + 2SLS | `ivreghdfe y x (endog = iv), absorb(fe1 fe2)`；报告第一阶段，但不要把本命令当成 IV 设计本身 |
 | IV 五命令怎么选 / 弱工具 / Hansen J / 内生性检验 | 命令选择读 [references/iv.md](references/iv.md)；检验体系读 [references/iv-testing.md](references/iv-testing.md) |
+| IV 识别假设 / LATE / complier / 简约式 / 第一阶段-2SLS 怎么写论文 | 读 [references/iv-identification.md](references/iv-identification.md)；命令选择仍读 iv.md，统计检验仍读 iv-testing.md |
 | 显著交互 / 二次项 | 禁止读主效应；`margins, dydx(*) at(...)` → `marginsplot` |
 
 `fect`（10.7，见 [references/fect.md](references/fect.md)）仅作「错时 TWFE 有偏」的指针，新分析不要从这里起步。
@@ -56,7 +57,8 @@ compatibility: >-
 | 10.7 `fect`（扩展，教材未覆盖） | [fect.md](references/fect.md) | 错时 DID 的 TWFE 偏差修正（IFE / matrix completion） |
 | 10.8 工具变量五命令：`ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe`（扩展，教材未覆盖） | [iv.md](references/iv.md) | 命令选择 + 语法 + 最小对照 + 必须避开的写法 |
 | 10.9 IV 检验体系：`KP F` / Hansen J / AR / CLR（扩展，教材未覆盖） | [iv-testing.md](references/iv-testing.md) | 第一阶段 / 不可识别 / 弱识别 + Stock-Yogo / 弱工具稳健推断 / 过度识别 / 子集外生 / 内生性 + esttab 出表模板 |
-| 10.6a 官方 `ivregress` 验证（内置，无需外部包） | — | verify-regression.do 已扩展覆盖 `ivregress 2sls ... first` + `estat firststage / endogenous / overid` |
+| 10.10 IV 识别与论文解释：`LATE`（扩展，教材未覆盖） | [iv-identification.md](references/iv-identification.md) | 联合识别 / relevance+independence+exclusion+monotonicity+SUTVA / complier / 第一阶段-简约式-2SLS 结果三角 + Wald ratio / OLS-IV 差异 / 论文主表与限制模板 |
+| 10.6a 官方 `ivregress` 验证（内置，无需外部包） | — | verify-regression.do 已扩展覆盖 `ivregress 2sls ... first` + `estat firststage / endogenous / overid` + ch10.10 IV 结果三角与 `assert` 数值断言 |
 
 ## 关键陷阱速查
 
@@ -110,7 +112,7 @@ compatibility: >-
 10. 内生变量的平方 / 交乘必须进括号
    - **触发**：写 `ivreg2 y (x1 = z1 z1_sq)` 把 `x1_sq` 当额外排除工具。但 `x1` 内生时 `x1_sq` 也是内生，写法只给 `x1` 配两把工具，`x1_sq` 被留在括号外当外生——识别失败。
    - **Fix**：内生变量的平方/交乘全部进括号左侧，并用对应工具（如 `z1_sq` / `c.z1#c.w`）当额外工具：`ivreg2 y x2 x3 (x1 x1_sq = z1 z1_sq)`。
-   - **验证**：每个内生变量（及其非线性变换）都有至少一把专属排除性工具；脚注里的「第一阶段 F」对每个内生变量都要拒绝（`estat firststage, all`）。
+   - **验证**：先用数量条件 `L >= K` 排除最粗的错配；再用 `estat firststage, all`（官方）或 `ivreg2 ..., ffirst`（社区）查联合秩 / 条件诊断——单个内生变量第一阶段显著不等于多个内生变量已被一一识别。识别与论文解释全过程见 [references/iv-identification.md](references/iv-identification.md)。
 
 11. 恰好识别时不要报 Hansen J / Sargan
    - **触发**：恰好识别（工具数 L = 内生数 K）后跑 `estat overid` 或在 `ivreg2` 脚注看 Hansen J——J 的自由度为 0，命令会输出 `equation exactly identified`，却没有意识到这意味着没有过度识别检验可做。

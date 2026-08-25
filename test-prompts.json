@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。每条 prompt 新增三个元字段：difficulty（easy/medium/hard）、gotchas（对应陷阱速查编号）、requires_package（前置 SSC 包列表；null=全部内置）。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "prompts": [
     {
       "id": "basics-01-reverse-coding",
@@ -126,6 +126,54 @@
       "verify_keywords": [
         "ivreg2",
         "weakivtest"
+      ]
+    },
+    {
+      "id": "regression-04-iv-identification-late",
+      "skill": "stata-regression",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["iv_late_not_ate", "overid_not_exclusion_proof"],
+      "scenario": "用户问题：二元资格工具 z 推动二元处理 d。要解释 IV 系数估计的是谁、如何论证识别假设。",
+      "expected_actions": [
+        "load stata-regression SKILL.md → references/iv-identification.md",
+        "区分 relevance、independence、exclusion、monotonicity 与 SUTVA；第一阶段/KP 只诊断相关性",
+        "在二元工具与二元处理下，把 IV 系数表述为 compliers 的 LATE，不写成全样本 ATE 或 ATT",
+        "Hansen J 不拒绝和 reduced form 显著都不是排除限制证明；外生性只能靠制度与设计论证",
+        "说明 LATE 只对当前样本与工具推动的 compliers 外推"
+      ],
+      "expected_outputs": [
+        "识别假设与各自证据来源",
+        "compliers 的 LATE 解释",
+        "排除限制与外推限制说明"
+      ],
+      "verify_keywords": [
+        "assert"
+      ]
+    },
+    {
+      "id": "regression-05-iv-results-triangle",
+      "skill": "stata-regression",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["iv_triangle_same_specification", "ols_iv_gap_not_only_endogeneity"],
+      "scenario": "用户问题：x1 内生，z1 为工具，x2 x3 为控制，稳健 VCE。论文里如何同时报告第一阶段、简约式与 2SLS，并解释 OLS-IV 差异？",
+      "expected_actions": [
+        "load stata-regression SKILL.md → references/iv-identification.md",
+        "用相同样本、x2 x3、固定效应、权重和 VCE 报第一阶段 z1→x1、简约式 z1→y、2SLS x1→y",
+        "恰好识别时核对 Wald ratio = reduced-form z1 coefficient / first-stage z1 coefficient",
+        "第一阶段独立成列，报告工具系数、偏 R2、排除性 F 或 KP F、控制/FE 与聚类层级",
+        "OLS-IV 差异可能来自内生性与处理效应异质性，不能只归因于 OLS 偏误"
+      ],
+      "expected_outputs": [
+        "第一阶段、简约式与 2SLS 结果三角",
+        "Wald ratio 一致性检查",
+        "不机械归因的 OLS-IV 差异说明"
+      ],
+      "verify_keywords": [
+        "assert",
+        "regress",
+        "ivregress"
       ]
     },
     {

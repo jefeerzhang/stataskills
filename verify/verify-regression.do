@@ -3,7 +3,7 @@ version 19.5
 * skill:    stata-regression
 * chapter:  ch9
 * data:     partyid.dta;gss2006_chapter9.dta;gss2006_chapter9_2way.dta;ops2004.dta;c10interaction.dta;nlsy97_chapter11.dta;environ.dta;sim:100x10
-* checks:   anova+regress+ivregress+ivreg2+ivreghdfe+weakivtest
+* checks:   anova+regress+ivregress+ivreg2+ivreghdfe+weakivtest+iv-identification
 * ============================
 * ---- ch9 ANOVA ----
 use partyid, clear
@@ -151,3 +151,32 @@ if `can_ivreg2_sim' {
         display "weakivtest_F_eff=" r(F_eff)
     }
 }
+
+* ---- ch10.10 官方 IV 结果三角（内置命令即可，不依赖社区包）----
+* 三类回归必须共享样本、外生控制与 vce；恰好识别时
+*   beta_2SLS = reduced-form z1 系数 / first-stage z1 系数
+* 这是结果链检查，不检验排除限制。
+clear
+set seed 20260825
+set obs 1000
+generate double z1 = rnormal()
+generate double x2 = rnormal()
+generate double x3 = rnormal()
+generate double u = rnormal()
+generate double x1 = 0.8*z1 + 0.3*x2 + 0.4*u + rnormal()
+generate double y = 1.2*x1 + 0.4*x2 - 0.1*x3 + u + rnormal()
+
+regress x1 z1 x2 x3, vce(robust)
+local triangle_n = e(N)
+scalar triangle_first_z1 = _b[z1]
+
+regress y z1 x2 x3, vce(robust)
+assert e(N) == `triangle_n'
+scalar triangle_reduced_z1 = _b[z1]
+
+ivregress 2sls y x2 x3 (x1 = z1), vce(robust) first
+estat firststage
+assert e(N) == `triangle_n'
+scalar triangle_iv_x1 = _b[x1]
+assert abs(triangle_reduced_z1 / triangle_first_z1 - triangle_iv_x1) < 1e-8
+display "iv_triangle_wald=" triangle_reduced_z1 / triangle_first_z1

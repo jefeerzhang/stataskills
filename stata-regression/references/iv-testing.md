@@ -7,7 +7,7 @@ description: IV 一整套检验体系：第一阶段、不可识别（KP LM）�
 
 > **加载时机**：[iv.md](iv.md) 已读完，命令选定后，需要读检验结果 / 写论文表注 / 处理弱工具时加载本文件。
 >
-> **边界约定**：本文件只讲「检验 + 出表 + 论文写法」。五命令语法见 [iv.md](iv.md)；`ivreghdfe` 安装与版本 bug 见 [ivreghdfe.md](ivreghdfe.md)。四件套陷阱统一在主 `SKILL.md`，不重复。
+> **边界约定**：本文件只讲「检验 + 出表 + 论文写法」。五命令语法见 [iv.md](iv.md)；`ivreghdfe` 安装与版本 bug 见 [ivreghdfe.md](ivreghdfe.md)。识别假设、LATE、结果三角与论文解释见 [iv-identification.md](iv-identification.md)。四件套陷阱统一在主 `SKILL.md`，不重复。
 
 ---
 

@@ -7,7 +7,7 @@ description: 工具变量五命令全景：ivregress / ivreg2 / xtivreg / xtivre
 
 > **加载时机**：主 `SKILL.md` 强制路径已读完，遇到「IV / 工具变量 / 内生性 / 弱工具」时加载本文件。
 >
-> **边界约定**：本文件只讲「五命令怎么选 + 语法」。检验体系（第一阶段 F / KP F / Hansen J / 内生性 / 弱工具稳健推断）见 [iv-testing.md](iv-testing.md)。四件套陷阱统一收录在主 `SKILL.md`「关键陷阱速查」，不重复。
+> **边界约定**：本文件只讲「五命令怎么选 + 语法」。检验体系（第一阶段 F / KP F / Hansen J / 内生性 / 弱工具稳健推断）见 [iv-testing.md](iv-testing.md)。识别假设、LATE、结果三角与论文解释见 [iv-identification.md](iv-identification.md)。四件套陷阱统一收录在主 `SKILL.md`「关键陷阱速查」，不重复。
 
 ---
 

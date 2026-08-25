@@ -8,6 +8,7 @@ versioned by Stata compatibility).
 ## [Unreleased]
 
 ### Added
+- feat(回归+IV): 增加识别与论文解释路径 — 新增 `references/iv-identification.md`（联合识别 / relevance+independence+exclusion+monotonicity+SUTVA / LATE/complier / 第一阶段-简约式-2SLS 结果三角 + Wald ratio / OLS-IV 差异 / 论文主表与限制模板）；SKILL.md description 增 LATE/complier/简约式/识别假设触发词 + 强制路径表 +1 行 + references 表新增 10.10 行 + 陷阱 10「验证」段改写为联合秩条件 + 引用识别文档；`references/iv.md` / `iv-testing.md` 边界约定加 pointer；`test-prompts.json` schema 2.2.0→2.3.0 新增 2 条 IV prompt（regression-04/05）需 `verify-regression.do` 真实 `assert` 执行证据；verify-regression.do ch10.10 新增官方结果三角（ivregress/egress 三类回归共享样本 + vce + Wald-ratio 数值断言），VERIFY CONTRACT checks: 增 `iv-identification`；README prompt 计数 14→16。
 - feat(回归+IV): 工具变量五命令 + 全套检验体系（教材未覆盖扩展）— 新增 `references/iv.md`（268 行）五命令全景 + `references/iv-testing.md`（412 行）检验体系；`stata-regression/SKILL.md` 新增 6 处改动（description 触发词 / compatibility 包列表 / 强制路径 +1 行 / 路由表 +3 行 10.8/10.9/10.6a / 陷阱四件套 +4 条 9-12 号 / 黑名单 +2 条）；`test-prompts.json` schema 2.1.0→2.2.0 新增 2 条 IV prompt（regression-02/03）；README prompt 计数 12→14 — `da91f8f`。
 - fix(回归+IV): 修复恰好识别时 `estat overid` r(498) 导致 verify-regression 失败 — verify-regression.do 恰好识别段改 `capture noisily estat overid` + 另起过度识别段；SKILL.md r(498) 条目补充第二种触发；test-prompts.json regression-03 场景改为恰好识别 — `084fcfd`。
 
