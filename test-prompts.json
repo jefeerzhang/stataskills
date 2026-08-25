@@ -1,11 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
-  "version": "2.0.0",
+  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。每条 prompt 新增三个元字段：difficulty（easy/medium/hard）、gotchas（对应陷阱速查编号）、requires_package（前置 SSC 包列表；null=全部内置）。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
+  "version": "2.1.0",
   "prompts": [
     {
       "id": "basics-01-reverse-coding",
       "skill": "stata-basics",
+      "difficulty": "medium",
+      "requires_package": null,
+      "gotchas": ["missing_values", "recode_preserve_missing_code"],
       "scenario": "用户问题：用 Stata 把 nlsy97_chapter7.dta 里的抑郁量表反向编码，缺失码 .a/.b 保留。",
       "expected_actions": [
         "load stata-basics SKILL.md",
@@ -27,6 +30,9 @@
     {
       "id": "descriptives-01-crosstab-effect-size",
       "skill": "stata-descriptives",
+      "difficulty": "easy",
+      "requires_package": null,
+      "gotchas": ["pvalue_display_p_lt_0.001"],
       "scenario": "用户问题：auto.dta 里 rep78 × foreign 的卡方检验报效应量。",
       "expected_actions": [
         "load stata-descriptives SKILL.md",
@@ -46,6 +52,9 @@
     {
       "id": "regression-01-ancova-with-covariate",
       "skill": "stata-regression",
+      "difficulty": "medium",
+      "requires_package": null,
+      "gotchas": ["factor_variable_notation_c_dot", "ancova_do_not_interpret_covariate_main_effect"],
       "scenario": "用户问题：跑 price ~ weight + foreign 的 ANCOVA，连续协变量 weight 别按分类处理。",
       "expected_actions": [
         "load stata-regression SKILL.md",
@@ -66,6 +75,9 @@
     {
       "id": "advanced-01-factor-not-just-alpha",
       "skill": "stata-advanced",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["alpha_not_for_item_deletion"],
       "scenario": "用户问题：attitude.dta 跑因子分析，要求 PCF 与 PF 对比，报告累积方差贡献，不只看 α。",
       "expected_actions": [
         "load stata-advanced SKILL.md",
@@ -86,6 +98,9 @@
     {
       "id": "coefplot-01-multiple-models-forest",
       "skill": "stata-coefplot",
+      "difficulty": "medium",
+      "requires_package": ["coefplot"],
+      "gotchas": ["eform_xline_one_not_zero", "or_reference_line"],
       "scenario": "用户问题：跑两个 logit 模型（auto.dta，foreign ~ mpg + weight vs foreign ~ mpg + weight + price），画森林图对比系数，OR 形式，参考线 1。",
       "expected_actions": [
         "load stata-coefplot SKILL.md",
@@ -105,6 +120,9 @@
     {
       "id": "did-01-staggered-twowfe-bias",
       "skill": "stata-did",
+      "difficulty": "hard",
+      "requires_package": ["hdidregress"],
+      "gotchas": ["twfe_bias_under_staggered_timing", "bdecomp_negative_weights"],
       "scenario": "用户问题：错时 DID 数据（两个 cohort：第 5 期、第 8 期处理），估计 ATET，并诊断 TWFE 偏误。",
       "expected_actions": [
         "load stata-did SKILL.md",
@@ -127,6 +145,9 @@
     {
       "id": "did-02-csdid-staggered",
       "skill": "stata-did-community",
+      "difficulty": "hard",
+      "requires_package": ["csdid", "drdid"],
+      "gotchas": ["notyet_control_group", "doubly_robust_method"],
       "scenario": "用户问题：错时 DID 数据，用 csdid 估计 ATET，要求 notyet 控制组 + DR 方法 + 事件研究图。",
       "expected_actions": [
         "load stata-did-community SKILL.md",
@@ -149,6 +170,9 @@
     {
       "id": "did-03-jwdid-etwfe",
       "skill": "stata-did-community",
+      "difficulty": "hard",
+      "requires_package": ["hdfe", "jwdid"],
+      "gotchas": ["poisson_link_for_counts", "pretrend_test_interpretation"],
       "scenario": "用户问题：错时 DID 数据，用 jwdid 估计 ETWFE，要求 poisson 模型 + 事件研究图 + 平行趋势检验。",
       "expected_actions": [
         "load stata-did-community SKILL.md",
@@ -173,6 +197,9 @@
     {
       "id": "did-04-did-imputation",
       "skill": "stata-did-community",
+      "difficulty": "hard",
+      "requires_package": ["reghdfe", "did_imputation"],
+      "gotchas": ["Ei_dot_missing_not_zero", "leaveout_variance_correction"],
       "scenario": "用户问题：错时 DID 数据，用 did_imputation 估计插补法 ATT，要求 leaveout 方差修正 + 事件研究 + 平行趋势检验。",
       "expected_actions": [
         "load stata-did-community SKILL.md",
@@ -195,6 +222,9 @@
     {
       "id": "cross-01-clean-then-descriptives",
       "skill": "stata-basics + stata-descriptives",
+      "difficulty": "medium",
+      "requires_package": null,
+      "gotchas": ["cross_skill_routing_order", "alpha_misuse_for_item_deletion"],
       "scenario": "用户问题：把 firstsurvey.dta 清洗（reverse coding、构建量表），然后跑量表的描述统计 + 信度。",
       "expected_actions": [
         "先加载 stata-basics：mvdecode + recode 反向编码 → rowmean 构建量表 → save 清洗数据",
@@ -213,6 +243,9 @@
     {
       "id": "cross-02-regression-then-coefplot",
       "skill": "stata-regression + stata-coefplot",
+      "difficulty": "medium",
+      "requires_package": ["coefplot"],
+      "gotchas": ["bycoefs_integer_headings_not_names", "byopts_xrescale_for_scale_difference"],
       "scenario": "用户问题：跑 3 个嵌套回归（auto.dta，price ~ mpg；+ weight；+ length + turn），画森林图对比每步新增系数的显著性变化。",
       "expected_actions": [
         "先加载 stata-regression：quietly regress ... ; estimates store m1/m2/m3",
@@ -232,6 +265,9 @@
     {
       "id": "rdd-01-sharp-tutoring",
       "skill": "stata-rdd",
+      "difficulty": "hard",
+      "requires_package": ["rdrobust", "rdplot", "rddensity"],
+      "gotchas": ["tau_cl_robust_not_tau", "placebo_cutoff_no_effect", "manipulation_density_test"],
       "scenario": "用户问题：学校对入学成绩 ≤70 的学生自动提供辅导，想估计辅导对期末成绩的因果效应（sharp 断点回归）。",
       "expected_actions": [
         "load stata-rdd SKILL.md（分数线 → 1 验设计 2 看图 3 主估计 4 密度检验 5 带宽敏感 6 placebo）",
