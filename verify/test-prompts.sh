@@ -269,7 +269,7 @@ run_prompts_mode() {
 run_llm_mode() {
   if ! command -v claude >/dev/null 2>&1; then
     echo "SKIP  --llm 模式：claude CLI 不存在；需要安装 Claude CLI 并配置 ANTHROPIC_API_KEY"
-    echo "      安装：npm install -g @anthropic-ai/claude-cli"
+    echo "      安装：npm install -g @anthropic-ai/claude-code"
     exit 0
   fi
 
