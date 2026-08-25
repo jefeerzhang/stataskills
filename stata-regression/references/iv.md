@@ -47,6 +47,7 @@ ssc install reghdfe, replace
 ssc install ivreghdfe, replace
 ssc install estout, replace        // 出表
 ssc install weakivtest, replace    // 可选：Olea-Pflueger effective F
+ssc install avar, replace          // weakivtest 的必需依赖
 ssc install weakiv, replace        // 可选：AR / CLR 弱工具稳健推断
 ssc install xtoverid, replace      // 可选：xtivreg 后的过度识别
 ```

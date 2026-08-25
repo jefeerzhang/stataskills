@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ============================================================
-# Agent 行为回归测试 harness：把 test-prompts.json 的 12 条 prompt
+# Agent 行为回归测试 harness：把 test-prompts.json 的 prompt
 # 从 spec 升级为可执行测试。
 #
 # 三模式（仿 verify/test-harness.sh 套路 + check-claims.sh 的 docs 层）：
 #   默认（docs）  : 文档层断言——test-prompts.json 合法 + expected_outputs 关键词
 #                   出现在 README/REPORT/对应 SKILL.md；CI 友好（无 Stata 依赖）
 #   --prompts     : Stata 子集层——跑现有 verify-<skill>.do（run-verify.sh harness）
-#                   + grep log 关键词断言 expected_actions 都执行；需要本机 Stata
+#                   + 断言 verify_keywords 出现在实际命令行；需要本机 Stata
 #   --llm         : Claude CLI 层——调用 `claude -p <prompt>` 跑 prompt，断言期望
 #                   输出；需要 claude CLI + ANTHROPIC_API_KEY；不存在时 SKIP 不报错
 #
@@ -173,10 +173,46 @@ run_docs_mode() {
 # ============================================================
 
 # 模式 B 的数据全部来自 test-prompts.json（单一来源，不再用平行数组）：
-#   - verify_keywords → grep 关键词（断言 verify log 执行了对应命令）
+#   - verify_keywords → 匹配 Stata log 中实际执行的命令行；注释与 which 探针不算覆盖
 #   - skill 字段取首个、去 "stata-" 前缀 → run-verify.sh 的目标名
+log_has_executed_command() {
+  local keyword="$1" log_file="$2"
+  awk -v keyword="$keyword" '
+    $1 == "." {
+      i = 2
+      while ($i ~ /^(capture|cap|quietly|quiet|qui|noisily|noi)$/) i++
+      if ($i == "*" || $i == "which") next
+      for (j = i; j <= NF; j++) {
+        token = $j
+        gsub(/^[,(]+|[,)]+$/, "", token)
+        if (token == keyword) found = 1
+      }
+    }
+    END { exit(found ? 0 : 1) }
+  ' "$log_file"
+}
+
+self_test_log_matcher() {
+  local probe
+  probe="$(mktemp)"
+  printf '%s\n' '. * ivreg2 只出现在注释' '. capture which ivreg2' > "$probe"
+  if log_has_executed_command ivreg2 "$probe"; then
+    rm -f "$probe"
+    echo "FAIL  log matcher 把注释或 which 探针误判为执行证据"
+    return 1
+  fi
+  printf '%s\n' '. ivreg2 y (x = z), robust' >> "$probe"
+  if ! log_has_executed_command ivreg2 "$probe"; then
+    rm -f "$probe"
+    echo "FAIL  log matcher 未识别真实执行命令"
+    return 1
+  fi
+  rm -f "$probe"
+}
+
 run_prompts_mode() {
   local pass=0 fail=0
+  self_test_log_matcher || return 1
 
   local pid skill keywords first_skill verify_log i=0
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
@@ -204,10 +240,10 @@ run_prompts_mode() {
       continue
     fi
 
-    # grep log 关键词
+    # 只认真实执行的命令；注释、cap which <package> 和输出文本不能充当覆盖。
     local kw missing_kw=""
     for kw in $keywords; do
-      if ! grep -qE "\\b${kw}\\b" "$verify_log"; then
+      if ! log_has_executed_command "$kw" "$verify_log"; then
         missing_kw="$missing_kw $kw"
       fi
     done

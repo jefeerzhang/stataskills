@@ -151,7 +151,7 @@ weakivtest
 * 不要沿用 Stock-Yogo 的 16.38 去卡 F_eff
 ```
 
-`weakivtest` 接在 `ivreg2` / `ivreghdfe` / `xtivreg2` 后面。F 过不了临界值：主结果改 LIML 或 `fuller(1)`，并报下一节的弱工具稳健推断，不要只把 2SLS 的 t 值写进正文。
+`weakivtest` 接在 `ivreg2` / `ivreghdfe` / `xtivreg2` 后面，并要求先安装 `avar`（`ssc install avar`）。F 过不了临界值：主结果改 LIML 或 `fuller(1)`，并报下一节的弱工具稳健推断，不要只把 2SLS 的 t 值写进正文。
 
 ### 4. 弱工具稳健推断
 

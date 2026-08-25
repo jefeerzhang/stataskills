@@ -30,8 +30,8 @@ Notes:
 . * skill:    stata-regression
 . * chapter:  ch9
 . * data:     partyid.dta;gss2006_chapter9.dta;gss2006_chapter9_2way.dta;ops200
-> 4.dta;c10interaction.dta;nlsy97_chapter11.dta;environ.dta
-. * checks:   anova+regress+ivregress+ivreghdfe
+> 4.dta;c10interaction.dta;nlsy97_chapter11.dta;environ.dta;sim:100x10
+. * checks:   anova+regress+ivregress+ivreg2+ivreghdfe+weakivtest
 . * ============================
 . * ---- ch9 ANOVA ----
 . use partyid, clear
@@ -546,7 +546,16 @@ Absorbed degrees of freedom:
 .     display "__COMMUNITY_PACKAGE_MISSING__ivreg2__"
 . }
 
-. local can_ivreghdfe = (`has_ivreghdfe' & `can_reghdfe' & `has_ivreg2')
+. cap which ranktest
+
+. local has_ranktest = (_rc == 0)
+
+. if !`has_ranktest' {
+.     display "__COMMUNITY_PACKAGE_MISSING__ranktest__"
+. }
+
+. local can_ivreghdfe = (`has_ivreghdfe' & `can_reghdfe' & `has_ivreg2' & `has_
+> ranktest')
 
 . if `can_ivreghdfe' {
 .     use gss2006_chapter9_2way, clear
@@ -762,6 +771,321 @@ Exogenous:  sex age marital
   Test of overidentifying restrictions:
 
   Score chi2(1)          =  57.8535  (p = 0.0000)
+
+. 
+. * ---- ch10.8-10.9 外部 IV 栈：非线性内生项 + weakivtest ----
+. * weakivtest help：只支持一个内生变量，并要求 avar；先用双内生模型验证
+. * x1_sq/z1_sq 括号语法，再用单内生模型验证 effective F。
+. cap which weakivtest
+
+. local has_weakivtest = (_rc == 0)
+
+. if !`has_weakivtest' {
+.     display "__COMMUNITY_PACKAGE_MISSING__weakivtest__"
+. }
+
+. cap which avar
+
+. local has_avar = (_rc == 0)
+
+. if !`has_avar' {
+.     display "__COMMUNITY_PACKAGE_MISSING__avar__"
+. }
+
+. local can_ivreg2_sim = (`has_ivreg2' & `has_ranktest')
+
+. if `can_ivreg2_sim' {
+.     clear
+.     set seed 20260825
+.     set obs 1000
+Number of observations (_N) was 0, now 1,000.
+.     generate long id = ceil(_n / 10)
+.     bysort id: generate int year = 2000 + _n - 1
+.     generate double z1 = rnormal()
+.     generate double z1_sq = z1^2
+.     generate double x2 = rnormal()
+.     generate double x3 = rnormal()
+.     generate double u = rnormal()
+.     generate double x1 = 0.8*z1 + 0.3*x2 + 0.4*u + rnormal()
+.     generate double x1_sq = x1^2
+.     generate double y = 1.2*x1 - 0.2*x1_sq + 0.4*x2 - 0.1*x3 + u + rnormal()
+.     xtset id year
+
+Panel variable: id (strongly balanced)
+ Time variable: year, 2000 to 2009
+         Delta: 1 unit
+. 
+.     ivreg2 y x2 x3 i.year (x1 x1_sq = z1 z1_sq), ///
+>         cluster(id) first ffirst endog(x1)
+
+First-stage regressions
+-----------------------
+
+
+First-stage regression of x1:
+
+Statistics robust to heteroskedasticity and clustering on id
+Number of obs =                   1000
+Number of clusters (id) =          100
+------------------------------------------------------------------------------
+             |               Robust
+          x1 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          z1 |    .855053   .0327554    26.10   0.000     .7907748    .9193312
+       z1_sq |   .0494372    .025337     1.95   0.051    -.0002835    .0991579
+          x2 |   .3018846   .0288776    10.45   0.000     .2452159    .3585532
+          x3 |  -.0487384   .0316055    -1.54   0.123    -.1107601    .0132834
+             |
+        year |
+       2001  |  -.0985155   .1455212    -0.68   0.499    -.3840823    .1870513
+       2002  |  -.2405521   .1265268    -1.90   0.058    -.4888448    .0077406
+       2003  |   .1411366   .1454782     0.97   0.332    -.1443459    .4266191
+       2004  |    .008114   .1585005     0.05   0.959    -.3029231    .3191512
+       2005  |  -.0040947   .1578926    -0.03   0.979    -.3139389    .3057495
+       2006  |   .2575499   .1387287     1.86   0.064    -.0146874    .5297873
+       2007  |  -.0156835   .1546004    -0.10   0.919    -.3190672    .2877002
+       2008  |  -.0930704   .1480707    -0.63   0.530    -.3836403    .1974994
+       2009  |   .2193925   .1326722     1.65   0.099    -.0409599    .4797448
+             |
+       _cons |  -.1045336   .1087859    -0.96   0.337    -.3180121     .108945
+------------------------------------------------------------------------------
+F test of excluded instruments:
+  F(  2,    99) =   349.36
+  Prob > F      =   0.0000
+Sanderson-Windmeijer multivariate F test of excluded instruments:
+  F(  1,    99) =   794.83
+  Prob > F      =   0.0000
+
+
+First-stage regression of x1_sq:
+
+Statistics robust to heteroskedasticity and clustering on id
+Number of obs =                   1000
+Number of clusters (id) =          100
+------------------------------------------------------------------------------
+             |               Robust
+       x1_sq | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          z1 |    .134649   .1439986     0.94   0.350    -.1479299    .4172278
+       z1_sq |   .7184045   .0999104     7.19   0.000      .522343     .914466
+          x2 |  -.1063952   .0737559    -1.44   0.149    -.2511318    .0383414
+          x3 |   .0401472   .0891004     0.45   0.652    -.1347009    .2149954
+             |
+        year |
+       2001  |  -.3559176    .341768    -1.04   0.298    -1.026594    .3147586
+       2002  |   .3147943   .3228449     0.98   0.330    -.3187478    .9483364
+       2003  |   .2062808   .3295205     0.63   0.531    -.4403612    .8529229
+       2004  |   .5799181   .4208906     1.38   0.169    -.2460263    1.405862
+       2005  |   .0491356   .3565434     0.14   0.890    -.6505355    .7488068
+       2006  |     .20061   .3458451     0.58   0.562    -.4780671     .879287
+       2007  |   -.115253   .2838017    -0.41   0.685    -.6721777    .4416717
+       2008  |  -.0541753   .3132362    -0.17   0.863    -.6688615    .5605109
+       2009  |   .0328296    .305824     0.11   0.915    -.5673111    .6329703
+             |
+       _cons |   1.093674   .2532218     4.32   0.000     .5967588     1.59059
+------------------------------------------------------------------------------
+F test of excluded instruments:
+  F(  2,    99) =    26.78
+  Prob > F      =   0.0000
+Sanderson-Windmeijer multivariate F test of excluded instruments:
+  F(  1,    99) =    49.26
+  Prob > F      =   0.0000
+
+
+
+Summary results for first-stage regressions
+-------------------------------------------
+
+                                           (Underid)            (Weak id)
+Variable     | F(  2,    99)  P-val | SW Chi-sq(  1) P-val | SW F(  1,    99)
+x1           |     349.36    0.0000 |      813.45   0.0000 |      794.83
+x1_sq        |      26.78    0.0000 |       50.42   0.0000 |       49.26
+
+NB: first-stage test statistics cluster-robust
+
+Stock-Yogo weak ID F test critical values for single endogenous regressor:
+                                   10% maximal IV size             19.93
+                                   15% maximal IV size             11.59
+                                   20% maximal IV size              8.75
+                                   25% maximal IV size              7.25
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for i.i.d. errors only.
+
+Underidentification test
+Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+Kleibergen-Paap rk LM statistic          Chi-sq(1)=26.93    P-val=0.0000
+
+Weak identification test
+Ho: equation is weakly identified
+Cragg-Donald Wald F statistic                                      95.30
+Kleibergen-Paap Wald rk F statistic                                23.20
+
+Stock-Yogo weak ID test critical values for K1=2 and L1=2:
+                                   10% maximal IV size              7.03
+                                   15% maximal IV size              4.58
+                                   20% maximal IV size              3.95
+                                   25% maximal IV size              3.63
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+
+Weak-instrument-robust inference
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and orthogonality conditions are valid
+Anderson-Rubin Wald test           F(2,99)=      129.53     P-val=0.0000
+Anderson-Rubin Wald test           Chi-sq(2)=    265.12     P-val=0.0000
+Stock-Wright LM S statistic        Chi-sq(2)=     66.42     P-val=0.0000
+
+NB: Underidentification, weak identification and weak-identification-robust
+    test statistics cluster-robust
+
+Number of clusters             N_clust  =        100
+Number of observations               N  =       1000
+Number of regressors                 K  =         14
+Number of endogenous regressors      K1 =          2
+Number of instruments                L  =         14
+Number of excluded instruments       L1 =          2
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on id
+
+Number of clusters (id) =          100                Number of obs =     1000
+                                                      F( 13,    99) =    85.01
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  6127.740829                Centered R2   =   0.7257
+Total (uncentered) SS   =  6281.737306                Uncentered R2 =   0.7325
+Residual SS             =  1680.634611                Root MSE      =    1.296
+
+------------------------------------------------------------------------------
+             |               Robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          x1 |   1.326533   .0539015    24.61   0.000     1.220888    1.432178
+       x1_sq |  -.2053108    .032993    -6.22   0.000    -.2699759   -.1406456
+          x2 |   .3154551   .0420579     7.50   0.000     .2330232     .397887
+          x3 |  -.0960942   .0453899    -2.12   0.034    -.1850568   -.0071315
+             |
+        year |
+       2001  |   .0471436   .1907732     0.25   0.805    -.3267649    .4210522
+       2002  |    .133987   .1844899     0.73   0.468    -.2276066    .4955806
+       2003  |  -.0910747   .1786957    -0.51   0.610    -.4413119    .2591625
+       2004  |  -.1404194   .1925977    -0.73   0.466     -.517904    .2370652
+       2005  |  -.1000834    .197413    -0.51   0.612    -.4870059     .286839
+       2006  |   .0743329   .1854689     0.40   0.689    -.2891795    .4378452
+       2007  |   -.065946   .1907732    -0.35   0.730    -.4398547    .3079626
+       2008  |   .1125252   .1812217     0.62   0.535    -.2426628    .4677133
+       2009  |   .0117415    .175456     0.07   0.947    -.3321459    .3556289
+             |
+       _cons |   .0299625   .1378982     0.22   0.828    -.2403131    .3002381
+------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):             26.933
+                                                   Chi-sq(1) P-val =    0.0000
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):               95.297
+                         (Kleibergen-Paap rk Wald F statistic):         23.196
+Stock-Yogo weak ID test critical values: 10% maximal IV size              7.03
+                                         15% maximal IV size              4.58
+                                         20% maximal IV size              3.95
+                                         25% maximal IV size              3.63
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+-endog- option:
+Endogeneity test of endogenous regressors:                               5.294
+                                                   Chi-sq(1) P-val =    0.0214
+Regressors tested:    x1
+------------------------------------------------------------------------------
+Instrumented:         x1 x1_sq
+Included instruments: x2 x3 2001.year 2002.year 2003.year 2004.year 2005.year
+                      2006.year 2007.year 2008.year 2009.year
+Excluded instruments: z1 z1_sq
+------------------------------------------------------------------------------
+. 
+.     local can_weakivtest = (`has_weakivtest' & `has_avar')
+.     if `can_weakivtest' {
+.         ivreg2 y x2 x3 i.year (x1 = z1), cluster(id)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity and clustering on id
+
+Number of clusters (id) =          100                Number of obs =     1000
+                                                      F( 12,    99) =    70.92
+                                                      Prob > F      =   0.0000
+Total (centered) SS     =  6127.740829                Centered R2   =   0.6773
+Total (uncentered) SS   =  6281.737306                Uncentered R2 =   0.6852
+Residual SS             =  1977.345238                Root MSE      =    1.406
+
+------------------------------------------------------------------------------
+             |               Robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          x1 |   1.299927   .0647579    20.07   0.000     1.173003     1.42685
+          x2 |   .3504829   .0448713     7.81   0.000     .2625367    .4384291
+          x3 |  -.1031582   .0499111    -2.07   0.039    -.2009822   -.0053343
+             |
+        year |
+       2001  |   .0951494   .1961455     0.49   0.628    -.2892887    .4795874
+       2002  |   .0898474   .2037719     0.44   0.659    -.3095382     .489233
+       2003  |  -.1271913   .1981999    -0.64   0.521    -.5156559    .2612733
+       2004  |  -.2658708    .209172    -1.27   0.204    -.6758403    .1440987
+       2005  |  -.1269564   .2117745    -0.60   0.549    -.5420268     .288114
+       2006  |   .0384674   .1924844     0.20   0.842    -.3387951    .4157299
+       2007  |  -.0578431   .1944856    -0.30   0.766    -.4390278    .3233416
+       2008  |   .1164417   .2016418     0.58   0.564     -.278769    .5116524
+       2009  |  -.0086051   .1943303    -0.04   0.965    -.3894854    .3722752
+             |
+       _cons |  -.3488903   .1350125    -2.58   0.010    -.6135099   -.0842708
+------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):             72.372
+                                                   Chi-sq(1) P-val =    0.0000
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):              708.187
+                         (Kleibergen-Paap rk Wald F statistic):        672.145
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         x1
+Included instruments: x2 x3 2001.year 2002.year 2003.year 2004.year 2005.year
+                      2006.year 2007.year 2008.year 2009.year
+Excluded instruments: z1
+------------------------------------------------------------------------------
+.         weakivtest
+(obs=1,000)
+
+Montiel-Pflueger robust weak instrument test
+--------------------------------------------
+Effective F statistic:      672.145
+Confidence level alpha:          5%
+--------------------------------------------
+
+--------------------------------------------
+Critical Values             TSLS      LIML
+--------------------------------------------
+% of Worst Case Bias
+tau=5%                    37.418    37.418
+tau=10%                   23.109    23.109
+tau=20%                   15.062    15.062
+tau=30%                   12.039    12.039
+--------------------------------------------
+.         display "weakivtest_F_eff=" r(F_eff)
+weakivtest_F_eff=672.14541
+.     }
+. }
 
 . 
 end of do-file

@@ -11,6 +11,9 @@ versioned by Stata compatibility).
 - feat(回归+IV): 工具变量五命令 + 全套检验体系（教材未覆盖扩展）— 新增 `references/iv.md`（268 行）五命令全景 + `references/iv-testing.md`（412 行）检验体系；`stata-regression/SKILL.md` 新增 6 处改动（description 触发词 / compatibility 包列表 / 强制路径 +1 行 / 路由表 +3 行 10.8/10.9/10.6a / 陷阱四件套 +4 条 9-12 号 / 黑名单 +2 条）；`test-prompts.json` schema 2.1.0→2.2.0 新增 2 条 IV prompt（regression-02/03）；README prompt 计数 12→14 — `da91f8f`。
 - fix(回归+IV): 修复恰好识别时 `estat overid` r(498) 导致 verify-regression 失败 — verify-regression.do 恰好识别段改 `capture noisily estat overid` + 另起过度识别段；SKILL.md r(498) 条目补充第二种触发；test-prompts.json regression-03 场景改为恰好识别 — `084fcfd`。
 
+### Fixed
+- fix(回归+IV): 让 `test-prompts.sh --prompts` 只以真实执行的 Stata 命令作为覆盖证据；新增 `ivreg2` 非线性内生项与 `weakivtest` 实跑段，补齐 `ranktest` / `avar` 等依赖声明，并修正 KP LM 与 KP Wald F 的结果表述。
+
 ### Changed
 - fix(验证): `check-claims.sh` 第 13 条注释从旧单行格式更新为 6 行 VERIFY CONTRACT 键值块 — `efa539a`。
 - fix(验证): `stata-regression/SKILL.md` compatibility 包清单补 `weakivtest` — `efa539a`。

@@ -76,7 +76,7 @@
       "id": "regression-02-iv-command-selection",
       "skill": "stata-regression",
       "difficulty": "medium",
-      "requires_package": ["ivreg2", "ivreghdfe"],
+      "requires_package": ["ivreg2", "ranktest", "ftools", "require", "reghdfe", "ivreghdfe"],
       "gotchas": ["two_stage_manual_predict_wrong_se", "endog_sq_term_must_be_in_parens"],
       "scenario": "用户问题：公司面板（id × year）想跑 x1 内生、x2 x3 外生控制、z1 排除性工具的 2SLS；同时报告第一阶段 F、KP rk LM、Hansen J、内生性检验；不要手搓两阶段；x1_sq 也要当内生进括号。",
       "expected_actions": [
@@ -102,9 +102,9 @@
       "id": "regression-03-iv-diagnostics-reading",
       "skill": "stata-regression",
       "difficulty": "hard",
-      "requires_package": ["ivreg2", "weakivtest"],
+      "requires_package": ["ivreg2", "ranktest", "weakivtest", "avar"],
       "gotchas": ["f_gt_10_not_universal_safe_line", "cluster_vce_use_kp_f_not_cd_f"],
-      "scenario": "用户问题：ivreg2 跑完报「KP rk Wald F = 3.2, p = 0.04；endog p = 0.02」。1 内生 1 工具聚类到 id——恰好识别，根本没 Hansen J。下一步怎么写？",
+      "scenario": "用户问题：ivreg2 跑完报「KP rk LM p = 0.04；KP rk Wald F = 3.2；endog p = 0.02」。1 内生 1 工具聚类到 id——恰好识别，根本没 Hansen J。下一步怎么写？",
       "expected_actions": [
         "load stata-regression SKILL.md → references/iv-testing.md",
         "认清恰好识别（工具数 = 内生数）：不要报 Hansen J / Sargan，外生性只能靠制度故事",

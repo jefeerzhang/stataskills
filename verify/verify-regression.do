@@ -2,8 +2,8 @@ version 19.5
 * ==== VERIFY CONTRACT ====
 * skill:    stata-regression
 * chapter:  ch9
-* data:     partyid.dta;gss2006_chapter9.dta;gss2006_chapter9_2way.dta;ops2004.dta;c10interaction.dta;nlsy97_chapter11.dta;environ.dta
-* checks:   anova+regress+ivregress+ivreghdfe
+* data:     partyid.dta;gss2006_chapter9.dta;gss2006_chapter9_2way.dta;ops2004.dta;c10interaction.dta;nlsy97_chapter11.dta;environ.dta;sim:100x10
+* checks:   anova+regress+ivregress+ivreg2+ivreghdfe+weakivtest
 * ============================
 * ---- ch9 ANOVA ----
 use partyid, clear
@@ -77,7 +77,12 @@ local has_ivreg2 = (_rc == 0)
 if !`has_ivreg2' {
     display "__COMMUNITY_PACKAGE_MISSING__ivreg2__"
 }
-local can_ivreghdfe = (`has_ivreghdfe' & `can_reghdfe' & `has_ivreg2')
+cap which ranktest
+local has_ranktest = (_rc == 0)
+if !`has_ranktest' {
+    display "__COMMUNITY_PACKAGE_MISSING__ranktest__"
+}
+local can_ivreghdfe = (`has_ivreghdfe' & `can_reghdfe' & `has_ivreg2' & `has_ranktest')
 if `can_ivreghdfe' {
     use gss2006_chapter9_2way, clear
     * IV + 单层 FE：prestg80 当内生变量（prestige 可能有反向因果），
@@ -105,3 +110,44 @@ display "overid_exact_rc=" _rc
 
 ivregress 2sls tvhours sex (prestg80 = age marital), vce(robust)
 estat overid
+
+* ---- ch10.8-10.9 外部 IV 栈：非线性内生项 + weakivtest ----
+* weakivtest help：只支持一个内生变量，并要求 avar；先用双内生模型验证
+* x1_sq/z1_sq 括号语法，再用单内生模型验证 effective F。
+cap which weakivtest
+local has_weakivtest = (_rc == 0)
+if !`has_weakivtest' {
+    display "__COMMUNITY_PACKAGE_MISSING__weakivtest__"
+}
+cap which avar
+local has_avar = (_rc == 0)
+if !`has_avar' {
+    display "__COMMUNITY_PACKAGE_MISSING__avar__"
+}
+local can_ivreg2_sim = (`has_ivreg2' & `has_ranktest')
+if `can_ivreg2_sim' {
+    clear
+    set seed 20260825
+    set obs 1000
+    generate long id = ceil(_n / 10)
+    bysort id: generate int year = 2000 + _n - 1
+    generate double z1 = rnormal()
+    generate double z1_sq = z1^2
+    generate double x2 = rnormal()
+    generate double x3 = rnormal()
+    generate double u = rnormal()
+    generate double x1 = 0.8*z1 + 0.3*x2 + 0.4*u + rnormal()
+    generate double x1_sq = x1^2
+    generate double y = 1.2*x1 - 0.2*x1_sq + 0.4*x2 - 0.1*x3 + u + rnormal()
+    xtset id year
+
+    ivreg2 y x2 x3 i.year (x1 x1_sq = z1 z1_sq), ///
+        cluster(id) first ffirst endog(x1)
+
+    local can_weakivtest = (`has_weakivtest' & `has_avar')
+    if `can_weakivtest' {
+        ivreg2 y x2 x3 i.year (x1 = z1), cluster(id)
+        weakivtest
+        display "weakivtest_F_eff=" r(F_eff)
+    }
+}
