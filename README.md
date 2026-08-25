@@ -246,7 +246,7 @@ bash verify/run-verify.sh
 | `stata-did-community` | extension | staggered DiD community packages: csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid |
 | `stata-rdd` | extension | regression discontinuity: rdrobust / rdplot / rddensity (sharp & fuzzy, manipulation test, bandwidth sensitivity, placebo cutoff) |
 
-Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist (now with **Fix** action lines). The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **8/8 PASS** on StataNow 19.5 MP (8 verification entry points). Agent behavior is regression-tested via `test-prompts.json` (14 prompts covering all 8 skills + 2 cross-skill scenarios, including 2 IV-specific prompts for command selection and diagnostics reading).
+Each SKILL.md contains complete command syntax, result-interpretation logic, menu paths, and a pitfalls checklist (now with **Fix** action lines). The 38 `.dta` datasets ship in `data/agis6/`. End-to-end demo (7 do-files + 27 PNGs) lives in `demo/`. Verify harness (`bash verify/run-verify.sh`) currently reports **8/8 PASS** on StataNow 19.5 MP (8 verification entry points). Agent behavior is regression-tested via `test-prompts.json` (16 prompts covering all 8 skills + 2 cross-skill scenarios, including 4 IV-specific prompts for command selection, diagnostics reading, identification/LATE, and the results triangle).
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
