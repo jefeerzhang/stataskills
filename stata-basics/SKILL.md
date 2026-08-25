@@ -31,6 +31,75 @@ tab old_orig old, miss
 
 1. `clonevar` 留底。2. `mvdecode` 先转缺失码。3. `recode` 反向，显式保留 `.a`/`.b`。4. `tab old new, miss` 交叉核对。禁止 `gen new = 5 - old`。
 
+## ⚠️ 通用 Stata 陷阱速查（跨 skill 前置清单）
+
+> 借鉴 dylantmoore/stata-skill 的 Critical Gotchas 前置模式：以下 13 条是与 skill 无关、任何 Stata 写 do-file 都会撞的坑。在写第一行代码前必读一遍。下方「关键陷阱速查」是本 skill 数据管理特有补充（漏逗号、if 缺 `& var < .`、反向编码等），两者互补。
+
+1. **缺失值排序到 +infinity**（dylantmoore 通用陷阱 #1）
+   - **触发**：`sort age` 把缺失值放到最大；`if age > 64` 把缺失者也选进来；`assert age != .` 实际却匹配缺失（用 `age < .`）。
+   - **Fix**：数值比较的 `if` 永远加 `& var < .`；想排除缺失用 `if !missing(var)`；排序无碍但要知道顺序。
+   - **验证**：`count if age > 64 & age < .` 应等于「真大于 64 的样本数」；`tab age if age > 64, miss` 看缺失是否被错选。
+
+2. **`=` vs `==`**（#2）
+   - **触发**：条件里写 `if x = 1` 报 `invalid syntax`；逻辑与写 `if x==1 and y==2` 报 `and not found`。
+   - **Fix**：`==` 表相等、`&` 表与（不要 `and`）；`=` 只在 `gen x = ...` 或选项赋值（如 `local x = 1`）里用。`assert x==1` 是自检利器。
+   - **验证**：`assert x==1` PASS；写错的 `assert x=1` 报 `invalid syntax`。
+
+3. **local 宏语法：反引号 + 宏名**（#3）
+   - **触发**：写 `` `x' `` 漏反引号或拼错宏名；`local` 定义后忘了用反引号引用；宏值里含空格需要复合引号。
+   - **Fix**：定义 `local varlist "mpg weight"`；引用 `` `varlist' ``；含空格或特殊字符用复合引号 `` ` "varlist" ' ``。
+   - **验证**：`display "`varlist'"` 应打印宏值；`local test = 1` 后 `` `test' `` 才能拿到值。
+
+4. **`by` 前必须 `sort`**（#4）
+   - **触发**：写 `by id: gen mean_y = mean(y)` 报 `not sorted`；`by` 前未 `sort id`。
+   - **Fix**：用 `bysort id: ...`（一步完成 sort + by）；或 `sort id` + `by id: ...`。永远用 `bysort` 替代 `sort + by`。
+   - **验证**：`bysort id: gen mean_y = mean(y)` 应无 not sorted 错误。
+
+5. **因子变量 `i.` 与 `c.`**（#5）
+   - **触发**：`regress y i.group` 中 `group` 是数值变量但被当类别处理；要 `c.x` 当连续却写 `i.x` 当类别；`#` 表交互、`##` 表主效应+交互。
+   - **Fix**：类别变量加 `i.` 前缀（自动生成虚拟变量）；连续变量加 `c.` 前缀（默认线性）；交互 `i.a##i.b` 或 `i.a#i.b`；用 `##` 让两个主效应保留。
+   - **验证**：`regress y i.group c.x` 系数行应为 0b.group（基准类省略）+ 1.group、2.group + x；`margins i.group` 看每类边际均值。
+
+6. **`generate` vs `replace`**（#6）
+   - **触发**：`replace newvar = 1` 时 `newvar` 还没定义，报 `variable newvar not found`；`gen` 已存在变量报 `variable newvar already defined`。
+   - **Fix**：第一次创建用 `gen`；后续改值用 `replace`；批量重生成用 `drop newvar` + `gen newvar = ...`；`clonevar` 可保留原标签和值标签。
+   - **验证**：第一次写 `gen`；后续改动写 `replace`；跑 `do` 无 `not found` 或 `already defined`。
+
+7. **字符串比较区分大小写**（#7）
+   - **触发**：`if country == "china"` 不匹配 `China`；`merge` 时键值因大小写差异导致 0 匹配。
+   - **Fix**：比较前 `replace var = lower(var)` 或 `replace var = strupper(var)`；`merge` 前先统一大小写。
+   - **验证**：`tab country if country == "china"` 应匹配全部 `china`/`China`/`CHINA`（若已 lower）。
+
+8. **`merge` 必查 `_merge`**（#8）
+   - **触发**：`merge 1:1 id using other.dta` 后直接用数据；未合并记录混入主表导致回归结果异常；`_merge == 1`（仅主表）或 `_merge == 2`（仅外部）未识别。
+   - **Fix**：merge 后立即 `tab _merge`；保留 `_merge` 列做审计；确认无 `2` 后 `drop _merge`；用 `assert _merge == 3` 强制只取双方都有。
+   - **验证**：`tab _merge` 应只见 3；`assert _merge == 3` 应无 error。
+
+9. **`preserve`/`restore` + `tempfile` 做 collapse-merge-back**（#9）
+   - **触发**：在 do-file 中间对数据做了 `collapse`/`contract`，原数据丢失；想做聚合后合并回原行，用 `merge m:1` 但 `collapse` 已把数据压成一行。
+   - **Fix**：修改前 `preserve`，改坏了 `restore`；聚合步骤先 `preserve` → `keep id x` → `collapse (mean) y, by(id)` → `save tempfile` → `restore` → `merge m:1 id using tempfile`。
+   - **验证**：restore 后原数据集的行数应与 preserve 前一致；`merge m:1` 后 `tab _merge` 应只见 3。
+
+10. **权重不可互换**（#10）
+    - **触发**：`regress y x [aw=1/n]`（分析权重）和 `[fw=n]`（频率权重）系数和 SE 都不同；`pweight`/`aweight`/`fweight` 三者对 SE 计算路径不同。
+    - **Fix**：看 `help weight` 决定类型；调查类常用 `pweight`（个体抽样权重），描述类用 `aweight`（归一化权重）；频率类用 `fweight`（计数）。
+    - **验证**：换权重类型后 N 应不变，系数可能变（aw 与 fw 不同）、SE 显著不同（pweight 影响 SE 而非系数）。
+
+11. **`capture` 吞错**（#11）
+    - **触发**：`capture confirm file "x.dta"` 后忘了看返回值 `rc`；后面命令依赖文件存在却无声失败；写 `capture { ... }` 把内层所有 error 全部吞掉。
+    - **Fix**：`capture` 后立即看 `rc`：\`capture ...\` \`if \`rc' != 0 \` ...\`；`capture noisily` 仍打印输出但捕获错误；批量处理用 `foreach` + `capture` 时单独写一行 `di "`rc' failed: \`var'"`。
+    - **验证**：`capture confirm file "nope.dta"` 后 `display "rc = `rc'"` 应打印非零；后续 `if \\`rc'\\` 应跳到错误分支。
+
+12. **行续接 `///`**（#12）
+    - **触发**：长命令换行忘了 `///` 报 `command ... invalid`；`///` 前留了空格报 `unrecognized command`；do-file 里中文注释换行后 `///` 错位。
+    - **Fix**：每行末加 `///`（前面无空格）；行尾 `///` 后换行不能有空格或注释；多行宏定义每行都加 `///`。
+    - **验证**：`do myscript.do` 应无 `command invalid` 错误；`cat myscript.do` 看 `///` 三连斜杠是否贴在行尾。
+
+13. **储存结果 `r()`/`e()`/`s()` 区分**（#13）
+    - **触发**：`regress` 后调用 `r(mean)` 取不到（回归用 `e(b)`/`e(V)`）；`summarize` 用 `r(mean)`/`r(N)`，混淆报错 `r(mean) not found`。
+    - **Fix**：`return list`/`ereturn list`/`sreturn list` 查看当前可用结果；回归类命令存 `e()`（estimates）；`summarize`/`tabulate` 类存 `r()`（results）；标量宏存 `s()`（local macros）；`return list` 后立刻用，用完会被下一条命令覆盖。
+    - **验证**：`regress` 后 `ereturn list` 应见 `e(b)`、`e(V)`；`summarize` 后 `return list` 应见 `r(mean)`、`r(N)`。
+
 ## 核心语法
 
 ```
