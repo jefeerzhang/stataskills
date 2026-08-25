@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: Single-user 16-core  perpetual
-Serial number: 3851871377
-  Licensed to: 张剑
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
                sicau
 
 Notes:
@@ -22,7 +22,7 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do C:/Users/jefee/Downloads/stataskills/verify/verify-synth-sdid.do 
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-synth-sdid.do 
 
 . version 19.5
 
@@ -30,10 +30,16 @@ Notes:
 
 . set seed 20260817
 
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-did-community
+. * chapter:  synth
+. * data:     data/synth/synth_smoking.dta
+. * checks:   synth+gap+placebo+donor
+. * ============================
 . 
 . * ============================================================
-. * stata-did 验证脚本：第 13-15 节（csdid / jwdid / did_imputation / 合成控制 / 
-> 合成 DID，社区包）
+. * stata-did 验证脚本：第 13-15 节（csdid / jwdid / did_imputation / 合成控制 
+> / 合成 DID，社区包）
 . *
 . * 数据：
 . *   - csdid / jwdid / did_imputation 章节用本地模拟数据
@@ -51,7 +57,7 @@ Notes:
 . *   - did_imputation ：必需（BJS 插补法估计量）
 . *   - reghdfe        ：可选（did_imputation 的依赖包，未装时 sentinel）
 . *   - synth          ：必需（run-verify.sh 在数据已就绪时仍要求装包才 PASS）
-. *   - synth_runner   ：可选；未装时 display sentinel，--community 模式下报 BAD
+. *   - synth_runner   ：可选；未装时 display sentinel，不影响任一模式 PASS
 . *   - sdid           ：必需（同 synth）
 . *   - 缺包检测：在缺包分支用 `display "<sentinel-string><pkg><sentinel-end>"`
 . *     （harness 用正则识别，注释中提及 sentinel 字符串不会误匹配）；
@@ -71,9 +77,7 @@ Notes:
 
 . if !`has_csdid' {
 .     display "__COMMUNITY_PACKAGE_MISSING__csdid__"
-__COMMUNITY_PACKAGE_MISSING__csdid__
 .     display as error "csdid 未安装，请运行 ssc install csdid, replace"
-csdid 未安装，请运行 ssc install csdid, replace
 . }
 
 . 
@@ -82,9 +86,7 @@ csdid 未安装，请运行 ssc install csdid, replace
 
 . if _rc != 0 {
 .     display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__drdid__"
-__COMMUNITY_PACKAGE_OPTIONAL_MISSING__drdid__
 .     display as text "drdid 未安装（csdid 依赖包；装上可用 method(dr/ipw)）"
-drdid 未安装（csdid 依赖包；装上可用 method(dr/ipw)）
 . }
 
 . 
@@ -113,6 +115,40 @@ Number of observations (_N) was 0, now 400.
 . if `has_csdid' {
 .     * 基本估计：notyet 控制组 + 回归法
 .     csdid y x, ivar(id) time(t) gvar(first_treat) notyet method(reg)
+..................
+Difference-in-difference with Multiple Time Periods
+
+                                                           Number of obs = 400
+Outcome model  : regression adjustment
+Treatment model: none
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+g3           |
+       t_1_2 |   .2633354   .4090364     0.64   0.520    -.5383611    1.065032
+       t_2_3 |   1.678689   .4908135     3.42   0.001     .7167127    2.640666
+       t_2_4 |    1.25107   .5388087     2.32   0.020     .1950245    2.307116
+       t_2_5 |   1.610182   .4554324     3.54   0.000     .7175506    2.502813
+       t_2_6 |   .8519957   .4064086     2.10   0.036     .0554496    1.648542
+       t_2_7 |   1.550641   .5406911     2.87   0.004     .4909058    2.610376
+       t_2_8 |   1.437407   .3571297     4.02   0.000     .7374459    2.137369
+       t_2_9 |   1.078112   .5284982     2.04   0.041     .0422745     2.11395
+      t_2_10 |   1.235111   .4971874     2.48   0.013      .260641     2.20958
+-------------+----------------------------------------------------------------
+g7           |
+       t_1_2 |   .4829035    .627796     0.77   0.442     -.747554    1.713361
+       t_2_3 |  -1.085384   .5785723    -1.88   0.061    -2.219365    .0485969
+       t_3_4 |   .3322647   .5695849     0.58   0.560    -.7841012     1.44863
+       t_4_5 |  -.0033498   .6624038    -0.01   0.996    -1.301637    1.294938
+       t_5_6 |  -.1031059   .5235825    -0.20   0.844    -1.129309     .923097
+       t_6_7 |   1.313793   .5678387     2.31   0.021     .2008491    2.426736
+       t_6_8 |   1.575967   .5552165     2.84   0.005      .487763    2.664172
+       t_6_9 |   1.175264   .5942792     1.98   0.048     .0104985     2.34003
+      t_6_10 |   1.360511   .4689901     2.90   0.004      .441307    2.279715
+------------------------------------------------------------------------------
+Control: Not yet Treated
+
+See Callaway and Sant'Anna (2021) for details
 . 
 .     * 事后聚合（capture 包住：40 unit × 10 period 小样本下 estat group/event
 .     * 可能报 conformability r(503)，不视为脚本错误）
@@ -121,6 +157,7 @@ Number of observations (_N) was 0, now 400.
 .     capture estat event
 . 
 .     display as text "csdid 完成"
+csdid 完成
 . }
 
 . 
@@ -185,10 +222,8 @@ hdfe 未安装（jwdid 依赖包）
 
 . if !`has_did_imputation' {
 .     display "__COMMUNITY_PACKAGE_MISSING__did_imputation__"
-__COMMUNITY_PACKAGE_MISSING__did_imputation__
-.     display as error "did_imputation 未安装，请运行 ssc install did_imputation,
->  replace"
-did_imputation 未安装，请运行 ssc install did_imputation, replace
+.     display as error "did_imputation 未安装，请运行 ssc install did_imputatio
+> n, replace"
 . }
 
 . 
@@ -210,22 +245,56 @@ reghdfe 已安装（did_imputation 依赖）
 .     * 使用与 csdid/jwdid 验证块相同的模拟数据
 .     * 注意：did_imputation 的 Ei 编码与 csdid/jwdid 的 gvar 不同：
 .     *   - csdid/jwdid: gvar = 0 或 . 表示从未处理
-.     *   - did_imputation: Ei 必须是缺失值（.）表示从未处理，0 会被当作"第 0 期
-> 处理"
+.     *   - did_imputation: Ei 必须是缺失值（.）表示从未处理，0 会被当作"第 0 
+> 期处理"
 .     * first_treat 在模拟数据中已经是 0 = 从未处理，需要转换为缺失
 .     preserve
 .     gen Ei = first_treat
 .     replace Ei = . if first_treat == 0
+(100 real changes made, 100 to missing)
 . 
 .     * 基本估计：总体 ATT + 事件研究
 .     did_imputation y id t Ei, horizons(0/5) autosample
+WARNING: suppressing the following coefficients from estimation because of insu
+> fficient effective sample size: tau0 tau1 tau2 tau3 tau4 tau5. To report them
+>  nevertheless, set the minn option to a smaller number or 0, but keep in mind
+>  that the estimates may be unreliable and their SE may be downward biased.
+
+                                                           Number of obs = 360
+------------------------------------------------------------------------------
+           y | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        tau0 |          0  (omitted)
+        tau1 |          0  (omitted)
+        tau2 |          0  (omitted)
+        tau3 |          0  (omitted)
+        tau4 |          0  (omitted)
+        tau5 |          0  (omitted)
+------------------------------------------------------------------------------
 . 
 .     * leaveout 方差修正（BJS 附录 A.9，唯一实现）
 .     did_imputation y id t Ei, horizons(0/5) leaveout autosample
+WARNING: suppressing the following coefficients from estimation because of insu
+> fficient effective sample size: tau0 tau1 tau2 tau3 tau4 tau5. To report them
+>  nevertheless, set the minn option to a smaller number or 0, but keep in mind
+>  that the estimates may be unreliable and their SE may be downward biased.
+
+                                                           Number of obs = 360
+------------------------------------------------------------------------------
+           y | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        tau0 |          0  (omitted)
+        tau1 |          0  (omitted)
+        tau2 |          0  (omitted)
+        tau3 |          0  (omitted)
+        tau4 |          0  (omitted)
+        tau5 |          0  (omitted)
+------------------------------------------------------------------------------
 . 
 .     restore
 . 
 .     display as text "did_imputation 完成"
+did_imputation 完成
 . }
 
 . 
@@ -250,8 +319,8 @@ synth 未安装，请运行 ssc install synth, replace
 .     use "../synth/synth_smoking.dta", clear
 .     tsset state year
 . 
-.     synth cigsale beer(1984(1)1988) lnincome(1972(1)1988) retprice age15to24 //
-> /
+.     synth cigsale beer(1984(1)1988) lnincome(1972(1)1988) retprice age15to24 
+> ///
 >           cigsale(1988) cigsale(1980) cigsale(1975), ///
 >           trunit(3) trperiod(1989) xperiod(1980(1)1988) nested
 . 
@@ -265,8 +334,8 @@ synth 未安装，请运行 ssc install synth, replace
 . local has_synth_runner = (_rc == 0)
 
 . if !`has_synth_runner' {
-.     display as text "synth_runner 未安装（非必需；装上可用 ADH 2015 placebo 置
-> 换）"
+.     display as text "synth_runner 未安装（非必需；装上可用 ADH 2015 placebo 
+> 置换）"
 synth_runner 未安装（非必需；装上可用 ADH 2015 placebo 置换）
 .     display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__synth_runner__"
 __COMMUNITY_PACKAGE_OPTIONAL_MISSING__synth_runner__
@@ -293,9 +362,7 @@ __COMMUNITY_PACKAGE_OPTIONAL_MISSING__synth_runner__
 
 . if !`has_sdid' {
 .     display "__COMMUNITY_PACKAGE_MISSING__sdid__"
-__COMMUNITY_PACKAGE_MISSING__sdid__
 .     display as error "sdid 未安装，请运行 ssc install sdid, replace"
-sdid 未安装，请运行 ssc install sdid, replace
 . }
 
 . 
@@ -303,6 +370,7 @@ sdid 未安装，请运行 ssc install sdid, replace
 .     clear
 .     set seed 20260817
 .     set obs 800
+Number of observations (_N) was 0, now 800.
 .     gen state = ceil(_n/20)
 .     gen year  = mod(_n-1, 20) + 1
 .     gen treat = (state==1 & year>=15)
@@ -314,8 +382,20 @@ sdid 未安装，请运行 ssc install sdid, replace
 .     * SKILL.md 第 15 节示例代码（vce(bootstrap) reps(50)）适用于真实
 .     * 多处理单位数据，与此处模拟数据不同——见 verify 脚本注释。
 .     sdid y state year treat, vce(noinference) seed(20260817)
+
+
+Synthetic Difference-in-Differences Estimator
+
+-----------------------------------------------------------------------------
+           y |     ATT     Std. Err.     t      P>|t|    [95% Conf. Interval]
+-------------+---------------------------------------------------------------
+       treat |   1.45063          .        .        .           .           .
+-----------------------------------------------------------------------------
+95% CIs and p-values are based on large-sample approximations.
+Refer to Arkhangelsky et al., (2021) for theoretical derivations.
 . 
 .     display as text "sdid 完成"
+sdid 完成
 . }
 
 . display as text "=== 全部测试通过 ==="

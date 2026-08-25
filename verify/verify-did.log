@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: Single-user 16-core  perpetual
-Serial number: 3851871377
-  Licensed to: 张剑
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
                sicau
 
 Notes:
@@ -22,10 +22,16 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do C:/Users/jefee/Downloads/stataskills/verify/verify-did.do 
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-did.do 
 
 . version 19.5
 
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-did
+. * chapter:  did
+. * data:     sim:24000x5
+. * checks:   didregress+atet+paralleltrend
+. * ============================
 . 
 . * ============================================================
 . * stata-did 验证脚本
@@ -84,7 +90,7 @@ Data type: Repeated cross-sectional
 -------------+----------------------------------------------------------------
 ATET         |
        treat |
-   (1 vs 0)  |   2.010488   4.30e-10  4.7e+09   0.000     2.010488    2.010488
+   (1 vs 0)  |   2.010488          .        .       .            .           .
 ------------------------------------------------------------------------------
 Note: ATET estimate adjusted for group effects and time effects.
 
@@ -140,15 +146,15 @@ Time         |
 Triple-differences regression                           Number of obs = 24,000
 Data type: Repeated cross-sectional
 
-                                 (Std. err. adjusted for 2 clusters in hospital)
---------------------------------------------------------------------------------
-               |               Robust
-        satis3 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
----------------+----------------------------------------------------------------
-ATET           |
-        treat3 |
-     (1 vs 0)  |   1.815303   .0001074  1.7e+04   0.000     1.813939    1.816667
---------------------------------------------------------------------------------
+                               (Std. err. adjusted for 2 clusters in hospital)
+------------------------------------------------------------------------------
+             |               Robust
+      satis3 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+      treat3 |
+   (1 vs 0)  |   1.815303   .0001074  1.7e+04   0.000     1.813939    1.816667
+------------------------------------------------------------------------------
 Note: ATET estimate adjusted for group effects, time effects, and group- and
       time-effects interactions.
 
@@ -189,18 +195,18 @@ Note: ATET estimate adjusted for group effects and time effects.
 . * ---- 4. Wild bootstrap 推断：wildbootstrap ----
 . didregress (satis) (treat), group(hospital) time(month) ///
 >     wildbootstrap(reps(99) rseed(20260816))
-note: for equal-tailed 95% CI, better performance is obtained when .025*reps()
-      is an integer.
+note: for equal-tailed 95% CI, better performance is obtained when
+      .025*reps() is an integer.
 note: setting repetitions to 120.
 
 Performing 120 replications for p-value for constraint
   treat = 0 ...
 Computing confidence interval for treat
-  Lower bound: .........10.........20.........30.........40.........50.........60
-> .........70.........80.........90.........100 done (100)
+  Lower bound: .........10.........20.........30.........40.........50.........
+> 60.........70.........80.........90.........100 done (100)
 lower confidence bound not found
-  Upper bound: .........10.........20.........30.........40.........50.........60
-> .........70.........80.........90.........100 done (100)
+  Upper bound: .........10.........20.........30.........40.........50.........
+> 60.........70.........80.........90.........100 done (100)
 upper confidence bound not found
 Treatment and time information
 
@@ -228,7 +234,7 @@ Error weight: rademacher
 -------------+----------------------------------------------------
 ATET         |
        treat |
-    (1 vs 0) |   2.010488  8.9e+12  0.000            .           .
+    (1 vs 0) |   2.010488  6.4e+12  0.000            .           .
 ------------------------------------------------------------------
 Note:    .% confidence interval is wider than requested.
 Note: ATET estimate adjusted for group effects and time effects.
@@ -310,7 +316,8 @@ H0: No effect in anticipation of treatment
 Prob > F =   0.0043
 
 . 
-. * ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort，SKILL.md 第 5 节）----
+. * ---- 6. 异质性 DID：hdidregress twfe（错时处理 cohort，SKILL.md 第 5 节）--
+> --
 . clear
 
 . set obs 7200                           // 600 个体 × 12 期
@@ -343,8 +350,8 @@ Panel variable: id (strongly balanced)
 . 
 . hdidregress twfe (y) (treat), group(id) time(month)
 note: variable _did_cohort, containing cohort indicators formed by treatment
-      variable treat and group variable id, was added to the dataset using the
-      estimation sample.
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
 
 Treatment and time information
 
@@ -369,7 +376,6 @@ Estimator:       Two-way fixed effects
 Treatment level: id
 Control group:   Never treated
 Heterogeneity:   Cohort and time
-Over:            Cohort
 
                                    (Std. err. adjusted for 600 clusters in id)
 ------------------------------------------------------------------------------
@@ -448,8 +454,8 @@ Note: Exposure is the number of periods since the first treatment time.
 . * ---- 7. 回归调整估计量：hdidregress ra（SKILL.md 第 5 节）----
 . hdidregress ra (y) (treat), group(id) time(month)
 note: variable _did_cohort, containing cohort indicators formed by treatment
-      variable treat and group variable id, was added to the dataset using the
-      estimation sample.
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
 
 Computing ATET for each cohort and time:
 Cohort 5 (11): ..........10. done
@@ -524,11 +530,10 @@ Overall ATET                                             Number of obs = 7,200
        treat |
    (1 vs 0)  |   1.559588   .0741828    21.02   0.000     1.414193    1.704984
 ------------------------------------------------------------------------------
-Note: Aggregation weights vary across times and cohorts.
 
 . 
-. * ---- 8. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据，SKILL.md 第 6 节）
-> ----
+. * ---- 8. 异质性 DID 面板版：xthdidregress（沿用第 6 节数据，SKILL.md 第 6 节
+> ）----
 . xtset id month
 
 Panel variable: id (strongly balanced)
@@ -537,8 +542,8 @@ Panel variable: id (strongly balanced)
 
 . xthdidregress twfe (y) (treat), group(id)
 note: variable _did_cohort, containing cohort indicators formed by treatment
-      variable treat and group variable id, was added to the dataset using the
-      estimation sample.
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
 
 Treatment and time information
 
@@ -564,7 +569,6 @@ Panel variable:  id
 Treatment level: id
 Control group:   Never treated
 Heterogeneity:   Cohort and time
-Over:            Cohort
 
                                    (Std. err. adjusted for 600 clusters in id)
 ------------------------------------------------------------------------------
@@ -607,8 +611,8 @@ ATET over cohort                                         Number of obs = 7,200
 ------------------------------------------------------------------------------
 
 . 
-. * ---- 9. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据，SKILL.md 第 7 
-> 节）----
+. * ---- 9. 效应分解：bdecomp（需错时处理 + 强平衡，重造错时数据，SKILL.md 第 7
+>  节）----
 . clear
 
 . set obs 4800                           // 4 组医院 × 12 期 × 100 人

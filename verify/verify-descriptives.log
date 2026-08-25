@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: Single-user 16-core  perpetual
-Serial number: 3851871377
-  Licensed to: 张剑
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
                sicau
 
 Notes:
@@ -22,11 +22,16 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do C:/Users/jefee/Downloads/stataskills/verify/verify-descriptives.do 
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-descriptives.do 
 
 . version 19.5
 
-. 
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-descriptives
+. * chapter:  ch5
+. * data:     descriptive_gss.dta
+. * checks:   tabulate+summarize+corr
+. * ============================
 . * ---- ch5 描述统计 ----
 . use descriptive_gss, clear
 
@@ -72,8 +77,8 @@ never married |        708       25.61      100.00
 95%            6              7       Skewness      -.1509408
 99%            7              7       Kurtosis       2.693351
 
-. tabstat wwwhr, statistics(mean median sd iqr skewness kurtosis) by(sex) columns
-> (statistics)
+. tabstat wwwhr, statistics(mean median sd iqr skewness kurtosis) by(sex) colum
+> ns(statistics)
 
 Summary for variables: wwwhr
 Group variable: sex (respondents sex)

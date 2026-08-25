@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: Single-user 16-core  perpetual
-Serial number: 3851871377
-  Licensed to: 张剑
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
                sicau
 
 Notes:
@@ -22,11 +22,16 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do C:/Users/jefee/Downloads/stataskills/verify/verify-advanced.do 
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-advanced.do 
 
 . version 19.5
 
-. 
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-advanced
+. * chapter:  ch12
+. * data:     gss2006_chapter12.dta
+. * checks:   alpha+factor
+. * ============================
 . * ---- ch12 信度与因子分析 ----
 . use gss2006_chapter12, clear
 (General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
@@ -36,8 +41,8 @@ Notes:
 (1,050 differences between empathy4 and revempathy4)
 (1,152 differences between empathy5 and revempathy5)
 
-. alpha empathy1 revempathy2 empathy3 revempathy4 revempathy5 empathy6 empathy7, 
-> asis item min(5)
+. alpha empathy1 revempathy2 empathy3 revempathy4 revempathy5 empathy6 empathy7
+> , asis item min(5)
 
 Test scale = mean(unstandardized items)
 
@@ -68,8 +73,8 @@ Agreement   agreement     Kappa   Std. err.         Z      Prob>Z
 . use gss2006_chapter12_selected, clear
 (General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
 
-. recode natspac natenvir natheal natcity natcrime natdrug nateduc natrace natarm
-> s natfare natroad natsoc natchld natsci (1=3)(2=2)(3=1), prefix(r)
+. recode natspac natenvir natheal natcity natcrime natdrug nateduc natrace nata
+> rms natfare natroad natsoc natchld natsci (1=3)(2=2)(3=1), prefix(r)
 (756 differences between natspac and rnatspac)
 (1,081 differences between natenvir and rnatenvir)
 (1,169 differences between natheal and rnatheal)
@@ -85,8 +90,8 @@ Agreement   agreement     Kappa   Std. err.         Z      Prob>Z
 (1,756 differences between natchld and rnatchld)
 (1,570 differences between natsci and rnatsci)
 
-. factor rnatspac rnatenvir rnatheal rnatcity rnatcrime rnatdrug rnateduc rnatrac
-> e rnatarms rnatfare rnatroad rnatsoc rnatchld rnatsci, pcf
+. factor rnatspac rnatenvir rnatheal rnatcity rnatcrime rnatdrug rnateduc rnatr
+> ace rnatarms rnatfare rnatroad rnatsoc rnatchld rnatsci, pcf
 (obs=1,082)
 
 Factor analysis/correlation                      Number of obs    =      1,082
@@ -241,8 +246,8 @@ mc2 = mc^2 is the Bentler–Raykov squared multiple correlation coefficient.
 
 . sem bmi <- age children incomeln educ quickfood, method(mlmv) standardized
 note: Missing values found in observed exogenous variables. Using the
-      noxconditional behavior. Specify the forcexconditional option to override
-      this behavior.
+      noxconditional behavior. Specify the forcexconditional option to
+      override this behavior.
 Endogenous variables
   Observed: bmi
 
@@ -269,60 +274,61 @@ Estimation method: mlmv
 
 Log likelihood = -5755.3751
 
---------------------------------------------------------------------------------
-               |                 OIM
-  Standardized | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
----------------+----------------------------------------------------------------
-Structural     |
-  bmi          |
-           age |   .1025498   .0464111     2.21   0.027     .0115857    .1935139
-      children |   .0761626   .0449013     1.70   0.090    -.0118424    .1641676
-      incomeln |  -.2031064   .0509003    -3.99   0.000    -.3028691   -.1033437
-          educ |   -.174441   .0507598    -3.44   0.001    -.2739285   -.0749536
-     quickfood |   .1560023   .0456212     3.42   0.001     .0665864    .2454182
-         _cons |   5.819998   .6113505     9.52   0.000     4.621773    7.018223
----------------+----------------------------------------------------------------
-      mean(age)|   6.689349   .2206699    30.31   0.000     6.256844    7.121854
- mean(children)|   2.316993   .0876098    26.45   0.000     2.145281    2.488706
- mean(incomeln)|   11.07493   .3621459    30.58   0.000     10.36514    11.78472
-     mean(educ)|   2.944047   .1058155    27.82   0.000     2.736653    3.151442
-mean(quickfood)|   1.727495   .0722062    23.92   0.000     1.585973    1.869016
----------------+----------------------------------------------------------------
-     var(e.bmi)|   .8477139   .0308644                      .7893288    .9104177
-       var(age)|          1          .                             .           .
-  var(children)|          1          .                             .           .
-  var(incomeln)|          1          .                             .           .
-      var(educ)|          1          .                             .           .
- var(quickfood)|          1          .                             .           .
----------------+----------------------------------------------------------------
-       cov(age,|
-      children)|  -.2302454   .0432238    -5.33   0.000    -.3149625   -.1455282
-       cov(age,|
-      incomeln)|   .2463728    .043313     5.69   0.000      .161481    .3312647
-  cov(age,educ)|   .3231003   .0408804     7.90   0.000     .2429762    .4032243
-       cov(age,|
-     quickfood)|  -.1298331   .0451698    -2.87   0.004    -.2183644   -.0413019
-  cov(children,|
-      incomeln)|   .0046738   .0460874     0.10   0.919    -.0856559    .0950035
-  cov(children,|
-          educ)|  -.1980476    .043919    -4.51   0.000    -.2841273   -.1119679
-  cov(children,|
-     quickfood)|  -.0633405   .0454746    -1.39   0.164    -.1524691     .025788
-  cov(incomeln,|
-          educ)|   .4756463   .0356959    13.32   0.000     .4056837    .5456089
-  cov(incomeln,|
-     quickfood)|  -.3270838   .0410795    -7.96   0.000    -.4075981   -.2465695
-      cov(educ,|
-     quickfood)|  -.2109199   .0438928    -4.81   0.000    -.2969482   -.1248916
---------------------------------------------------------------------------------
-LR test of model vs. saturated: chi2(0) = 0.00                   Prob > chi2 = .
+------------------------------------------------------------------------------
+             |                 OIM
+Standardized | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+Structural   |
+  bmi        |
+         age |   .1025498   .0464111     2.21   0.027     .0115857    .1935139
+    children |   .0761626   .0449013     1.70   0.090    -.0118424    .1641676
+    incomeln |  -.2031064   .0509003    -3.99   0.000    -.3028691   -.1033437
+        educ |   -.174441   .0507598    -3.44   0.001    -.2739285   -.0749536
+   quickfood |   .1560023   .0456212     3.42   0.001     .0665864    .2454182
+       _cons |   5.819998   .6113505     9.52   0.000     4.621773    7.018223
+-------------+----------------------------------------------------------------
+    mean(age)|   6.689349   .2206699    30.31   0.000     6.256844    7.121854
+mean(child~n)|   2.316993   .0876098    26.45   0.000     2.145281    2.488706
+mean(incom~n)|   11.07493   .3621459    30.58   0.000     10.36514    11.78472
+   mean(educ)|   2.944047   .1058155    27.82   0.000     2.736653    3.151442
+mean(quick~d)|   1.727495   .0722062    23.92   0.000     1.585973    1.869016
+-------------+----------------------------------------------------------------
+   var(e.bmi)|   .8477139   .0308644                      .7893288    .9104177
+     var(age)|          1          .                             .           .
+var(children)|          1          .                             .           .
+var(incomeln)|          1          .                             .           .
+    var(educ)|          1          .                             .           .
+var(quickf~d)|          1          .                             .           .
+-------------+----------------------------------------------------------------
+     cov(age,|
+    children)|  -.2302454   .0432238    -5.33   0.000    -.3149625   -.1455282
+     cov(age,|
+    incomeln)|   .2463728    .043313     5.69   0.000      .161481    .3312647
+cov(age,educ)|   .3231003   .0408804     7.90   0.000     .2429762    .4032243
+     cov(age,|
+   quickfood)|  -.1298331   .0451698    -2.87   0.004    -.2183644   -.0413019
+cov(children,|
+    incomeln)|   .0046738   .0460874     0.10   0.919    -.0856559    .0950035
+cov(children,|
+        educ)|  -.1980476    .043919    -4.51   0.000    -.2841273   -.1119679
+cov(children,|
+   quickfood)|  -.0633405   .0454746    -1.39   0.164    -.1524691     .025788
+cov(incomeln,|
+        educ)|   .4756463   .0356959    13.32   0.000     .4056837    .5456089
+cov(incomeln,|
+   quickfood)|  -.3270838   .0410795    -7.96   0.000    -.4075981   -.2465695
+    cov(educ,|
+   quickfood)|  -.2109199   .0438928    -4.81   0.000    -.2969482   -.1248916
+------------------------------------------------------------------------------
+LR test of model vs. saturated: chi2(0) = 0.00                 Prob > chi2 = .
 
 . 
 . * ---- ch14 多重插补 ----
 . use chapter13_missing, clear
 (NLS Women 14-26 in 1968)
 
-. misstable summarize ln_wagem gradem agem ttl_expm tenurem not_smsa south blackm
+. misstable summarize ln_wagem gradem agem ttl_expm tenurem not_smsa south blac
+> km
                                                                Obs<.
                                                 +------------------------------
                |                                | Unique
@@ -343,7 +349,8 @@ LR test of model vs. saturated: chi2(0) = 0.00                   Prob > chi2 = .
 
 . mi register regular not_smsa south
 
-. mi impute mvn ln_wagem gradem agem ttl_expm tenurem blackm, add(5) rseed(2121)
+. mi impute mvn ln_wagem gradem agem ttl_expm tenurem blackm, add(5) rseed(2121
+> )
 
 Performing EM optimization:
   observed log likelihood = -5347.0692 at iteration 12
@@ -373,8 +380,8 @@ Prior: uniform                               Iterations =      500
 (Complete + Incomplete = Total; Imputed is the minimum across m
  of the number of filled-in observations.)
 
-. mi estimate, dftable: regress ln_wagem gradem agem ttl_expm tenurem not_smsa so
-> uth blackm
+. mi estimate, dftable: regress ln_wagem gradem agem ttl_expm tenurem not_smsa 
+> south blackm
 
 Multiple-imputation estimates                   Imputations       =          5
 Linear regression                               Number of obs     =      1,693
@@ -479,13 +486,12 @@ Performing EM optimization ...
 
 Performing gradient-based optimization: 
 Iteration 0:  Log likelihood = -17029.795  
-Iteration 1:  Log likelihood = -17013.355  
+Iteration 1:  Log likelihood = -17013.354  
 Iteration 2:  Log likelihood = -17012.671  
 Iteration 3:  Log likelihood = -17012.446  
 Iteration 4:  Log likelihood =  -17012.39  
 Iteration 5:  Log likelihood = -17012.375  
 Iteration 6:  Log likelihood = -17012.374  
-Iteration 7:  Log likelihood = -17012.374  
 
 Computing standard errors ...
 
@@ -498,22 +504,22 @@ Group variable: id                                   Number of groups =  1,554
                                                      Wald chi2(1)     = 350.87
 Log likelihood = -17012.374                          Prob > chi2      = 0.0000
 
---------------------------------------------------------------------------------
-         drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
----------------+----------------------------------------------------------------
-          wave |   .4493319   .0239879    18.73   0.000     .4023165    .4963473
-         _cons |    2.23915   .1304175    17.17   0.000     1.983537    2.494764
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+       drink | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        wave |   .4493337   .0239881    18.73   0.000     .4023178    .4963496
+       _cons |   2.239133   .1304158    17.17   0.000     1.983523    2.494743
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
   Random-effects parameters  |   Estimate   Std. err.     [95% conf. interval]
 -----------------------------+------------------------------------------------
 id: Unstructured             |
-                   var(wave) |   .2400771   .0237902      .1976977    .2915411
-                  var(_cons) |    .306768   .1605132      .1100088    .8554457
-             cov(wave,_cons) |   .2713816   .0613682      .1511021     .391661
+                   var(wave) |   .2401082   .0239537      .1974646     .291961
+                  var(_cons) |   .3068269   .1670719      .1055362    .8920427
+             cov(wave,_cons) |   .2714246   .0652301      .1435761    .3992732
 -----------------------------+------------------------------------------------
-               var(Residual) |   21.31583   .4763187      20.40241    22.27014
+               var(Residual) |   21.31518   .4765172      20.40139     22.2699
 ------------------------------------------------------------------------------
 LR test vs. linear model: chi2(3) = 977.00                Prob > chi2 = 0.0000
 
@@ -559,7 +565,7 @@ Log likelihood =  -16989.76                          Prob > chi2      = 0.0000
 -----------------------------+------------------------------------------------
 id: Independent              |
                    var(wave) |   .2766612   .0188117      .2421422    .3161011
-                  var(_cons) |   1.321931   .5187415       .612614    2.852531
+                  var(_cons) |   1.321931   .5187413      .6126148    2.852531
 -----------------------------+------------------------------------------------
                var(Residual) |   21.06079   .4908945       20.1203    22.04524
 ------------------------------------------------------------------------------

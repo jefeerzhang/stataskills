@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: Single-user 16-core  perpetual
-Serial number: 3851871377
-  Licensed to: 张剑
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
                sicau
 
 Notes:
@@ -22,7 +22,7 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do C:/Users/jefee/Downloads/stataskills/verify/verify-rdd.do 
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-rdd.do 
 
 . version 19.5
 
@@ -30,6 +30,12 @@ Notes:
 
 . set seed 42
 
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-rdd
+. * chapter:  rdd
+. * data:     data/rdd/tutoring.dta
+. * checks:   rdrobust+rdplot+rddensity
+. * ============================
 . 
 . * ============================================================
 . * stata-rdd 验证脚本：断点回归（sharp / fuzzy / 密度检验）
@@ -75,9 +81,8 @@ rdrobust 未安装，请运行 ssc install rdrobust, replace
 
 . if !`has_rddensity' {
 .     display "__COMMUNITY_PACKAGE_MISSING__rddensity__"
-__COMMUNITY_PACKAGE_MISSING__rddensity__
-.     display as error "rddensity 未安装，请运行 ssc install rddensity, replace"
-rddensity 未安装，请运行 ssc install rddensity, replace
+.     display as error "rddensity 未安装，请运行 ssc install rddensity, replace
+> "
 . }
 
 . if !`has_lpdensity' {
@@ -132,8 +137,8 @@ below_cuto |    (Yes = 1, No=0)
 . local n_treat = r(N)
 
 . 
-. display "below cutoff & treated: " `n_treated_below' "（应 = " `n_treat' "，sha
-> rp）"
+. display "below cutoff & treated: " `n_treated_below' "（应 = " `n_treat' "，s
+> harp）"
 below cutoff & treated: 241（应 = 241，sharp）
 
 . 
@@ -197,8 +202,8 @@ rdrobust 未装，跳过 rdplot
 . 
 .     display as text "--- 核函数对比 ---"
 .     capture noisily rdrobust exit_exam entrance_exam, c(70) kernel(uniform)
-.     capture noisily rdrobust exit_exam entrance_exam, c(70) kernel(epanechnikov
-> )
+.     capture noisily rdrobust exit_exam entrance_exam, c(70) kernel(epanechnik
+> ov)
 . 
 .     display as text "rdrobust 完成"
 . }
@@ -236,6 +241,49 @@ rdrobust 未装，跳过 rdbwselect
 . 
 . if `has_rddensity' {
 .     rddensity entrance_exam, c(70)
+Computing data-driven bandwidth selectors.
+
+Point estimates and standard errors have been adjusted for repeated observation
+> s.
+(Use option nomasspoints to suppress this adjustment.)
+
+RD Manipulation test using local polynomial density estimation.
+
+     c =    70.000 | Left of c  Right of c          Number of obs =         100
+> 0
+-------------------+----------------------          Model         = unrestricte
+> d
+     Number of obs |       237         763          BW method     =         com
+> b
+Eff. Number of obs |       208         577          Kernel        =   triangula
+> r
+    Order est. (p) |         2           2          VCE method    =    jackknif
+> e
+    Order bias (q) |         3           3
+       BW est. (h) |    22.444      19.966
+
+Running variable: entrance_exam.
+------------------------------------------
+            Method |      T          P>|T|
+-------------------+----------------------
+            Robust |   -0.5521      0.5809
+------------------------------------------
+
+P-values of binomial tests. (H0: prob = .5)
+-----------------------------------------------------
+ Window Length / 2 |       <c         >=c |     P>|T|
+-------------------+----------------------+----------
+             0.300 |        9          11 |    0.8238
+             0.600 |       15          16 |    1.0000
+             0.900 |       20          21 |    1.0000
+             1.200 |       23          24 |    1.0000
+             1.500 |       29          32 |    0.7982
+             1.800 |       36          38 |    0.9076
+             2.100 |       43          47 |    0.7520
+             2.400 |       44          52 |    0.4752
+             2.700 |       47          57 |    0.3776
+             3.000 |       53          64 |    0.3553
+-----------------------------------------------------
 . 
 .     if e(pv_q) == . {
 .         display as error "e(pv_q) 为缺失值：rddensity 未产生密度检验结果"
@@ -243,12 +291,13 @@ rdrobust 未装，跳过 rdbwselect
 .     }
 . 
 .     display "Density test p: " %6.4f e(pv_q)
+Density test p: 0.5809
 .     display as text "rddensity 完成"
+rddensity 完成
 . }
 
 . else {
 .     display as text "rddensity 未装，跳过密度检验"
-rddensity 未装，跳过密度检验
 . }
 
 . 
@@ -263,7 +312,8 @@ rddensity 未装，跳过密度检验
 .     foreach c in 55 60 65 70 75 80 85 {
   2.         capture noisily rdrobust exit_exam entrance_exam, c(`c')
   3.         if _rc == 0 {
-  4.             display "cutoff `c': tau=" %9.3f e(tau_cl) "  p=" %6.3f e(pv_cl)
+  4.             display "cutoff `c': tau=" %9.3f e(tau_cl) "  p=" %6.3f e(pv_c
+> l)
   5.         }
   6.         else {
   7.             display "cutoff `c': (跳过)"
