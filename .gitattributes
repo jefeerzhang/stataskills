@@ -1,0 +1,17 @@
+# 行尾政策单一来源：仓库内一律 LF。
+# 背景：verify/*.sh 的断言（如 check-claims.sh 第 13 条契约块匹配）以行尾 `$` 锚定，
+# CRLF 会击穿断言；Windows 工作区由 core.autocrlf 控制检出换行，此处只管入库格式。
+
+* text=auto
+
+# 明确钉 LF（含 Windows 上也保持 LF 的文件）
+*.sh   text eol=lf
+*.do   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.conf text eol=lf
+
+# 二进制（防止误转）
+*.dta  binary
+*.png  binary
+*.pdf  binary
