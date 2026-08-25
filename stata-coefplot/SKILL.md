@@ -46,6 +46,34 @@ which coefplot                   // 查版本（本仓库验证环境：1.8.8 22
 
 ---
 
+## 0. estout/esttab 工作流衔接
+
+实际研究中常用 `eststo`/`estout` 管理模型，再喂给 coefplot：
+
+```stata
+ssc install estout  // 首次使用
+
+sysuse auto, clear
+eststo clear
+
+eststo m1: regress price mpg
+eststo m2: regress price mpg trunk
+eststo m3: regress price mpg trunk length
+
+* 先用 esttab 看表格
+esttab, se star(* 0.1 ** 0.05 *** 0.01)
+
+* 再用 coefplot 作图（eststo 存储的模型直接用名字调用）
+coefplot m1 m2 m3, drop(_cons) xline(0)
+```
+
+**关键点**：
+- `eststo` 存储的模型名可以直接用于 `coefplot`，无需额外 `estimates store`
+- `estadd` 可添加自定义统计量到已存储的模型，`coefplot` 通过 `matrix()` 读取
+- `estimates dir` 查看已存储的模型列表
+
+---
+
 # 第一部分 基本用法（getting-started）
 
 ## 1. 基本用法
