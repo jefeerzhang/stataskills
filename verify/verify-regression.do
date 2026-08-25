@@ -2,7 +2,7 @@ version 19.5
 * ==== VERIFY CONTRACT ====
 * skill:    stata-regression
 * chapter:  ch9
-* data:     partyid.dta
+* data:     partyid.dta;gss2006_chapter9.dta;gss2006_chapter9_2way.dta;ops2004.dta;c10interaction.dta;nlsy97_chapter11.dta;environ.dta
 * checks:   anova+regress+ivregress+ivreghdfe
 * ============================
 * ---- ch9 ANOVA ----

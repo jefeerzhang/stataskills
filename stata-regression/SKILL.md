@@ -3,7 +3,7 @@ name: stata-regression
 description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 / margins 边际效应 / reghdfe 高维固定效应 / ivreghdfe IV 估计 / 工具变量五命令（ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe）+ 全套检验（KP F / Hansen J / 弱工具稳健推断）/ fect 错时 DID 偏差修正。对应教材第 9–11 章（IV 为教材未覆盖扩展）。触发词：回归 / ANOVA / margins / reghdfe / ivregress / ivreg2 / xtivreg / ivreghdfe / 工具变量 / 内生性 / 弱工具 / 过度识别 / fect / 逻辑回归 / 固定效应。
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
-  触发即读本文，无需联网加载其他文件。reghdfe / ivreghdfe / ivreg2 / xtivreg2 / ranktest / fect 需 ssc install；ivregress / xtivreg / margins / anova / regress 内置。
+  触发即读本文，无需联网加载其他文件。reghdfe / ivreghdfe / ivreg2 / xtivreg2 / ranktest / weakivtest / fect 需 ssc install；ivregress / xtivreg / margins / anova / regress 内置。
 ---
 
 # Stata 方差分析与回归建模（本书第 9–11 章）

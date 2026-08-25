@@ -384,7 +384,13 @@ fi
 
 # ---- 13. verify-*.do I/O 契约：每个脚本必须有机器可读声明 ----
 # 借鉴 luban 报告 P1 短板：原 do-file 自包含但无机器可读「这个脚本验证什么」声明。
-# 契约格式：第 2-6 行内含一行 `* VERIFY: <skill> | <chapter> | <data> | <checks>`
+# 契约格式：前 10 行内含 6 行键值块：
+#   * ==== VERIFY CONTRACT ====
+#   * skill:    stata-xxx
+#   * chapter:  chN
+#   * data:     ...
+#   * checks:   ...
+#   * ============================
 # 字段：
 #   skill  - 对应 stata-xxx skill 目录名（必须存在）
 #   chapter - 教材章节或方法名（自由文本）
@@ -421,24 +427,26 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   if [ ! -d "$REPO_ROOT/$v_skill" ]; then
     verify_bad_skill="${verify_bad_skill} ${vname}→${v_skill};"
   fi
-  # 校验 data 字段：根据前缀分三类
-  #   sysuse:X+Y  - Stata 内置数据，路径检查跳过
-  #   sim:NxM     - 模拟数据（clear + set obs + gen），路径检查跳过
-  #   其它        - 相对路径，必须存在（先试 data/ 再试 data/agis6/ 再试原路径）
-  case "$v_data" in
-    sysuse:*|sim:*|"")
-      :  # 内置/模拟/未声明，跳过路径检查
-      ;;
-    *)
-      found=0
-      for prefix in "data/" "data/agis6/" ""; do
-        if [ -f "$REPO_ROOT/${prefix}${v_data}" ]; then found=1; break; fi
-      done
-      if [ "$found" -eq 0 ]; then
-        verify_bad_data="${verify_bad_data} ${vname}→${v_data};"
-      fi
-      ;;
-  esac
+  # 校验 data 字段：; 分隔多个仓库数据集；每项根据前缀分三类
+  #   sysuse:X+Y / sim:NxM - Stata 内置/模拟数据，路径检查跳过
+  #   其它               - 相对路径，必须存在（先试 data/ 再试 data/agis6/ 再试原路径）
+  IFS=';' read -r -a data_items <<< "$v_data"
+  for data_item in "${data_items[@]}"; do
+    case "$data_item" in
+      sysuse:*|sim:*|"")
+        :  # 内置/模拟/未声明，跳过路径检查
+        ;;
+      *)
+        found=0
+        for prefix in "data/" "data/agis6/" ""; do
+          if [ -f "$REPO_ROOT/${prefix}${data_item}" ]; then found=1; break; fi
+        done
+        if [ "$found" -eq 0 ]; then
+          verify_bad_data="${verify_bad_data} ${vname}→${data_item};"
+        fi
+        ;;
+    esac
+  done
   # 校验 4 字段全有（非空）：用 grep 数 contract 块里出现几次字段名关键字
   field_count=0
   for fk in skill chapter data checks; do
