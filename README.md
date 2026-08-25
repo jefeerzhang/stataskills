@@ -83,7 +83,26 @@ bash verify/run-verify.sh
 | 分数线 / 年龄门槛 / 地理边界断点 | `stata-rdd` |
 | 政策实施年月（时间断点） | `stata-did`（RDiT，不是标准 RDD） |
 
-## 示例
+## Quick Reference：用户原话 → 读哪几个文件
+
+> 借鉴 dylantmoore/stata-skill 的 Quick Reference 模式：路由表回答「去哪个 skill」，本表回答「打开 skill 后读哪个 references / 章节」。Agent 触发后不必全量加载，按表定位即可。
+
+| 用户原话 | 加载 skill | 重点读 |
+|---|---|---|
+| "帮我把缺失码 .a/.b 转成 ." | `stata-basics` | 「3.1 缺失值代码转 Stata 缺失值」+「关键陷阱速查 #4」 |
+| "用 Stata 跑卡方 + 效应量" | `stata-descriptives` | 「卡方检验 + Cramér's V」+「黑名单『不要只报 p 不报效应量』」 |
+| "price ~ weight + foreign 的 ANCOVA" | `stata-regression` | `references/anova.md` + `references/regression.md` |
+| "用 reghdfe 跑高维 FE" | `stata-regression` | `references/reghdfe.md`（absorb/vce/noconstant） |
+| "画森林图对比两个 logit 模型" | `stata-coefplot` | 「强制路径」+ `references/intermediate.md` 多模型段 |
+| "OR 图参考线用 1 还是 0？" | `stata-coefplot` | 「关键陷阱速查 OR」+ `references/advanced.md` eform 段 |
+| "错时 DID 估计 ATET" | `stata-did` | 「强制路径」+ didregress / hdidregress 选择 + atetplot / bdecomp |
+| "csdid 估计 + 事件研究 + 平行趋势" | `stata-did-community` | `references/csdid-jwdid-imputation.md` csdid 段 |
+| "合成控制 DID" | `stata-did-community` | `references/synth.md` + `references/workflow-8step.md` |
+| "分数线 70 分处 RDD 因果效应" | `stata-rdd` | 「6 步工作流」+ sharp 验合规 + rdrobust + rddensity + placebo |
+| "如何做 IRT" | `stata-advanced` | `references/` IRT 段（第 16 章）+ 「黑名单『alpha 不是删条依据』」 |
+| "do-file 跑完报 r(N) 错" | **所有 skill 通用** | 各 skill 「🔍 错误码速查」节（黑名单下方的 r(N) → 触发 → 修复表） |
+
+> 触发后只读「重点读」列即可；其它 references 按需懒加载。
 
 来自 demo/REPORT.md 的真实运行结果（macOS StataNow 19.5 MP）：
 
