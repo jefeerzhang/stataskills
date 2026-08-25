@@ -7,6 +7,19 @@ versioned by Stata compatibility).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-25
+
+luban 打磨方案 A 落地：README hero 钩子重写 + skills.sh badge 诚实化 + 8 skill 错误码速查 + compatibility frontmatter + Quick Reference 导航表。
+
+### Added
+- feat(skills): 8 个 SKILL.md 各加「🔍 错误码速查」节（24 条 r(N) 错误码 → 触发 → 修复三件套），挂在「❌ Agent 不该做的事（黑名单）」下方互补——黑名单给原则，错误码给精准命中 — `76493bc`。
+- feat(skills): 8 个 SKILL.md frontmatter 加 `compatibility:` YAML 字段（runtime / Stata 版本平台 / skill-specific 依赖三段式），让 Skill 在 SkillsMP / OpenClaw / Claude Code / Codex 多 runtime marketplace 里都被识别为兼容 — `9cdf16a`（含 `694cb30` revert + redo 修复了 `read({limit:8})` 截断事故）。
+- docs(README): 加「Quick Reference：用户原话 → 读哪几个文件」表（12 条导航），与 step 3 错误码速查形成「用户原话 → 读哪节 → 报 r(N) 怎么办」三层闭环 — `9a0a214`。
+
+### Changed
+- feat(README + 验证): README hero 钩子从「Agent 跑 Stata DID 分析的唯一验证通过入口」改为「中文实证研究者装上就能让 Agent 写出经过 8/8 verify 验证的教材级 Stata 代码」；同步声明本仓库已通过 `bash verify/run-verify.sh` 实测 8/8 PASS。README skills.sh badges 全部补 [待注册] 诚实标记（8 个含 stata-rdd）；补 stata-rdd badge（之前漏挂的 8 skill 之一） — `12d91e3`。
+- feat(验证): `verify/check-claims.sh` 新增第 12 条「README hero + skills.sh badge 诚实性」断言——hero 区禁词（7/7 verify / 9 个识别方法 / DID 唯一入口 / Stata DID 分析的唯一）/ hero 区必含词（8/8 verify）/ skills.sh badge ↔ 实际 skill 目录一一对应 / 占位 badge 必须标 [待注册]。实证捕到 4 处历史漂移 — `12d91e3`。
+
 ## [1.0.0] - 2026-08-25
 
 首个稳定版本。8 个 skill 全量验证通过（6/6 run-verify.sh + 12/12 test-prompts.sh docs 模式），
@@ -155,5 +168,6 @@ demo 全景 8 do-file + 27 PNG 全部 end of do-file，5 篇 ADR + 完整 verify
 
 ---
 
-[Unreleased]: https://github.com/jefeerzhang/stataskills/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jefeerzhang/stataskills/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/jefeerzhang/stataskills/releases/tag/v1.1.0
 [1.0.0]: https://github.com/jefeerzhang/stataskills/releases/tag/v1.0.0
