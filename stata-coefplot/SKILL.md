@@ -292,6 +292,14 @@ coefplot (rep2, label(rep78=2)) (rep3, label(rep78=3)), bylabel(Low record) ///
 - ❌ **不要对比例变量不加 `citype(logit)`**：CI 越界（如 [-0.05, 0.35]）。**替代**：百分比变量加 `citype(logit)`；bar 图加 `recast(bar) citop`。
 - ❌ **不要画 50+ 系数散点图不加排序/分组**：图不可读。**替代**：先 `coefplot, sort(coefficient) drop(_cons) bycoefs`；或按分组 `headings()` 折叠。
 
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(198)`** — coefplot 报 not estimable（模型无对应系数）。**修复**：keep(*:) 全选；matrix list e(b) 看实际有系数的项
+- **`r(303)`** — margins/post 后 coefplot 报 conformability。**修复**：margins 跑完必 estimates restore margins；否则 coefplot 看的是原模型
+- **`r(7)`** — bycoefs headings(x1=A) 报 invalid numlist。**修复**：headings() 只接整数：headings(1=A 2=B)；先 coefplot 跑一次看 e(b) 顺序
+
 ## 引用
 
 > Ben Jann. 2025. coefplot: Stata module for plotting regression coefficients and other estimates. Statistical Software Components, Boston College Department of Economics. https://repec.sowi.unibe.ch/stata/coefplot/

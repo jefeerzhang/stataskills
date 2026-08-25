@@ -272,6 +272,14 @@ predict confidence, latent
 - 菜单：Statistics → IRT (item response theory) Control Panel（Model/Report/Graph/DIF 页）。
 - 扩展：部分信用模型（1PL 版 GRM）、`irt hybrid`（不同条目不同模型）、DIF（`difmh`、`diflogistic` 检验项目功能差异）。
 
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(430)`** — SEM / factor 协方差矩阵非正定。**修复**：先 corr 排查近零方差 / 完全线性相关变量；剔除或合并
+- **`r(420)`** — SEM 不收敛。**修复**：逐步加 path；先跑每个潜变量单独 CFA 验证；sem ..., standardize
+- **`r(1400)`** — mi estimate 报 imputations not consistent。**修复**：mi import 时确保 imputations 数匹配；mi describe 看注册
+
 ## 附录 A 进阶资源
 
 - UCLA 统计站：https://stats.idre.ucla.edu/stata/（首选，含 do-files 与视频）。

@@ -377,3 +377,11 @@ power onecorrelation 0 0.20        // H0: r=0 vs Ha: r=0.20，功效 0.80，输�
 - ❌ **不要写 `tab var1 var2, chi2 v`（小写 v）**：报 `option v not allowed`。**替代**：永远加 `, chi2 V` 大写；自检 `tab var1 var2, V`。
 - ❌ **不要在 sktest 单一 p > 0.05 时说"分布正态"**：小样本迟钝、大样本敏感。**替代**：三件齐备（`histogram x, normal` + Q-Q 图 + sktest 数值）；冲突时优先信图形。
 - ❌ **不要在 prtest / ttest 后用 0.000 报 p 值**：不符合 APA/Sci 惯例。**替代**：`outreg2, pformat(%9.3f)` + 论文正文一律 `<0.001`。
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(3)`** — varlist 类型不匹配（如 summarize 用字符串变量）。**修复**：先 describe 看类型；字符串需 encode 转数值标签
+- **`r(5)`** — 矩阵非正定（如因子分析相关矩阵奇异）。**修复**：corr 前 summarize 看分布；剔除零方差变量或加 force
+- **`r(6)`** — 矩阵不匹配（多组统计量合并时维度错）。**修复**：逐组检查 N；tab ..., matcell(A) 后 matrix list A 验维度
+

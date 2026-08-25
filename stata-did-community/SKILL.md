@@ -271,6 +271,14 @@ description: Stata DID 社区包（9 个方法）：csdid / jwdid / did_imputati
     - **Fix**：`matrix list e(results)` 看事件研究系数；`matrix list e(pooled_results)` 看汇总效应；自定义图用 `svmat` 提取。
     - **验证**：`matrix list e(results)` 应输出 horizon × coefficient 矩阵。
 
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(503)`** — csdid / jwdid 小样本 conformability（已知 csdid 限制）。**修复**：用 capture estat group/event 包住；详见 CHANGELOG scripts capture 包住段
+- **`r(111)`** — did_imputation 报 not sorted。**修复**：sort id t；面板必须按 id-time 排序
+- **`r(301)`** — did_imputation 报 endogenous，leaveout 修正缺失。**修复**：did_imputation ..., leaveout autosample；horizon 外样本不足时降 horizons
+
 ## 参考文献与延伸阅读
 
 > 完整文献清单（含 `[csdid-jwdid-imputation]` / `[synth-sdid]` / `[dcdh]` / `[stacked]` / `[lpdid]` 标签）见各 `references/*.md` 末尾。本节只列跨方法的核心综述。

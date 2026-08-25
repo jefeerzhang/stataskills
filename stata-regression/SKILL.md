@@ -108,3 +108,11 @@ description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 /
 - ❌ **不要在显著交互/二次项存在时读主效应/线性系数**：b1 失去意义。**替代**：`margins, dydx(*) at(...)` + `marginsplot`；解读只说"在某 X 取值下 Y 的变化"。
 - ❌ **不要在本 skill 里把 `fect` 当政策评估主估计**：`fect` 是错时 DID 偏差修正，识别假设不在回归章。**替代**：政策 / 平行趋势 / 错时 → `stata-did`（默认 `hdidregress aipw`）或 `stata-did-community`。
 - ❌ **不要把 `ivreghdfe` 写成完整 IV 识别**：它只吸收多层 FE 的 2SLS 语法，不检查弱工具、排除限制或 LATE。**替代**：报告第一阶段；没有识别策略就只解释为相关。分数线 / 年龄门槛不要用 IV 或回归冒充。
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(131)`** — 回归系数发散（完全多重共线性）。**修复**：corr x* 查共线；剔除冗余或 regress, noabsorb 排查
+- **`r(498)`** — FE 估计时变量组内方差为 0。**修复**：时不变变量跑 xtreg fe 自动 drop；改 regress i.id, noconstant
+- **`r(7)`** — reghdfe 报 option absorb() not allowed。**修复**：reghdfe 吸收 FE 必放 absorb() 而非 i.；详见 references/reghdfe.md
+

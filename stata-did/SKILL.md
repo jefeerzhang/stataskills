@@ -287,6 +287,14 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 - ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那不是时间断点，平行趋势框架套不上。**替代**：转到 `stata-rdd`，不要用 `didregress` / `hdidregress` 冒充。
 - ❌ **不要在错时设计默认跑 `didregress` 再「顺便」跑 `hdidregress`**：强制路径命中错时就只走 `hdidregress aipw`（+ 事件研究图）。**替代**：需要 TWFE 负权重诊断时另起 `collapse` + `estat bdecomp`，不要把工具箱全跑一遍。
 
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(451)`** — didregress 报 panel not set。**修复**：前一行加 xtset id time；面板数据 xtdidregress 必须有 group/time
+- **`r(459)`** — 重复时间值（同一 id 同一 time 多行）。**修复**：duplicates report id time；先 collapse (mean) ..., by(id time) 压平
+- **`r(1499)`** — didregress 报 variable ... not in model。**修复**：didregress 必显式列入 didregress (y) (treat post) 形式；不能漏第二个括号
+
 ## 验证
 
 - 本 skill 全部内置命令语法经 `verify/verify-did.do` 在 Stata 19.5（StataNow MP）批处理模式实测通过；数据全部本地模拟（`set seed` 固定），不依赖网络与额外 `.dta`。

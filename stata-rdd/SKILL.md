@@ -158,6 +158,14 @@ rdrobust y x, c(c0) fuzzy(treat)
 - ❌ **不要在离散 mass points 上假装连续性框架**：**替代**：`rdlocrand` 局部随机化。
 - ❌ **不要对政策实施日期跑 `rdrobust`**：那是 RDiT（DID），非标准 RDD。
 
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(2001)`** — rdrobust 带宽无效（bw 太窄或 cutoff 处观测过少）。**修复**：看 e(h_l) / e(h_r)；用默认 MSE 带宽；或手动设 h(<value>)
+- **`r(498)`** — rdplot 报矩阵奇异（运行变量 cutoff 附近方差为 0）。**修复**：在 cutoff 两侧 nudge 一段再画；rdplot y x, c(<cutoff>) grid(<n>)
+- **`r(198)`** — rddensity 报 not estimable（操纵边界过近）。**修复**：看 e(T) 操纵检验统计量；p > 0.1 即无操纵；样本小换 rddensity ..., bin(<n>)
+
 ## 验证
 
 - 本 skill 的 sharp + fuzzy + 密度检验由 `verify/verify-rdd.do` 覆盖：

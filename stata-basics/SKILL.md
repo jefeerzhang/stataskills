@@ -274,3 +274,11 @@ command varlist if/in, options
 - ❌ **不要复制 .dta 文件当变量名用**（如 `gen 教育年限 = ...`）：中文字段名在批处理模式可能渲染为乱码，且某些导出命令（`outreg2` / `estout`）不支持中文标签。**替代**：用拼音（如 `educ`）+ `label variable educ "教育年限"`。
 - ❌ **不要用 Excel 输入数据后不 `destring`**：误打字母会把变量变字符串，回归报错 `variable ... not found`。**替代**：导入后跑 `destring varlist, replace force`；或用 `import excel, cellrange(A2:I100) clear` 严格列范围。
 - ❌ **不要在 do-file 里用 `cd "~/..."` 绝对路径**：换机器就跑不了。**替代**：用相对路径（`cd data/agis6/`）+ 项目根目录约定。
+## 🔍 错误码速查（错误码 → 触发 → 修复）
+
+> 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
+
+- **`r(7)`** — 命令语法错（漏逗号、漏 /// 续行、错用 = 写 ==）。**修复**：do-file 里 grep -nE 找无逗号行；选项前永远先 , option
+- **`r(111)`** — by / bysort 前未 sort。**修复**：用 bysort id: ... 一行替代 sort id + by id: ...
+- **`r(121)`** — varlist 含重复变量（如 keep x x y）。**修复**：isid 检查唯一；summarize 前 assert !duplicated(varlist)
+
