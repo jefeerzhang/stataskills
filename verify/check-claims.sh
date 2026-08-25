@@ -400,15 +400,23 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue
   verify_total=$((verify_total + 1))
   vname=$(basename "$vdo" .do)
-  # 取前 6 行找 VERIFY 契约行
-  contract_line=$(head -6 "$vdo" | grep -E '^\* VERIFY:' || true)
-  if [ -z "$contract_line" ]; then
+  # 取前 10 行找 VERIFY 契约块：
+  #   * ==== VERIFY CONTRACT ====
+  #   * skill:    stata-xxx
+  #   * chapter:  chN
+  #   * data:     ...
+  #   * checks:   ...
+  #   * ============================
+  contract_block=$(head -10 "$vdo" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p')
+  if [ -z "$contract_block" ]; then
     verify_missing_contract="${verify_missing_contract} ${vname};"
     continue
   fi
-  # 解析 4 字段（管道分隔，去前后空格）
-  v_skill=$(echo "$contract_line" | sed -e 's/^\* VERIFY:[[:space:]]*//' -e 's/|.*//' | tr -d ' ')
-  v_data=$(echo "$contract_line" | awk -F'|' '{print $3}' | tr -d ' ')
+  # 解析 4 字段（管道分隔→改为键值对行）
+  v_skill=$(echo "$contract_block" | sed -n 's/^\* skill:[[:space:]]*//p' | head -1 | tr -d ' ')
+  v_chapter=$(echo "$contract_block" | sed -n 's/^\* chapter:[[:space:]]*//p' | head -1 | tr -d ' ')
+  v_data=$(echo "$contract_block" | sed -n 's/^\* data:[[:space:]]*//p' | head -1 | tr -d ' ')
+  v_checks=$(echo "$contract_block" | sed -n 's/^\* checks:[[:space:]]*//p' | head -1 | tr -d ' ')
   # 校验 skill 字段 → 必须有对应 stata-xxx 目录
   if [ ! -d "$REPO_ROOT/$v_skill" ]; then
     verify_bad_skill="${verify_bad_skill} ${vname}→${v_skill};"
@@ -431,10 +439,13 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
       fi
       ;;
   esac
-  # 校验字段数量 = 4（防止 VERIFY 行截断）
-  field_count=$(echo "$contract_line" | sed -e 's/^\* VERIFY:[[:space:]]*//' | awk -F'|' '{print NF}' | tr -d ' ')
+  # 校验 4 字段全有（非空）：用 grep 数 contract 块里出现几次字段名关键字
+  field_count=0
+  for fk in skill chapter data checks; do
+    if echo "$contract_block" | grep -q "^\* $fk:"; then field_count=$((field_count+1)); fi
+  done
   if [ "$field_count" -ne 4 ]; then
-    verify_bad_format="${verify_bad_format} ${vname}(${field_count} fields);"
+    verify_bad_format="${verify_bad_format} ${vname}(${field_count}/4 字段);"
   fi
 done
 [ -n "$verify_missing_contract" ] && verify_drift="${verify_drift} 无 VERIFY 契约:${verify_missing_contract}"
@@ -444,7 +455,22 @@ done
 if [ -n "$verify_drift" ]; then
   bad "verify-*.do 契约缺失或错误（共 ${verify_total} 个脚本）${verify_drift}"
 else
-  ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY 行，skill ↔ 目录 + data ↔ 文件对齐）"
+  ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY CONTRACT 块，skill ↔ 目录 + data ↔ 文件对齐）"
 fi
+
+# ---- 14. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
+# 借鉴 luban 报告 P3：每个 verify-*.do 应有 assert 断言验证关键不变量；
+# 当前 8 个脚本均依赖 "跑完不报错"。此处只 print 事实，不 FAIL——
+# 是否补 assert 由 verify 脚本维护者决定（教学型 verify 偏向 end-of-do exit 0）。
+assert_total=0
+assert_with=0
+for vdo in "$REPO_ROOT"/verify/verify-*.do; do
+  [ -f "$vdo" ] || continue
+  assert_total=$((assert_total + 1))
+  n=$(grep -cE '^[[:space:]]*assert[[:space:]]' "$vdo" || true)
+  n=${n:-0}
+  if [ "$n" -gt 0 ]; then assert_with=$((assert_with + 1)); fi
+done
+ok "verify-*.do assert 覆盖率 fact：${assert_with}/${assert_total} 脚本含 assert（教学型 verify 依赖 end-of-do exit 0；扩展为 P3 候选）"
 
 summary

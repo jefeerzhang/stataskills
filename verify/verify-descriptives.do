@@ -1,5 +1,10 @@
 version 19.5
-* VERIFY: stata-descriptives | ch5 | descriptive_gss.dta | tabulate+summarize+corr
+* ==== VERIFY CONTRACT ====
+* skill:    stata-descriptives
+* chapter:  ch5
+* data:     descriptive_gss.dta
+* checks:   tabulate+summarize+corr
+* ============================
 * ---- ch5 描述统计 ----
 use descriptive_gss, clear
 tab1 sex marital

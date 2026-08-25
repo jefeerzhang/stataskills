@@ -1,5 +1,10 @@
 version 19.5
-* VERIFY: stata-coefplot | coefplot | sysuse:auto+nlsw88 | basic+multimodel+subplot+eform
+* ==== VERIFY CONTRACT ====
+* skill:    stata-coefplot
+* chapter:  coefplot
+* data:     sysuse:auto+nlsw88
+* checks:   basic+multimodel+subplot+eform
+* ============================
 
 * ============================================================
 * stata-coefplot 验证脚本

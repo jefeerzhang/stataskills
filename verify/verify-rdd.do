@@ -1,7 +1,12 @@
 version 19.5
 set more off
 set seed 42
-* VERIFY: stata-rdd | rdd | data/rdd/tutoring.dta | rdrobust+rdplot+rddensity
+* ==== VERIFY CONTRACT ====
+* skill:    stata-rdd
+* chapter:  rdd
+* data:     data/rdd/tutoring.dta
+* checks:   rdrobust+rdplot+rddensity
+* ============================
 
 * ============================================================
 * stata-rdd 验证脚本：断点回归（sharp / fuzzy / 密度检验）

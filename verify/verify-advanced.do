@@ -1,5 +1,10 @@
 version 19.5
-* VERIFY: stata-advanced | ch12 | gss2006_chapter12.dta | alpha+factor
+* ==== VERIFY CONTRACT ====
+* skill:    stata-advanced
+* chapter:  ch12
+* data:     gss2006_chapter12.dta
+* checks:   alpha+factor
+* ============================
 * ---- ch12 信度与因子分析 ----
 use gss2006_chapter12, clear
 recode empathy2 empathy4 empathy5 (1=5)(2=4)(3=3)(4=2)(5=1), pre(rev)

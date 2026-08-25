@@ -1,5 +1,10 @@
 version 19.5
-* VERIFY: stata-basics | ch3 | relate.dta | missing+reverse+scale
+* ==== VERIFY CONTRACT ====
+* skill:    stata-basics
+* chapter:  ch3
+* data:     relate.dta
+* checks:   missing+reverse+scale
+* ============================
 * ---- ch3 缺失值处理 + 反向编码 + 量表构建 ----
 use relate, clear
 rename R0000100-R3828700, lower

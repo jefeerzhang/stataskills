@@ -1,5 +1,10 @@
 version 19.5
-* VERIFY: stata-regression | ch9 | partyid.dta | anova+regress
+* ==== VERIFY CONTRACT ====
+* skill:    stata-regression
+* chapter:  ch9
+* data:     partyid.dta
+* checks:   anova+regress
+* ============================
 * ---- ch9 ANOVA ----
 use partyid, clear
 oneway stemcell partyid, bonferroni tabulate

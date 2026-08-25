@@ -1,5 +1,10 @@
 version 19.5
-* VERIFY: stata-did | did | sim:24000x5 | didregress+atet+paralleltrend
+* ==== VERIFY CONTRACT ====
+* skill:    stata-did
+* chapter:  did
+* data:     sim:24000x5
+* checks:   didregress+atet+paralleltrend
+* ============================
 
 * ============================================================
 * stata-did 验证脚本
