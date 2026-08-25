@@ -329,4 +329,57 @@ else
   fi
 fi
 
+# ---- 12. README hero 区 + skills.sh badge 诚实性 ----
+# 防"7/7 verify" / "9 个识别方法" / "DID 唯一入口" 等历史漂移回归；
+# 防 skills.sh 占位 badge 假装已注册。两类都靠纯文本断言，无需联网。
+README="$REPO_ROOT/README.md"
+if [ ! -f "$README" ]; then
+  bad "README.md 缺失（无法校验 hero 区 + skills.sh badge）"
+else
+  hero_drift=""
+
+  # 12a. Hero 区（前 10 行）禁词：旧漂移措辞不应再出现
+  hero_block="$(head -10 "$README")"
+  for banned in "7/7 verify" "9 个识别方法" "DID 唯一入口" "Stata DID 分析的唯一"; do
+    if echo "$hero_block" | grep -qF "$banned"; then
+      hero_drift="${hero_drift} hero 区含旧漂移措辞「${banned}」;"
+    fi
+  done
+
+  # 12b. Hero 区必含模式："8/8 verify PASS"（防止又掉回 7/7）
+  if ! echo "$hero_block" | grep -qF "8/8 verify"; then
+    hero_drift="${hero_drift} hero 区缺失「8/8 verify」字样（防回归 7/7）;"
+  fi
+
+  # 12c. skills.sh badge 覆盖：README 列的 skills.sh badges 必须 ↔ 实际 skill 目录一一对应
+  # 抓 README 中所有 skills.sh badge 指向的 skill slug（badge 用 -- 分隔，目录用 -）。
+  # regex [a-z][a-z-]*[a-z] 避免吃到 shields.io 的颜色 hash（-4A90D9.svg）。
+  readme_badge_slugs="$(grep -oE 'skills\.sh-stata--[a-z][a-z-]*[a-z]' "$README" \
+    | sed -e 's/skills\.sh-stata--//' -e 's/--/-/g' -e 's/^/stata-/' \
+    | sort -u)"
+  actual_slugs="$(ls -d "$REPO_ROOT"/stata-* 2>/dev/null | xargs -n1 basename | sort -u)"
+  missing_badge="$(comm -23 <(printf '%s\n' "$actual_slugs") <(printf '%s\n' "$readme_badge_slugs") | tr '\n' ' ')"
+  if [ -n "$missing_badge" ]; then
+    hero_drift="${hero_drift} skills.sh badge 缺这些 skill: ${missing_badge};"
+  fi
+
+  # 12d. skills.sh 占位 badge 诚实性：如果 README 引用 skills.sh URL 而非真注册 URL，
+  # 必须出现 [待注册] / (TODO: register) 标记。
+  # 当前阶段：jefeerzhang/stataskills 在 skills.sh 未注册，README badge 都是占位符。
+  # 任何 skills.sh 引用块都要标注状态；标记缺则视为虚假声称。
+  pending_marks_count=$(grep -cE '\[(待注册|TODO: register)\]|\(pending registration\)' "$README" || true)
+  pending_marks_count=${pending_marks_count:-0}
+  badge_count=$(grep -cE 'skills\.sh/jefeerzhang' "$README" || true)
+  badge_count=${badge_count:-0}
+  if [ "$badge_count" -gt 0 ] && [ "$pending_marks_count" -lt 1 ]; then
+    hero_drift="${hero_drift} README 含 ${badge_count} 个 skills.sh 占位 badge 但无 [待注册]/[TODO: register] 标记（虚假声称）;"
+  fi
+
+  if [ -n "$hero_drift" ]; then
+    bad "README hero + skills.sh 漂移（${hero_drift}）"
+  else
+    ok "README hero + skills.sh badge 诚实性 OK（hero 区禁词/必含词 + badge ↔ skill 目录对齐 + 待注册标记）"
+  fi
+fi
+
 summary
