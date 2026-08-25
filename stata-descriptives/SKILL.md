@@ -1,6 +1,9 @@
 ---
 name: stata-descriptives
 description: Stata 描述统计与基础推断：频数表、交叉表、t 检验、效应量、功效分析、面板数据可视化 panelview。对应教材第 5–8 章。触发词：描述统计 / 卡方 / t 检验 / 效应量 / 功效分析 / panelview / 直方图。
+compatibility: >-
+  适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
+  触发即读本文，无需联网加载其他文件。panelview 需 ssc install panelview；其余命令（tab / summarize / corr / sktest / ttest）内置。
 ---
 
 # Stata 描述统计、表格与均值检验（本书第 5–8 章）
@@ -384,4 +387,3 @@ power onecorrelation 0 0.20        // H0: r=0 vs Ha: r=0.20，功效 0.80，输�
 - **`r(3)`** — varlist 类型不匹配（如 summarize 用字符串变量）。**修复**：先 describe 看类型；字符串需 encode 转数值标签
 - **`r(5)`** — 矩阵非正定（如因子分析相关矩阵奇异）。**修复**：corr 前 summarize 看分布；剔除零方差变量或加 force
 - **`r(6)`** — 矩阵不匹配（多组统计量合并时维度错）。**修复**：逐组检查 N；tab ..., matcell(A) 后 matrix list A 验维度
-
