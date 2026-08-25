@@ -10,9 +10,9 @@ ___/   /   /___/   /   /___/       MP—Parallel Edition
                                    800-782-8272        https://www.stata.com
                                    979-696-4600        service@stata.com
 
-Stata license: Single-user 16-core  perpetual
-Serial number: 3851871377
-  Licensed to: 张剑
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
                sicau
 
 Notes:
@@ -22,11 +22,16 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do C:/Users/jefee/Downloads/stataskills/verify/verify-regression.do 
+. do ../../verify/verify-regression.do 
 
 . version 19.5
 
-. 
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-regression
+. * chapter:  ch9
+. * data:     partyid.dta
+. * checks:   anova+regress+ivregress+ivreghdfe
+. * ============================
 . * ---- ch9 ANOVA ----
 . use partyid, clear
 
@@ -112,15 +117,15 @@ Adjusted predictions                                     Number of obs = 1,090
 Expression: Linear prediction, predict()
 At: age        = 43.82294 (mean)
 
---------------------------------------------------------------------------------
-               |            Delta-method
-               |     Margin   std. err.      t    P>|t|     [95% conf. interval]
----------------+----------------------------------------------------------------
-      mobile16 |
-    SAME CITY  |   44.10402   .6863205    64.26   0.000     42.75736    45.45068
-SAME ST,DIF..  |   48.68809    .832746    58.47   0.000     47.05412    50.32206
-DIFFERENT S..  |   47.18756   .6621822    71.26   0.000     45.88826    48.48686
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    mobile16 |
+  SAME CITY  |   44.10402   .6863205    64.26   0.000     42.75736    45.45068
+SAME ST,D..  |   48.68809    .832746    58.47   0.000     47.05412    50.32206
+DIFFERENT..  |   47.18756   .6621822    71.26   0.000     45.88826    48.48686
+------------------------------------------------------------------------------
 
 . use gss2006_chapter9_2way, clear
 (General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
@@ -418,7 +423,6 @@ concern: 1 |  candidate: 1 yes, 0
 
 . if !`has_require' {
 .     display "__COMMUNITY_PACKAGE_MISSING__require__"
-__COMMUNITY_PACKAGE_MISSING__require__
 . }
 
 . cap which ftools
@@ -433,12 +437,92 @@ __COMMUNITY_PACKAGE_MISSING__require__
 
 . if `can_reghdfe' {
 .     use gss2006_chapter9_2way, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
 .     * 多维 FE：workfull × married
 .     reghdfe tvhours age, absorb(workfull married)
+(MWFE estimator converged in 3 iterations)
+
+HDFE Linear regression                            Number of obs   =      1,981
+Absorbing 2 HDFE groups                           F(   1,   1977) =      11.56
+                                                  Prob > F        =     0.0007
+                                                  R-squared       =     0.0764
+                                                  Adj R-squared   =     0.0750
+                                                  Within R-sq.    =     0.0058
+                                                  Root MSE        =     2.2002
+
+------------------------------------------------------------------------------
+     tvhours | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |   .0104351   .0030694     3.40   0.001     .0044156    .0164546
+       _cons |   2.444765   .1532447    15.95   0.000     2.144226    2.745303
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+    workfull |         2           0           2     |
+     married |         2           1           1     |
+-----------------------------------------------------+
 .     * 多向聚类稳健 SE
-.     reghdfe tvhours age, absorb(workfull married) vce(cluster workfull married)
+.     reghdfe tvhours age, absorb(workfull married) vce(cluster workfull marrie
+> d)
+(MWFE estimator converged in 3 iterations)
+Warning: VCV matrix was non-positive semi-definite; adjustment from Cameron, Ge
+> lbach & Miller applied.
+warning: variance matrix is nonsymmetric or highly singular.
+
+HDFE Linear regression                            Number of obs   =      1,981
+Absorbing 2 HDFE groups                           F(   1,      1) =       3.82
+Statistics robust to heteroskedasticity           Prob > F        =     0.3010
+                                                  R-squared       =     0.0764
+                                                  Adj R-squared   =     0.0745
+Number of clusters (workfull) =          2        Within R-sq.    =     0.0058
+Number of clusters (married) =          2         Root MSE        =     2.2007
+
+                       (Std. err. adjusted for 2 clusters in workfull married)
+------------------------------------------------------------------------------
+             |               Robust
+     tvhours | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |   .0104351          .        .       .            .           .
+       _cons |   2.444765          .        .       .            .           .
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+    workfull |         2           2           0    *|
+     married |         2           2           0    *|
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
 .     * 报告 Within R² + 吸收 DoF 表（reghdfe 默认行为）
 .     reghdfe tvhours age, absorb(workfull married) residuals
+(MWFE estimator converged in 3 iterations)
+
+HDFE Linear regression                            Number of obs   =      1,981
+Absorbing 2 HDFE groups                           F(   1,   1977) =      11.56
+                                                  Prob > F        =     0.0007
+                                                  R-squared       =     0.0764
+                                                  Adj R-squared   =     0.0750
+                                                  Within R-sq.    =     0.0058
+                                                  Root MSE        =     2.2002
+
+------------------------------------------------------------------------------
+     tvhours | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |   .0104351   .0030694     3.40   0.001     .0044156    .0164546
+       _cons |   2.444765   .1532447    15.95   0.000     2.144226    2.745303
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+    workfull |         2           0           2     |
+     married |         2           1           1     |
+-----------------------------------------------------+
 . }
 
 . 
@@ -451,7 +535,6 @@ __COMMUNITY_PACKAGE_MISSING__require__
 
 . if !`has_ivreghdfe' {
 .     display "__COMMUNITY_PACKAGE_MISSING__ivreghdfe__"
-__COMMUNITY_PACKAGE_MISSING__ivreghdfe__
 . }
 
 . cap which ivreg2
@@ -460,22 +543,224 @@ __COMMUNITY_PACKAGE_MISSING__ivreghdfe__
 
 . if !`has_ivreg2' {
 .     display "__COMMUNITY_PACKAGE_MISSING__ivreg2__"
-__COMMUNITY_PACKAGE_MISSING__ivreg2__
 . }
 
 . local can_ivreghdfe = (`has_ivreghdfe' & `can_reghdfe' & `has_ivreg2')
 
 . if `can_ivreghdfe' {
 .     use gss2006_chapter9_2way, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
 .     * IV + 单层 FE：prestg80 当内生变量（prestige 可能有反向因果），
 .     * age 当工具变量，marital 当 FE。变量互不重叠。
 .     ivreghdfe tvhours sex (prestg80 = age), absorb(marital)
+(MWFE estimator converged in 1 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                                      Number of obs =     1882
+                                                      F(  2,  1875) =     2.85
+                                                      Prob > F      =   0.0583
+Total (centered) SS     =  9223.609028                Centered R2   =  -4.0417
+Total (uncentered) SS   =  9223.609028                Uncentered R2 =  -4.0417
+Residual SS             =  46502.85884                Root MSE      =     4.98
+
+------------------------------------------------------------------------------
+     tvhours | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    prestg80 |   .2937345    .123242     2.38   0.017     .0520286    .5354404
+         sex |   .0597844    .236214     0.25   0.800    -.4034855    .5230543
+------------------------------------------------------------------------------
+Underidentification test (Anderson canon. corr. LM statistic):           8.474
+                                                   Chi-sq(1) P-val =    0.0036
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                8.481
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+------------------------------------------------------------------------------
+Sargan statistic (overidentification test of all instruments):           0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         prestg80
+Included instruments: sex
+Excluded instruments: age
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     marital |         5           0           5     |
+-----------------------------------------------------+
 . 
 .     * IV + 异方差稳健 SE（ivreghdfe 用 ivreg2 语法：`robust` 直接选项；
-.     * 注意：选项之间是空格分隔（不是逗号），否则 ivreghdfe 解析器拒为 invalid s
-> yntax）
+.     * 注意：选项之间是空格分隔（不是逗号），否则 ivreghdfe 解析器拒为 invalid
+>  syntax）
 .     ivreghdfe tvhours sex (prestg80 = age), absorb(marital) robust
+(MWFE estimator converged in 1 iterations)
+
+IV (2SLS) estimation
+--------------------
+
+Estimates efficient for homoskedasticity only
+Statistics robust to heteroskedasticity
+
+                                                      Number of obs =     1882
+                                                      F(  2,  1875) =     2.66
+                                                      Prob > F      =   0.0703
+Total (centered) SS     =  9223.609028                Centered R2   =  -4.0417
+Total (uncentered) SS   =  9223.609028                Uncentered R2 =  -4.0417
+Residual SS             =  46502.85884                Root MSE      =     4.98
+
+------------------------------------------------------------------------------
+             |               Robust
+     tvhours | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    prestg80 |   .2937345   .1274095     2.31   0.021     .0438551    .5436139
+         sex |   .0597844   .2344447     0.26   0.799    -.4000155    .5195843
+------------------------------------------------------------------------------
+Underidentification test (Kleibergen-Paap rk LM statistic):              8.275
+                                                   Chi-sq(1) P-val =    0.0040
+------------------------------------------------------------------------------
+Weak identification test (Cragg-Donald Wald F statistic):                8.481
+                         (Kleibergen-Paap rk Wald F statistic):          8.347
+Stock-Yogo weak ID test critical values: 10% maximal IV size             16.38
+                                         15% maximal IV size              8.96
+                                         20% maximal IV size              6.66
+                                         25% maximal IV size              5.53
+Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+------------------------------------------------------------------------------
+Hansen J statistic (overidentification test of all instruments):         0.000
+                                                 (equation exactly identified)
+------------------------------------------------------------------------------
+Instrumented:         prestg80
+Included instruments: sex
+Excluded instruments: age
+Partialled-out:       _cons
+                      nb: total SS, model F and R2s are after partialling-out;
+                          any small-sample adjustments include partialled-out
+                          variables in regressor count K
+------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+     marital |         5           0           5     |
+-----------------------------------------------------+
 . }
+
+. 
+. * ---- ch10.6a 官方 ivregress（内置，无需外部包）----
+. * 验证官方 IV 栈（ivregress + estat firststage/endogenous/overid）能跑通
+. * 两段：
+. *   1. 恰好识别（1 内生 + 1 工具）— `estat overid` 会用 `capture` 兜住 r(498)
+> ，
+. *      这不是失败，是 Stata 表达"无过度识别可做"的合法退出码
+. *      （详见 SKILL.md「错误码速查」r(498)）。
+. *   2. 过度识别（1 内生 + 2 工具）— `estat overid` 正常输出 Score chi2 与 p。
+. use gss2006_chapter9_2way, clear
+(General Social Surveys, 1972-2006 [Cumulative File], Dataset 0001)
+
+. ivregress 2sls tvhours sex (prestg80 = age), vce(robust) first
+
+First-stage regressions
+-----------------------
+
+                                                       Number of obs =   1,882
+                                                       F(2, 1879)    =    3.76
+                                                       Prob > F      =  0.0234
+                                                       R-squared     =  0.0042
+                                                       Adj R-squared =  0.0031
+                                                       Root MSE      = 13.9893
+
+------------------------------------------------------------------------------
+             |               Robust
+    prestg80 | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         sex |  -.5763729   .6497829    -0.89   0.375    -1.850745    .6979991
+         age |   .0509466   .0195224     2.61   0.009     .0126586    .0892345
+       _cons |   42.89716   1.393984    30.77   0.000     40.16324    45.63108
+------------------------------------------------------------------------------
+
+
+Instrumental-variables 2SLS regression            Number of obs   =      1,882
+                                                  Wald chi2(2)    =       5.14
+                                                  Prob > chi2     =     0.0767
+                                                  Root MSE        =      5.918
+
+------------------------------------------------------------------------------
+             |               Robust
+     tvhours | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    prestg80 |   .3607654   .1617209     2.23   0.026     .0437981    .6777326
+         sex |    .308865   .2882825     1.07   0.284    -.2561582    .8738882
+       _cons |  -13.61079   7.329682    -1.86   0.063     -27.9767    .7551274
+------------------------------------------------------------------------------
+Endogenous: prestg80
+Exogenous:  sex age
+
+. estat firststage
+
+  First-stage regression summary statistics
+  --------------------------------------------------------------------------
+               |            Adjusted      Partial       Robust
+      Variable |   R-sq.       R-sq.        R-sq.     F(1,1879)   Prob > F
+  -------------+------------------------------------------------------------
+      prestg80 |  0.0042      0.0031       0.0037       6.81023    0.0091
+  --------------------------------------------------------------------------
+
+
+. estat endogenous
+
+  Tests of endogeneity
+  H0: Variables are exogenous
+
+  Robust score chi2(1)            =  36.9297  (p = 0.0000)
+  Robust regression F(1,1878)     =  38.2476  (p = 0.0000)
+
+. capture noisily estat overid
+no overidentifying restrictions
+
+. display "overid_exact_rc=" _rc
+overid_exact_rc=498
+
+. 
+. ivregress 2sls tvhours sex (prestg80 = age marital), vce(robust)
+
+Instrumental-variables 2SLS regression            Number of obs   =      1,882
+                                                  Wald chi2(2)    =       3.12
+                                                  Prob > chi2     =     0.2106
+                                                  R-squared       =     0.0173
+                                                  Root MSE        =     2.2348
+
+------------------------------------------------------------------------------
+             |               Robust
+     tvhours | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    prestg80 |  -.0543793   .0347726    -1.56   0.118    -.1225324    .0137737
+         sex |   .0544945   .1051453     0.52   0.604    -.1515865    .2605755
+       _cons |   5.223288   1.595154     3.27   0.001     2.096843    8.349733
+------------------------------------------------------------------------------
+Endogenous: prestg80
+Exogenous:  sex age marital
+
+. estat overid
+
+  Test of overidentifying restrictions:
+
+  Score chi2(1)          =  57.8535  (p = 0.0000)
 
 . 
 end of do-file

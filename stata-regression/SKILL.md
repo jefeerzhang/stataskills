@@ -142,5 +142,7 @@ compatibility: >-
 > 与上方「❌ Agent 不该做的事（黑名单）」互补：黑名单给原则，错误码给精准命中。Agent 看到 r(N) 时直接查本节定位。
 
 - **`r(131)`** — 回归系数发散（完全多重共线性）。**修复**：corr x* 查共线；剔除冗余或 regress, noabsorb 排查
-- **`r(498)`** — FE 估计时变量组内方差为 0。**修复**：时不变变量跑 xtreg fe 自动 drop；改 regress i.id, noconstant
+- **`r(498)`** — Stata 表达"无 X"或"输入不合规"的通用信号。两种常见触发：
+  1. **FE 估计时变量组内方差为 0**（xtreg fe）。**修复**：时不变变量跑 xtreg fe 自动 drop；改 `regress i.id, noconstant`。
+  2. **`estat overid` 在恰好识别（L=K）时报 "no overidentifying restrictions"**。**修复**：这不是失败，是 Stata 表达"无过度识别可做"的合法退出码。要把过度识别检验跑出来就多放一把工具；脚本里用 `capture noisily estat overid` 兜住，跑命令后写 `display "overid_rc=" _rc`，_rc=498 表示恰好识别，0 表示有结果。
 - **`r(7)`** — reghdfe 报 option absorb() not allowed。**修复**：reghdfe 吸收 FE 必放 absorb() 而非 i.；详见 references/reghdfe.md

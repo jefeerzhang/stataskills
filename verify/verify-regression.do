@@ -91,9 +91,17 @@ if `can_ivreghdfe' {
 
 * ---- ch10.6a 官方 ivregress（内置，无需外部包）----
 * 验证官方 IV 栈（ivregress + estat firststage/endogenous/overid）能跑通
-* 故意用恰好识别（1 内生 + 1 工具），让 overid 报 "exactly identified" 留给脚本后断言
+* 两段：
+*   1. 恰好识别（1 内生 + 1 工具）— `estat overid` 会用 `capture` 兜住 r(498)，
+*      这不是失败，是 Stata 表达"无过度识别可做"的合法退出码
+*      （详见 SKILL.md「错误码速查」r(498)）。
+*   2. 过度识别（1 内生 + 2 工具）— `estat overid` 正常输出 Score chi2 与 p。
 use gss2006_chapter9_2way, clear
 ivregress 2sls tvhours sex (prestg80 = age), vce(robust) first
 estat firststage
 estat endogenous
+capture noisily estat overid
+display "overid_exact_rc=" _rc
+
+ivregress 2sls tvhours sex (prestg80 = age marital), vce(robust)
 estat overid

@@ -104,15 +104,16 @@
       "difficulty": "hard",
       "requires_package": ["ivreg2", "weakivtest"],
       "gotchas": ["f_gt_10_not_universal_safe_line", "cluster_vce_use_kp_f_not_cd_f"],
-      "scenario": "用户问题：ivreg2 跑完报「KP rk Wald F = 3.2, p = 0.04；Hansen J p = 0.31；endog p = 0.02」。1 内生 1 工具聚类到 id。下一步怎么写？",
+      "scenario": "用户问题：ivreg2 跑完报「KP rk Wald F = 3.2, p = 0.04；endog p = 0.02」。1 内生 1 工具聚类到 id——恰好识别，根本没 Hansen J。下一步怎么写？",
       "expected_actions": [
         "load stata-regression SKILL.md → references/iv-testing.md",
+        "认清恰好识别（工具数 = 内生数）：不要报 Hansen J / Sargan，外生性只能靠制度故事",
         "不要把 KP F=3.2 当强工具：1 内生 1 工具时 10% maximal IV size 临界值是 16.38，远大于 3.2；属于弱工具",
         "主估计改 LIML：ivreg2 y x2 x3 (x1 = z1), cluster(id) liml first",
         "或 fuller(1)：ivreg2 ..., fuller(1) first",
         "跑 weakivtest 看 effective F：quiet ivreg2 ...; weakivtest → r(F_eff)，不要拿 Stock-Yogo 的 16.38 卡它",
-        "正文报 Anderson-Rubin：ivreg2 ..., ffirst → 读脚注 Anderson-Rubin Wald F / p",
-        "恰好识别时 Hansen J 没自由度（脚注写 equation exactly identified），J=0.31 这一行从表里删掉",
+        "正文报 Anderson-Rubin：ivreg2 ..., ffirst → 读脚注 Anderson-Rubin Wald F / p（恰好识别时 AR 与 CLR 等价）",
+        "脚本里写 capture noisily estat overid；_rc=498 表示恰好识别、过度识别检验跑不出来，不是脚本失败",
         "endog p=0.02 拒绝 → IV 相对 OLS 有必要，留在表里"
       ],
       "expected_outputs": [
@@ -120,7 +121,7 @@
         "Anderson-Rubin 检验 p",
         "weakivtest effective F + TSLS/LIML 临界值",
         "表注里没有「F>10 工具够」这种陈词",
-        "Hansen J 行被删掉（恰好识别）"
+        "恰好识别：表里没有 Hansen J 行；脚本里 `estat overid` 用 `capture` 兜住，_rc=498"
       ],
       "verify_keywords": [
         "ivreg2",
