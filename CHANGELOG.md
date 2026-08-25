@@ -7,6 +7,11 @@ versioned by Stata compatibility).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
+首个稳定版本。8 个 skill 全量验证通过（6/6 run-verify.sh + 12/12 test-prompts.sh docs 模式），
+demo 全景 8 do-file + 27 PNG 全部 end of do-file，5 篇 ADR + 完整 verify harness。
+
 ### Changed
 - refactor(验证): 新增 `verify/lib/targets.sh` 验证目标注册表，把
   `did-community → synth-sdid` 的委托关系收敛为单一来源；`run-verify.sh`
@@ -40,6 +45,21 @@ versioned by Stata compatibility).
   getting-started + estimates / confidence-intervals / labelling / markers /
   varia 六大页面的系数图方法；配套 `verify/verify-coefplot.do`、
   `demo/dofiles/06_stata-coefplot.do`（4 张 PNG）与 README 更新。
+- feat(测试): `test-prompts.json` schema 2.0.0 → 2.1.0，每条 prompt 新增
+  `difficulty`（easy/medium/hard）/ `gotchas`（陷阱速查编号数组）/
+  `requires_package`（前置 SSC 包列表；null=全部内置）三个元字段；
+  借鉴 dylantmoore/stata-skill 的 evals.json 结构。`verify/test-prompts.sh`
+  与 `verify/check-claims.sh` 仅消费 `id`/`skill`/`verify_keywords`，
+  新字段为纯扩展，不破坏 harness。docs 模式 12/12 PASS。
+- feat(stata-basics): 新增「⚠️ 通用 Stata 陷阱速查（跨 skill 前置清单）」节，
+  在「强制路径」与「核心语法」之间前置 13 条通用陷阱（缺失值排序到
+  +infinity、`=` vs `==`、local 宏语法、bysort 前置排序、`i.`/`c.` 因子变量、
+  `gen` vs `replace`、字符串大小写、`merge` 必查 `_merge`、
+  `preserve`/`restore` + `tempfile` 做 collapse-merge-back、权重不可互换、
+  `capture` 吞错、行续接 `///`、`r()`/`e()`/`s()` 区分），统一用项目
+  既有的「陷阱 → 触发 → Fix → 验证」四件套格式；与下方「关键陷阱速查」
+  （skill 特有：漏逗号、if 缺 `& var < .`、反向编码等）互补。
+  借鉴 dylantmoore/stata-skill 的 Critical Gotchas 前置模式。
 - feat(验证): `verify/test-harness.sh` 回归测试——探针 do-file 故意触发
   错误，断言 harness 必须判 FAIL，锁住判定逻辑本身。
 - feat(仓库): GitHub Actions（`.github/workflows/verify.yml`）在 push/PR 自动
@@ -60,7 +80,6 @@ versioned by Stata compatibility).
   `_*.log`）——可再生产物，非 provenance；`.gitignore` 扩为
   `data/agis6/*.log` 防复发，落实「数据目录只放数据」。
 
-### Added
 - docs(readme): 首屏加钩子句「**Agent 跑 Stata DID 分析的唯一验证通过入口。**」；
   快速开始节补 `npx skills add jefeerzhang/stataskills` marketplace 安装入口。
 - refactor(架构): 拆分 stata-did-community SKILL.md 为 references/ 模式——
@@ -76,7 +95,6 @@ versioned by Stata compatibility).
   接入 `.github/workflows/verify.yml`。仿 test-harness.sh 与 run-verify.sh 三模式
   设计。
 
-### Fixed
 - fix(验证): 本机实测 test-prompts.sh --prompts 模式时发现并修复 3 个 harness bug：
   1. `verify-did-community.do` 用了相对路径 `do "verify/verify-synth-sdid.do"`，
      cwd 切到 data/agis6/ 后路径解析失败——run-verify.sh 改为直接跑 verify-synth-sdid.do，
@@ -90,16 +108,6 @@ versioned by Stata compatibility).
 - fix(脚本): verify-synth-sdid.do 把 `error 1` 改为 `exit 1`（语义一致，行为
   一致）；`estat group/event` 在 40 unit × 10 period 小样本下报 conformability
   r(503) 是已知 csdid 限制，用 capture 包住让脚本继续。
-
-### Planned
-- Add `meta/METHODOLOGY.md` documenting the textbook → skill distillation
-  process (so other developers can adapt this pattern to their own textbook).
-- PR entries into `ComposioHQ/awesome-claude-skills` and
-  `hanlulong/awesome-ai-for-economists` (long-tail discovery).
-- Submit to skills.sh / clawhub.ai once the README overhaul lands.
-  README 已加 `npx skills add jefeerzhang/stataskills` 一行安装入口
-  （2026-08-22）；marketplace 实际发布仍需 owner 上传 metadata，从 Planned
-  移到 Done 后再勾掉。
 
 ## 2026-08-16 — repo polish
 
@@ -147,4 +155,5 @@ versioned by Stata compatibility).
 
 ---
 
-[Unreleased]: https://github.com/jefeerzhang/stataskills/compare/daaf692...HEAD
+[Unreleased]: https://github.com/jefeerzhang/stataskills/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/jefeerzhang/stataskills/releases/tag/v1.0.0
