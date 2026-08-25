@@ -1,5 +1,5 @@
 version 19.5
-
+* VERIFY: stata-regression | ch9 | partyid.dta | anova+regress
 * ---- ch9 ANOVA ----
 use partyid, clear
 oneway stemcell partyid, bonferroni tabulate

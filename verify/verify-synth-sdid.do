@@ -1,6 +1,7 @@
 version 19.5
 set more off
 set seed 20260817
+* VERIFY: stata-did-community | synth | data/synth/synth_smoking.dta | synth+gap+placebo+donor
 
 * ============================================================
 * stata-did 验证脚本：第 13-15 节（csdid / jwdid / did_imputation / 合成控制 / 合成 DID，社区包）

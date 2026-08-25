@@ -382,4 +382,69 @@ else
   fi
 fi
 
+# ---- 13. verify-*.do I/O 契约：每个脚本必须有机器可读声明 ----
+# 借鉴 luban 报告 P1 短板：原 do-file 自包含但无机器可读「这个脚本验证什么」声明。
+# 契约格式：第 2-6 行内含一行 `* VERIFY: <skill> | <chapter> | <data> | <checks>`
+# 字段：
+#   skill  - 对应 stata-xxx skill 目录名（必须存在）
+#   chapter - 教材章节或方法名（自由文本）
+#   data   - 该脚本用的 .dta 文件名（必须存在于 data/）
+#   checks - 该脚本验证的能力清单（+ 分隔的关键词）
+verify_drift=""
+verify_total=0
+verify_missing_contract=""
+verify_bad_skill=""
+verify_bad_data=""
+verify_bad_format=""
+for vdo in "$REPO_ROOT"/verify/verify-*.do; do
+  [ -f "$vdo" ] || continue
+  verify_total=$((verify_total + 1))
+  vname=$(basename "$vdo" .do)
+  # 取前 6 行找 VERIFY 契约行
+  contract_line=$(head -6 "$vdo" | grep -E '^\* VERIFY:' || true)
+  if [ -z "$contract_line" ]; then
+    verify_missing_contract="${verify_missing_contract} ${vname};"
+    continue
+  fi
+  # 解析 4 字段（管道分隔，去前后空格）
+  v_skill=$(echo "$contract_line" | sed -e 's/^\* VERIFY:[[:space:]]*//' -e 's/|.*//' | tr -d ' ')
+  v_data=$(echo "$contract_line" | awk -F'|' '{print $3}' | tr -d ' ')
+  # 校验 skill 字段 → 必须有对应 stata-xxx 目录
+  if [ ! -d "$REPO_ROOT/$v_skill" ]; then
+    verify_bad_skill="${verify_bad_skill} ${vname}→${v_skill};"
+  fi
+  # 校验 data 字段：根据前缀分三类
+  #   sysuse:X+Y  - Stata 内置数据，路径检查跳过
+  #   sim:NxM     - 模拟数据（clear + set obs + gen），路径检查跳过
+  #   其它        - 相对路径，必须存在（先试 data/ 再试 data/agis6/ 再试原路径）
+  case "$v_data" in
+    sysuse:*|sim:*|"")
+      :  # 内置/模拟/未声明，跳过路径检查
+      ;;
+    *)
+      found=0
+      for prefix in "data/" "data/agis6/" ""; do
+        if [ -f "$REPO_ROOT/${prefix}${v_data}" ]; then found=1; break; fi
+      done
+      if [ "$found" -eq 0 ]; then
+        verify_bad_data="${verify_bad_data} ${vname}→${v_data};"
+      fi
+      ;;
+  esac
+  # 校验字段数量 = 4（防止 VERIFY 行截断）
+  field_count=$(echo "$contract_line" | sed -e 's/^\* VERIFY:[[:space:]]*//' | awk -F'|' '{print NF}' | tr -d ' ')
+  if [ "$field_count" -ne 4 ]; then
+    verify_bad_format="${verify_bad_format} ${vname}(${field_count} fields);"
+  fi
+done
+[ -n "$verify_missing_contract" ] && verify_drift="${verify_drift} 无 VERIFY 契约:${verify_missing_contract}"
+[ -n "$verify_bad_skill" ] && verify_drift="${verify_drift} skill 字段无对应目录:${verify_bad_skill}"
+[ -n "$verify_bad_data" ] && verify_drift="${verify_drift} data 字段文件缺失:${verify_bad_data}"
+[ -n "$verify_bad_format" ] && verify_drift="${verify_drift} 字段数 != 4:${verify_bad_format}"
+if [ -n "$verify_drift" ]; then
+  bad "verify-*.do 契约缺失或错误（共 ${verify_total} 个脚本）${verify_drift}"
+else
+  ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY 行，skill ↔ 目录 + data ↔ 文件对齐）"
+fi
+
 summary

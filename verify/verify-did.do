@@ -1,4 +1,5 @@
 version 19.5
+* VERIFY: stata-did | did | sim:24000x5 | didregress+atet+paralleltrend
 
 * ============================================================
 * stata-did 验证脚本
