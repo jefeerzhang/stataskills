@@ -331,4 +331,4 @@ compatibility: >-
     - `bash verify/run-verify.sh did --community`：缺任一必需包（csdid / jwdid / did_imputation / synth / sdid）即 BAD，强制本地"真验证"。
     - `synth_runner` / `drdid` / `hdfe` 标记为可选——缺包仅打 sentinel，不影响 PASS。
   - 网络受限时本节方法与 `synthdid` R 包 / diff-diff 的 `SyntheticDiD` 同源，可跨语言替代。
-- 运行：`bash verify/run-verify.sh did-community`（默认）/ `bash verify/run-verify.sh did-community --community`（强制）；全量 8 个 skill：`bash verify/run-verify.sh`。
+- 运行：`bash verify/run-verify.sh did-community`（默认）/ `bash verify/run-verify.sh did-community --community`（强制）；全量 10 个 skill：`bash verify/run-verify.sh`。

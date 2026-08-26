@@ -8,11 +8,13 @@
 2. 编写代码或文档改动
 3. **本地验证**（必须）：
    ```bash
-   bash verify/run-verify.sh        # 全部 6 个 skill 通过
-   cd demo && for f in dofiles/*.do; do
-       stata-mp -b do "$f"
-   done                              # 全部 ends=1, 无错误码
+   bash verify/run-verify.sh --static
+   bash verify/test-harness.sh
+   bash verify/test-prompts.sh
+   bash verify/check-claims.sh
+   bash verify/run-verify.sh        # 全部 10 个 verify target 通过
    ```
+   demo 是 ADR-0002 定义的独立全景层；修改 demo 时再运行对应 `demo/dofiles/*.do`。
 4. **Commit message** 用 [Conventional Commits 中文规范](https://www.conventionalcommits.org/)：
    - type 英文（`feat` / `fix` / `docs` / `refactor` / `perf` / `test` / `chore` / `ci`）
    - scope 中文（`技能` / `验证` / `演示` / `仓库` / `描述技能` / `回归技能` 等模块名）
@@ -26,10 +28,10 @@
 
 | 改动类型 | 必改文件 |
 |---|---|
-| 修改命令语法 / 选项 / 陷阱 | `*/SKILL.md`（教学围栏） |
-|                       | `verify/verify-{basics,descriptives,regression,advanced,coefplot,did}.do`（可执行验证） |
-|                       | `data/agis6/chapter*.do`（教材原文 primary source） |
-| 新增数据集 | `data/manifest.txt`（**单一来源**）+ `verify/` 检查 |
+| 修改命令语法 / 选项 / 陷阱 | `stata-*/SKILL.md`（教学围栏）+ 对应 `verify/verify-<skill>.do`（可执行验证） |
+| 修改教材命令示例 | 同步 `data/agis6/chapter*.do`（教材原文 primary source） |
+| 新增 AGIS6 数据集 | `data/manifest.txt`（单一来源）+ `verify/` 检查 |
+| 新增项目级扩展数据 | `data/manifest-extra.txt` + 对应子目录 README；外部来源走 license/provenance/download 校验，项目内生成走 version/seed/DGP/build/invariants 校验 |
 | 新增社区包扩展节 | `*/SKILL.md` 加新节 + frontmatter description 加触发词 + `verify/` 加用例 + `demo/` 加段 + README 致谢段 ¹ |
 | 修改平台二进制路径 | **只能改** `verify/stata.conf`（单一来源）+ `docs/run-stata.md` 说明 |
 
@@ -39,7 +41,7 @@
 
 | 依赖 | 装法 | 何时需要 |
 |---|---|---|
-| Stata 15.1+ | 见 stata.com | 跑任何 Stata 命令 |
+| StataNow 19.5 | 见 `docs/run-stata.md` 与 `verify/stata.conf` | 跑任何验证 do-file；版本政策固定为 19.5 |
 | `reghdfe` 6.12.3+ | `ssc install reghdfe, replace` + `net install ftools, from(...)` + `ftools, compile` + `mata: mata mlib index` | 跑 `*/SKILL.md` 10.5 / 10.6 / 10.7 节 |
 | `ivreg2` 4.1.11+ | `ssc install ivreg2, replace` | 跑 10.6 ivreghdfe |
 | `ranktest` 1.3.02+ | `ssc install ranktest, replace` | 跑 10.6 ivreghdfe（弱工具变量诊断需要） |
@@ -76,22 +78,18 @@
 ## 测试要求（提交前必做）
 
 ```bash
-# 1. 验证（6 个 skill 必须全 PASS）
+# 1. Stata-free 结构与回归层
+bash verify/run-verify.sh --static
+bash verify/test-harness.sh
+bash verify/test-prompts.sh
+bash verify/check-claims.sh
+
+# 2. 执行层（10 个 verify target）
 bash verify/run-verify.sh
-# 预期：6 通过，0 失败
-
-# 2. Demo（6 个 do-file 必须全部 ends=1, 无错误码）
-cd demo
-STATA=$(which stata-mp)
-for f in dofiles/*.do; do
-    $STATA -b do "$f"
-done
-# 预期每个 log 末尾是 "end of do-file" + 无 r(错误码)
-
-# 3. Demo 产物
-ls demo/output/ | grep png | wc -l
-# 预期 19（每次新增 PNG 需同步 README PNG 计数）
+# 预期：10 通过，0 失败；raw logs 按 ADR-0005 保留
 ```
+
+修改 demo 时另跑对应 `demo/dofiles/*.do`，并检查 log 恰好一次 `end of do-file`、无 `r(错误码)`；demo 数量不等同于 skill 数。
 
 ## commit message 模板
 
@@ -122,7 +120,7 @@ TWFE 估计 ATT 的负权重偏误。
 - 4 种 method：ife / mc / both / 默认
 
 影响范围：SKILL.md 10.7 节新增
-测试：bash verify/run-verify.sh 6/6 PASS + demo 03 ends=1
+测试：bash verify/run-verify.sh 全量 PASS + demo 03 ends=1
 
 Refs: Liu et al. (2020) SSRN 3555463
 ```

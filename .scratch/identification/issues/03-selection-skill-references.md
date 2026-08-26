@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — ADR-0006 与实施基线；02 — 教学数据与数据治理
 
-**Status:** in-review
+**Status:** complete
 
 ### 静态与文档验收
 
@@ -21,4 +21,4 @@
 - [x] 用正式教学 `.dta` 的 `preserve` 临时副本实测 `psmatch2` 最小 ATE；v4.0.12 返回 ATE/ATT/ATU，并生成匹配权重与支持对象。
 - [x] 用正式教学 `.dta` 的 `preserve` 临时副本实测 `ebalance` 默认 `_webal` 与 `generate(ebw_verify)` 两条路径，均 `e(convg)==1`，并在 e(sample) 内验证非负。
 - [x] 用正式教学 `.dta` 的 `preserve` 临时副本实测 NN `biasadj()` + `metric(mahalanobis)` + `vce(robust, nn(2))` + `osample()`；估计成功并存储。
-- [ ] `verify/verify-selection.do` 覆盖两个 optional 包、NN 契约及真实错误 FAIL；该项属于 Ticket 06，完成前本 ticket 保持 in-review。
+- [x] `verify/verify-selection.do` 覆盖两个 optional 包、NN 契约及真实错误 FAIL；Ticket 06 已完成并通过 Stata 19.5 实测。

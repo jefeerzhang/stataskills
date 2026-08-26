@@ -14,7 +14,7 @@
 #
 # 数据治理分支与维护步骤：
 #   - 外部来源/再分发数据：必须提供 data/<子目录>/README.md，记录来源、许可和
-#     provenance；如需下载，必须提供 download_*.sh，并在脚本中用 EXPECTED_SIZE
+#     provenance；必须提供 checked-in download_*.sh，并在脚本中用 EXPECTED_SIZE
 #     做字节校验。维护时先审来源/许可，再运行下载脚本并核对 EXPECTED_SIZE，更新
 #     README 的 provenance/字节信息，最后在本清单登记基名。
 #   - 项目内生成数据：必须提供 README.md，记录固定 Stata version、seed、完整 DGP、

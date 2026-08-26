@@ -1,19 +1,20 @@
 # ADR-0006：四个识别方法支柱与横切路由
 
-- 状态：Proposed
+- 状态：Accepted
 - 日期：2026-08-25
-- 目标路径：`docs/adr/0006-identification-four-pillars.md`
+- 接受日期：2026-08-26
+- 路径：`docs/adr/0006-identification-four-pillars.md`
 - 相关：[ADR-0001](0001-do-not-execute-skill-code-fences.md)（SKILL 围栏保持教学伪代码）、[ADR-0002](0002-demo-as-independent-panorama-layer.md)（demo 独立全景层）、[ADR-0003](0003-community-packages-as-first-class-verifiable-subjects.md)（社区包验证）、[ADR-0004](0004-verification-target-registry.md)（验证目标注册表）、[ADR-0005](0005-keep-raw-verify-logs.md)（保留完整 verify log）
 
 ## 背景
 
-当前仓库仍有 8 个 Stata skill；现有验证入口、README / AGENTS 等文档中的 skill 与结构计数也仍是迁移前状态。本文提出的 10 skills 是 Proposed 实施完成后的目标状态，不是当前事实。现有 DID、RDD 与 IV 能分别承载三类观察性识别方法，但没有统一的「研究设计 → 识别方法」横切入口，也没有 selection-on-observables 的横截面教学路径。仅凭变量名、数据形状或政策关键词不能证明识别假设成立，因此不能用关键词列表代替设计判断。
+仓库现有 10 个 Stata skill；`stata-selection` 补齐横截面 selection-on-observables，`stata-identification` 提供统一的「研究设计 → 识别方法」横切入口。DID、RDD、IV 与 selection 分别承载四类观察性识别方法。仅凭变量名、数据形状或政策关键词不能证明识别假设成立，因此不能用关键词列表代替设计判断。
 
 ## 决策
 
 ### 1. 四个方法支柱 + 一个横切 router
 
-提出同时新增 `stata-selection` 与 `stata-identification`；实施完成后，仓库目标由 8 个 skill 扩展为 10 个 skill。
+新增 `stata-selection` 与 `stata-identification`，仓库由 8 个 skill 扩展为 10 个 skill。
 
 | 方法支柱 | 入口 |
 |---|---|
@@ -143,7 +144,7 @@ selection 数据走项目内生成分支：正式数据进入 `data/manifest-ext
 以下条件必须全部满足：
 
 - 完整 stop branches 覆盖 RCT、RDD、IV、面板政策公共 gate、standard DID、`synth` / `sdid`、横截面 selection-on-observables 与无可信设计时停止因果声明；每个分支都写明进入条件、关键假设和失败去向。standard DID 的进入条件必须包括足够的处理组与对照组 / 可比较单位，区别于 `synth` / `sdid` 的方法特定入口。
-- 公共 gate 只要求明确政策时点、处理前后信息、足够的处理组与对照组 / 可比较单位、未处理 donor / control、no anticipation、no interference 等；standard DID 另要求 parallel trends。`synth` / `sdid` 保持同一子分支，但按方法析取：`synth` 通常要求一个或极少处理单位、长前期、可辩护 donor pool 与前期拟合；`sdid` 要求充分处理前 / 后期和 untreated / not-yet-treated comparison units，支持单个或多个处理单位及当前实现支持的多个处理日期，并检查 weighting、latent-factor / regularity 与方法特定推断条件。“一个或极少处理单位”不是 `sdid` 必要条件。standard DID 的 parallel trends 失败后仍检查该子分支。
+- 公共 gate 只要求明确政策时点、处理前后信息、可定义的未处理 donor / control 或 not-yet-treated comparison 来源、no anticipation、no interference 与稳定构成；standard DID 另要求足够的处理组与对照组 / 可比较单位及 parallel trends。`synth` / `sdid` 保持同一子分支，但按方法析取：`synth` 通常要求一个或极少处理单位、长前期、可辩护 donor pool 与前期拟合；`sdid` 要求充分处理前 / 后期和 untreated / not-yet-treated comparison units，支持单个或多个处理单位及当前实现支持的多个处理日期，并检查 weighting、latent-factor / regularity 与方法特定推断条件。“一个或极少处理单位”不是 `sdid` 必要条件。standard DID 的 parallel trends 失败后仍检查该子分支。
 - `stata-did-community/references/sdid.md` 与 `stata-did-community/references/workflow-8step.md` 必须与 router 和 `identification-decision-tree.md` 同步：前者把单处理单位写成推断 / VCE 特殊情形，而非 `sdid` 适用范围；后者分开 Synthetic Control（通常少数处理单位）与 Synthetic DiD（充分 pre / post、comparison units、weighting、latent-factor / regularity 和方法特定推断条件），且不把处理单位少设为 Synthetic DiD 必要条件。
 - Named-method trigger 按第 2 节直接进入对应方法 skill，不先绕 router；方法本地 gate 失败后返回 router。通用设计选择、仅有数据形状或政策关键词的请求先进入 router。
 - selection 默认 estimand 处处为 ATET；`teffects ipwra`、`teffects psmatch`、`teffects ipw` 与 `teffects nnmatch` 的 estimation 示例都显式写 `, atet`；`teffects overlap` 作为 postestimation 不带 `atet`。`teffects ipwra` 准确称为 IPW regression adjustment 双重稳健估计量，并与 `teffects aipw`、`hdidregress aipw` 明确区分；文档不得声称双重稳健能修复未观测混杂或 overlap 失败。
@@ -165,7 +166,7 @@ selection 数据走项目内生成分支：正式数据进入 `data/manifest-ext
 - Optional 社区依赖锁定为 SSC `ebalance` 1.5.4；文档安装命令是 `ssc install ebalance`，最小二组语法是 `ebalance treat covarlist, targets(1)`。verify 只探测已安装包，不联网安装。
 - 已安装 `ebalance` 时，不写 `generate()` 的默认权重变量为 `_webal`；指定权重变量使用 `generate(ebw_verify)`。verify 必须断言 `e(convg)==1`，在 `e(sample)` 适用样本内权重非缺失且非负，并通过 `preserve` / `restore` 和 `estimates restore ipwra_atet` 恢复主数据与主估计状态。
 - 缺少 `ebalance` 时只输出纯 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ebalance__`；该 sentinel 在默认与 `--community` 两模式都 PASS。同一 log 出现真实 Stata 错误时仍必须 FAIL，sentinel 不得掩盖错误。
-- `psmatch2.md` 独立负责社区包契约。安装命令为 `ssc install psmatch2`；`psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate` 明确是最小 ATE 示例。若要社区 ATT，使用经本机 `help` / source 核实的 `att` 选项；selection 主 estimand ATET 与社区 ATT 只是术语对齐，不能把 `ate` 称为 ATT。`psmatch2` 不是 `teffects psmatch` 的同一实现。若未先检查本机 help/source，不锁定 `r(att)`、`r(ate)`、权重变量或 `_support` 名称。
+- `psmatch2.md` 独立负责社区包契约。安装命令为 `ssc install psmatch2`；默认不写 `ate` 时估计 treated-effect / ATT 语义，`psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate` 才是最小 ATE 示例。本机 v4.0.12 不存在 `att` option；selection 主 estimand ATET 与社区默认 ATT 只是术语对齐。`psmatch2` 不是 `teffects psmatch` 的同一实现。若未先检查本机 help/source，不锁定 `r(att)`、`r(ate)`、权重变量或 `_support` 名称。
 - `psmatch2` 为 optional 社区敏感性/兼容性对照，不是默认主路径，不强制安装；verify 缺包只输出 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__`，默认与 `--community` 两模式均 PASS。已安装时运行最小烟测，断言实际返回结果非缺失及匹配权重或匹配样本存在；真实 Stata 错误仍 FAIL。
 
 ### 6.4 验证与发布 Acceptance 条件
@@ -173,7 +174,7 @@ selection 数据走项目内生成分支：正式数据进入 `data/manifest-ext
 以下条件必须全部满足。验收证据分层：shell 静态检查只验证文件、计数、字段和字符串；Stata verify 验证命令执行与 N、处理率 `[0.20, 0.30]`、ATET 容差 `abs(_b[...]-.5)<=.15`、exact varlist 以及 balance / overlap 命令成功；prompt harness 验证 `route_branch` 与 `expected_actions`。人工 review 只负责制度证据和其他不能由模拟数据证明的识别假设；“可辩护”不是 shell 可以证明的结论。
 
 - `verify-selection.do` 与 `verify-identification.do` 的物理首行均为 `version 19.5`，前 10 行内各有合法文件级 `VERIFY CONTRACT`；section 不添加 harness 未消费的 metadata，两个新入口保持默认 1:1 映射。
-- selection verify 覆盖 exact varlist、数据不变量、原始失衡、IPWRA ATET 数值断言、模型归属明确的 balance、无 `atet` 且只检查成功的 overlap、官方 PSM、独立 optional `psmatch2`（最小 ATE 示例为 `psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate`；社区 ATT 只能使用经 help/source 核实的 `att` 选项）、IPW、NN、optional `ebalance`、原尺度主表与独立平衡 log；每个内置 estimator 显式存储。
+- selection verify 覆盖 exact varlist、数据不变量、原始失衡、IPWRA ATET 数值断言、模型归属明确的 balance、无 `atet` 且只检查成功的 overlap、官方 PSM、独立 optional `psmatch2`（默认不写 `ate` 为 treated-effect / ATT 语义；显式 `ate` 为 ATE；v4.0.12 不存在 `att` option）、IPW、NN、optional `ebalance`、原尺度主表与独立平衡 log；每个内置 estimator 显式存储。
 - identification verify 覆盖 consistency、SUTVA / no interference、design-specific exchangeability、positivity / overlap、estimand 及 power / precision 分离的可执行示例；自然语言路由主要由 prompts 验证。
 - `test-prompts.json` 必须是合法 JSON，每个实际 `stata-*/SKILL.md` 至少有一条覆盖；锁定的 `route_branch` 锚点都有 expected action，其中 `router-entry` 覆盖通用设计选择 / 能否识别入口，`synth-sdid` 的场景与动作覆盖 `synth` / `sdid` 析取条件；named-method prompt 断言直达，并覆盖本地 gate 失败返回 router 与 standard DID 失败后检查该面板政策子分支。
 - `verify/test-prompts.sh` 从实际 `stata-*/SKILL.md` 动态派生 expected skill，不保留 jq / Python 固定数组；`.github/workflows/verify.yml` 不保留“覆盖 8 skill”文案；`bash verify/test-prompts.sh` 退出码为 0。
@@ -226,4 +227,4 @@ selection 数据走项目内生成分支：正式数据进入 `data/manifest-ext
 
 ## 状态
 
-Proposed。只有本 ADR 第 6.1–6.4 节列出的自包含 Acceptance 条件全部通过，README 的最终当前态声明与 raw logs 已基于同一轮证据更新后，ADR-0006 才能改为 Accepted。
+Accepted。2026-08-26 同轮验证满足第 6.1–6.4 节全部 Acceptance 条件：`test-prompts.sh`、`test-harness.sh`、`check-claims.sh` 与 static verify 全部退出 0；selection、identification 和全量 Stata 验证报告 10/10 PASS；README 当前态与 10 份 raw logs 已基于同一轮证据更新。

@@ -3,17 +3,17 @@ message: |-
   If you use stataskills in academic work, please cite both this skill
   collection and the underlying textbook (see `references` below).
 type: software
-title: "stataskills: 7 Stata Skills distilled from A Gentle Introduction to Stata (6th edition)"
+title: "stataskills: 10 Stata Skills distilled from A Gentle Introduction to Stata (6th edition)"
 abstract: |-
-  Seven Agent skills — four (stata-basics, stata-descriptives, stata-regression,
+  Ten Agent skills — four (stata-basics, stata-descriptives, stata-regression,
   stata-advanced) that distill Alan C. Acock's "A Gentle Introduction to
-  Stata" (6th edition), plus three extensions (stata-coefplot for coefficient
-  plots, stata-did for the official difference-in-differences command family,
-  stata-did-community for DID community packages: csdid/jwdid/did_imputation/synth/sdid)
+  Stata" (6th edition), plus six extensions covering coefficient plots,
+  official and community difference-in-differences methods, regression
+  discontinuity, selection on observables, and identification design routing
   — callable from Claude Code, Codex, OpenClaw and other skill-compatible
-  runtimes. Each skill ships with the full chapter-to-command mapping,
-  interpretation logic, reporting conventions, and a pitfalls
-  checklist, plus the 38 .dta datasets needed to reproduce every example.
+  runtimes. Each skill ships with command guidance, interpretation logic,
+  reporting conventions, and a pitfalls checklist, plus the 38 .dta AGIS6
+  datasets and governed project-level extension datasets used by verification.
 version: 0.1.0
 date-released: 2026-08-14
 license: MIT

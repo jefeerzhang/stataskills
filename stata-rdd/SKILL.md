@@ -180,7 +180,7 @@ rdrobust y x, c(c0) fuzzy(treat)
     - 缺包分支用 `display "__COMMUNITY_PACKAGE_MISSING__<pkg>__"`，harness 用正则识别（见 `verify/run-verify.sh`）。
   - 断言：一次 `end of do-file`、无错误码、robust CI 存在、`rddensity` 跑过。
 - 运行：`bash verify/run-verify.sh rdd`（默认）/ `bash verify/run-verify.sh rdd --community`（强制装包）。
-- 全量 8 个 skill：`bash verify/run-verify.sh`。
+- 全量 10 个 skill：`bash verify/run-verify.sh`。
 
 ## 参考文献
 

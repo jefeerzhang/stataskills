@@ -36,9 +36,26 @@ if bash "$VERIFY_DIR/run-verify.sh" zzprobe --community >/dev/null 2>&1; then
 fi
 echo "PASS  harness 探针：必需包 sentinel 的默认/--community 语义正确"
 
-printf 'version 19.5\ndisplay "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__probe__"\nerror 1\n' > "$PROBE"
-if bash "$VERIFY_DIR/run-verify.sh" zzprobe >/dev/null 2>&1; then
-  echo "FAIL  harness 探针：sentinel 掩盖了真实 r(1) 错误"
-  exit 1
-fi
-echo "PASS  harness 探针：sentinel 不会掩盖真实 r(1) 错误"
+for package in ebalance psmatch2; do
+  printf 'version 19.5\ndisplay "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__%s__"\n' "$package" > "$PROBE"
+  if ! bash "$VERIFY_DIR/run-verify.sh" zzprobe >/dev/null 2>&1; then
+    echo "FAIL  harness 探针：纯 ${package} optional sentinel 在默认模式下未 PASS"
+    exit 1
+  fi
+  if ! bash "$VERIFY_DIR/run-verify.sh" zzprobe --community >/dev/null 2>&1; then
+    echo "FAIL  harness 探针：纯 ${package} optional sentinel 在 --community 模式下未 PASS"
+    exit 1
+  fi
+  echo "PASS  harness 探针：纯 ${package} optional sentinel 在默认/--community 两模式均 PASS"
+done
+
+printf 'version 19.5\ndisplay "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__"\nerror 1\n' > "$PROBE"
+for mode in default community; do
+  args=()
+  [ "$mode" = community ] && args+=(--community)
+  if bash "$VERIFY_DIR/run-verify.sh" zzprobe "${args[@]}" >/dev/null 2>&1; then
+    echo "FAIL  harness 探针：${mode} 模式下 optional sentinel 掩盖了真实 r(1) 错误"
+    exit 1
+  fi
+done
+echo "PASS  harness 探针：optional sentinel 在默认/--community 两模式均不掩盖真实 r(1) 错误"

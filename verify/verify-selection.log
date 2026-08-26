@@ -1,0 +1,597 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-selection.do 
+
+. version 19.5
+
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-selection
+. * chapter:  selection-on-observables
+. * data:     selection/teaching-treatment.dta
+. * checks:   data-invariants+raw-imbalance+ipwra-atet+tebalance+overlap+psmatc
+> h+psmatch2-optional+ipw+nnmatch+ebalance-optional+tables
+. * ============================
+. set more off
+
+. 
+. * ---- 1. Data load and publication invariants ----
+. use "../selection/teaching-treatment", clear
+
+. ds
+id     treat  y      x1     x2     x3     x4     x5     x6
+
+. local actual `r(varlist)'
+
+. local expected id treat y x1 x2 x3 x4 x5 x6
+
+. assert "`actual'" == "`expected'"
+
+. assert _N == 2000
+
+. isid id
+
+. assert inlist(treat, 0, 1)
+
+. assert !missing(id, treat, y, x1, x2, x3, x4, x5, x6)
+
+. quietly summarize treat, meanonly
+
+. scalar treatment_rate = r(mean)
+
+. assert inrange(treatment_rate, 0.20, 0.30)
+
+. display "treatment_rate=" %9.6f treatment_rate
+treatment_rate= 0.253500
+
+. 
+. * ---- 2. Raw covariate imbalance and outcome difference ----
+. scalar max_abs_smd = 0
+
+. foreach v of varlist x1-x4 {
+  2.     quietly summarize `v' if treat == 1
+  3.     scalar mean1_`v' = r(mean)
+  4.     scalar sd1_`v' = r(sd)
+  5.     quietly summarize `v' if treat == 0
+  6.     scalar mean0_`v' = r(mean)
+  7.     scalar sd0_`v' = r(sd)
+  8.     scalar abs_smd_`v' = abs(mean1_`v' - mean0_`v') / ///
+>         sqrt((sd1_`v'^2 + sd0_`v'^2) / 2)
+  9.     scalar max_abs_smd = max(max_abs_smd, abs_smd_`v')
+ 10.     display "raw_abs_smd_`v'=" %9.6f abs_smd_`v'
+ 11. }
+raw_abs_smd_x1= 0.431167
+raw_abs_smd_x2= 0.475731
+raw_abs_smd_x3= 0.027161
+raw_abs_smd_x4= 0.444719
+
+. assert max_abs_smd > 0.1
+
+. 
+. quietly summarize y if treat == 1, meanonly
+
+. scalar raw_y_treated = r(mean)
+
+. quietly summarize y if treat == 0, meanonly
+
+. scalar raw_y_control = r(mean)
+
+. scalar raw_y_difference = raw_y_treated - raw_y_control
+
+. assert abs(raw_y_difference - 0.5) > 0.25
+
+. display "raw_y_difference=" %9.6f raw_y_difference
+raw_y_difference= 1.460681
+
+. 
+. * ---- 3. Primary IPWRA ATET ----
+. teffects ipwra (y x1 x2 x3 x4) (treat x1 x2 x3 x4), atet
+
+Iteration 0:  EE criterion = 9.696e-26  
+Iteration 1:  EE criterion = 2.893e-33  
+
+Treatment-effects estimation                    Number of obs     =      2,000
+Estimator      : IPW regression adjustment
+Outcome model  : linear
+Treatment model: logit
+------------------------------------------------------------------------------
+             |               Robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   .5016781     .06099     8.23   0.000       .38214    .6212162
+-------------+----------------------------------------------------------------
+POmean       |
+       treat |
+          0  |   2.017785   .0650586    31.01   0.000     1.890272    2.145297
+------------------------------------------------------------------------------
+
+. estimates store ipwra_atet
+
+. scalar ipwra_effect = _b[ATET:r1vs0.treat]
+
+. assert !missing(ipwra_effect)
+
+. assert abs(ipwra_effect - 0.5) <= 0.15
+
+. display "ipwra_atet=" %9.6f ipwra_effect
+ipwra_atet= 0.501678
+
+. 
+. * ---- 4. Balance appendix, owned by the IPWRA estimate ----
+. display "=== BALANCE APPENDIX: IPWRA ATET ==="
+=== BALANCE APPENDIX: IPWRA ATET ===
+
+. tebalance summarize
+
+Covariate balance summary
+
+                         Raw     Weighted
+-----------------------------------------
+Number of obs =        2,000      2,000.0
+Treated obs   =          507      1,005.1
+Control obs   =        1,493        994.9
+-----------------------------------------
+
+-----------------------------------------------------------------
+                |Standardized differences          Variance ratio
+                |        Raw    Weighted           Raw   Weighted
+----------------+------------------------------------------------
+             x1 |   .4311667     .008227      .9129454   .9478416
+             x2 |   .4757308    .0240252      1.017998   1.082553
+             x3 |   .0271607    .0029408      1.054482   1.051957
+             x4 |  -.4447195   -.0187909      .9901981    .973923
+-----------------------------------------------------------------
+
+. 
+. * ---- 5. Propensity-score overlap diagnostic ----
+. teffects overlap
+
+. 
+. * ---- 6. Official propensity-score matching ATET ----
+. teffects psmatch (y) (treat x1 x2 x3 x4), atet nneighbor(1)
+
+Treatment-effects estimation                   Number of obs      =      2,000
+Estimator      : propensity-score matching     Matches: requested =          1
+Outcome model  : matching                                     min =          1
+Treatment model: logit                                        max =          1
+------------------------------------------------------------------------------
+             |              AI robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   .5521439   .0791867     6.97   0.000     .3969409     .707347
+------------------------------------------------------------------------------
+
+. estimates store psmatch_atet
+
+. scalar psmatch_effect = _b[ATET:r1vs0.treat]
+
+. assert !missing(psmatch_effect)
+
+. display "psmatch_atet=" %9.6f psmatch_effect
+psmatch_atet= 0.552144
+
+. 
+. * ---- 7. Optional community psmatch2 contracts ----
+. capture which psmatch2
+
+. local has_psmatch2 = (_rc == 0)
+
+. if !`has_psmatch2' {
+.     display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__"
+. }
+
+. else {
+.     preserve
+.     psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1)
+
+Probit regression                                       Number of obs =  2,000
+                                                        LR chi2(4)    = 240.47
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1012.061                              Pseudo R2     = 0.1062
+
+------------------------------------------------------------------------------
+       treat | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          x1 |   .2736942   .0322611     8.48   0.000     .2104635    .3369248
+          x2 |   .3245927   .0338274     9.60   0.000     .2582923    .3908931
+          x3 |   .1458589   .1094982     1.33   0.183    -.0687537    .3604715
+          x4 |  -.2977648   .0336273    -8.85   0.000    -.3636731   -.2318565
+       _cons |  -.8382134   .0652888   -12.84   0.000     -.966177   -.7102498
+------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+> ---------
+        Variable     Sample |    Treated     Controls   Difference         S.E.
+>    T-stat
+----------------------------+--------------------------------------------------
+> ---------
+               y  Unmatched | 2.51946297   1.05878207    1.4606809   .079583122
+>     18.35
+                        ATT | 2.51946297   1.98954747   .529915494   .119033711
+>      4.45
+----------------------------+--------------------------------------------------
+> ---------
+Note: S.E. does not take into account that the propensity score is estimated.
+
+           | psmatch2:
+ psmatch2: |   Common
+ Treatment |  support
+assignment | On suppor |     Total
+-----------+-----------+----------
+ Untreated |     1,493 |     1,493 
+   Treated |       507 |       507 
+-----------+-----------+----------
+     Total |     2,000 |     2,000 
+.     scalar psmatch2_att = r(att)
+.     scalar psmatch2_seatt = r(seatt)
+.     assert !missing(psmatch2_att)
+.     assert !missing(psmatch2_seatt)
+.     confirm variable _weight
+.     confirm variable _support
+.     quietly count if _support == 1 & !missing(_weight)
+.     assert r(N) > 0
+.     restore
+. 
+.     preserve
+.     psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate
+
+Probit regression                                       Number of obs =  2,000
+                                                        LR chi2(4)    = 240.47
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1012.061                              Pseudo R2     = 0.1062
+
+------------------------------------------------------------------------------
+       treat | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          x1 |   .2736942   .0322611     8.48   0.000     .2104635    .3369248
+          x2 |   .3245927   .0338274     9.60   0.000     .2582923    .3908931
+          x3 |   .1458589   .1094982     1.33   0.183    -.0687537    .3604715
+          x4 |  -.2977648   .0336273    -8.85   0.000    -.3636731   -.2318565
+       _cons |  -.8382134   .0652888   -12.84   0.000     -.966177   -.7102498
+------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+> ---------
+        Variable     Sample |    Treated     Controls   Difference         S.E.
+>    T-stat
+----------------------------+--------------------------------------------------
+> ---------
+               y  Unmatched | 2.51946297   1.05878207    1.4606809   .079583122
+>     18.35
+                        ATT | 2.51946297   1.98954747   .529915494   .119033711
+>      4.45
+                        ATU | 1.05878207   1.67431468   .615532612            .
+>         .
+                        ATE |                           .593828673            .
+>         .
+----------------------------+--------------------------------------------------
+> ---------
+Note: S.E. does not take into account that the propensity score is estimated.
+
+           | psmatch2:
+ psmatch2: |   Common
+ Treatment |  support
+assignment | On suppor |     Total
+-----------+-----------+----------
+ Untreated |     1,493 |     1,493 
+   Treated |       507 |       507 
+-----------+-----------+----------
+     Total |     2,000 |     2,000 
+.     scalar psmatch2_ate = r(ate)
+.     scalar psmatch2_att_from_ate = r(att)
+.     scalar psmatch2_seatt_from_ate = r(seatt)
+.     assert !missing(psmatch2_ate)
+.     assert !missing(psmatch2_att_from_ate)
+.     assert !missing(psmatch2_seatt_from_ate)
+.     confirm variable _weight
+.     confirm variable _support
+.     quietly count if _support == 1 & !missing(_weight)
+.     assert r(N) > 0
+.     restore
+.     estimates restore ipwra_atet
+(results ipwra_atet are active now)
+. }
+
+. 
+. * ---- 8. Official inverse-probability-weighted ATET ----
+. teffects ipw (y) (treat x1 x2 x3 x4), atet
+
+Iteration 0:  EE criterion = 9.696e-26  
+Iteration 1:  EE criterion = 1.634e-32  
+
+Treatment-effects estimation                    Number of obs     =      2,000
+Estimator      : inverse-probability weights
+Outcome model  : weighted mean
+Treatment model: logit
+------------------------------------------------------------------------------
+             |               Robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   .5384955   .0651386     8.27   0.000     .4108262    .6661648
+-------------+----------------------------------------------------------------
+POmean       |
+       treat |
+          0  |   1.980967    .065139    30.41   0.000     1.853297    2.108637
+------------------------------------------------------------------------------
+
+. estimates store ipw_atet
+
+. scalar ipw_effect = _b[ATET:r1vs0.treat]
+
+. assert !missing(ipw_effect)
+
+. display "ipw_atet=" %9.6f ipw_effect
+ipw_atet= 0.538496
+
+. 
+. * ---- 9. Official covariate nearest-neighbor ATET ----
+. teffects nnmatch (y x1 x2 x3 x4) (treat), atet nneighbor(1) ///
+>     metric(mahalanobis) biasadj(x1 x2 x3 x4) ///
+>     vce(robust, nn(2)) osample(nn_osample)
+
+Treatment-effects estimation                   Number of obs      =      2,000
+Estimator      : nearest-neighbor matching     Matches: requested =          1
+Outcome model  : matching                                     min =          1
+Distance metric: Mahalanobis                                  max =          1
+------------------------------------------------------------------------------
+             |              AI robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |   .4447961   .0761203     5.84   0.000     .2956031    .5939892
+------------------------------------------------------------------------------
+
+. estimates store nnmatch_atet
+
+. scalar nnmatch_effect = _b[ATET:r1vs0.treat]
+
+. assert !missing(nnmatch_effect)
+
+. confirm variable nn_osample
+
+. assert inlist(nn_osample, 0, 1)
+
+. display "nnmatch_atet=" %9.6f nnmatch_effect
+nnmatch_atet= 0.444796
+
+. 
+. * ---- 10. Optional community entropy-balancing contracts ----
+. capture which ebalance
+
+. local has_ebalance = (_rc == 0)
+
+. if !`has_ebalance' {
+.     display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ebalance__"
+. }
+
+. else {
+.     preserve
+.     ebalance treat x1 x2 x3 x4, targets(1)
+
+
+Data Setup
+Treatment variable:   treat
+Covariate adjustment: x1 x2 x3 x4 
+
+Optimizing...
+Iteration 1: Max Difference = 1492
+Iteration 2: Max Difference = 548.612092
+Iteration 3: Max Difference = 201.559429
+Iteration 4: Max Difference = 73.8868517
+Iteration 5: Max Difference = 26.9213355
+Iteration 6: Max Difference = 9.650655
+Iteration 7: Max Difference = 3.31530719
+Iteration 8: Max Difference = 1.02835508
+Iteration 9: Max Difference = .266610892
+Iteration 10: Max Difference = .052904143
+Iteration 11: Max Difference = .003406143
+maximum difference smaller than the tolerance level; convergence achieved
+
+
+Treated units: 507     total of weights: 507
+Control units: 1493    total of weights: 507
+
+
+Before: without weighting
+
+             |              Treat              |        Control       
+             |      mean   variance   skewness |      mean   variance 
+-------------+---------------------------------+----------------------
+          x1 |     .3416      .9534     -.0501 |   -.08937      1.044 
+          x2 |     .3753      .9475     .04671 |   -.08569      .9307 
+          x3 |     .5117     .08852    -.04084 |     .5037     .08395 
+          x4 |    -.3327      .9105     .07831 |    .09269      .9195 
+
+             |  Control  
+             |  skewness 
+-------------+----------
+          x1 |   -.07594 
+          x2 |   -.05944 
+          x3 |   -.03056 
+          x4 |      -.12 
+
+
+After:  _webal as the weighting variable
+
+             |              Treat              |        Control       
+             |      mean   variance   skewness |      mean   variance 
+-------------+---------------------------------+----------------------
+          x1 |     .3416      .9534     -.0501 |     .3397      1.003 
+          x2 |     .3753      .9475     .04671 |     .3732      .8715 
+          x3 |     .5117     .08852    -.04084 |     .5117     .08406 
+          x4 |    -.3327      .9105     .07831 |    -.3307      .9332 
+
+             |  Control  
+             |  skewness 
+-------------+----------
+          x1 |    .03399 
+          x2 |   -.01886 
+          x3 |   -.08369 
+          x4 |   -.04773 
+.     assert e(convg) == 1
+.     tempvar esample_default
+.     generate byte `esample_default' = e(sample)
+.     confirm variable _webal
+.     assert !missing(_webal) if `esample_default'
+.     assert _webal >= 0 if `esample_default'
+.     drop _webal
+. 
+.     ebalance treat x1 x2 x3 x4, targets(1) generate(ebw_verify)
+
+
+Data Setup
+Treatment variable:   treat
+Covariate adjustment: x1 x2 x3 x4 
+
+Optimizing...
+Iteration 1: Max Difference = 1492
+Iteration 2: Max Difference = 548.612092
+Iteration 3: Max Difference = 201.559429
+Iteration 4: Max Difference = 73.8868517
+Iteration 5: Max Difference = 26.9213355
+Iteration 6: Max Difference = 9.650655
+Iteration 7: Max Difference = 3.31530719
+Iteration 8: Max Difference = 1.02835508
+Iteration 9: Max Difference = .266610892
+Iteration 10: Max Difference = .052904143
+Iteration 11: Max Difference = .003406143
+maximum difference smaller than the tolerance level; convergence achieved
+
+
+Treated units: 507     total of weights: 507
+Control units: 1493    total of weights: 507
+
+
+Before: without weighting
+
+             |              Treat              |        Control       
+             |      mean   variance   skewness |      mean   variance 
+-------------+---------------------------------+----------------------
+          x1 |     .3416      .9534     -.0501 |   -.08937      1.044 
+          x2 |     .3753      .9475     .04671 |   -.08569      .9307 
+          x3 |     .5117     .08852    -.04084 |     .5037     .08395 
+          x4 |    -.3327      .9105     .07831 |    .09269      .9195 
+
+             |  Control  
+             |  skewness 
+-------------+----------
+          x1 |   -.07594 
+          x2 |   -.05944 
+          x3 |   -.03056 
+          x4 |      -.12 
+
+
+After:  ebw_verify as the weighting variable
+
+             |              Treat              |        Control       
+             |      mean   variance   skewness |      mean   variance 
+-------------+---------------------------------+----------------------
+          x1 |     .3416      .9534     -.0501 |     .3397      1.003 
+          x2 |     .3753      .9475     .04671 |     .3732      .8715 
+          x3 |     .5117     .08852    -.04084 |     .5117     .08406 
+          x4 |    -.3327      .9105     .07831 |    -.3307      .9332 
+
+             |  Control  
+             |  skewness 
+-------------+----------
+          x1 |    .03399 
+          x2 |   -.01886 
+          x3 |   -.08369 
+          x4 |   -.04773 
+.     assert e(convg) == 1
+.     tempvar esample_named
+.     generate byte `esample_named' = e(sample)
+.     confirm variable ebw_verify
+.     assert !missing(ebw_verify) if `esample_named'
+.     assert ebw_verify >= 0 if `esample_named'
+.     restore
+.     estimates restore ipwra_atet
+(results ipwra_atet are active now)
+. }
+
+. 
+. * ---- 11. Original-scale table for the four built-in estimators ----
+. estimates restore ipwra_atet
+(results ipwra_atet are active now)
+
+. estimates table ipwra_atet psmatch_atet ipw_atet nnmatch_atet, ///
+>     b(%9.4f) se(%9.4f)
+
+--------------------------------------------------------------
+    Variable | ipwra_a~t   psmatch~t   ipw_atet    nnmatch~t  
+-------------+------------------------------------------------
+ATET         |
+       treat |
+   (1 vs 0)  |    0.5017      0.5521      0.5385      0.4448  
+             |    0.0610      0.0792      0.0651      0.0761  
+-------------+------------------------------------------------
+POmean       |
+     0.treat |    2.0178                  1.9810              
+             |    0.0651                  0.0651              
+-------------+------------------------------------------------
+OME0         |
+          x1 |    0.6751                                      
+             |    0.0430                                      
+          x2 |    0.8396                                      
+             |    0.0475                                      
+          x3 |    0.6016                                      
+             |    0.1292                                      
+          x4 |   -0.6405                                      
+             |    0.0424                                      
+       _cons |    0.9511                                      
+             |    0.0724                                      
+-------------+------------------------------------------------
+OME1         |
+          x1 |    0.6968                                      
+             |    0.0494                                      
+          x2 |    0.7731                                      
+             |    0.0474                                      
+          x3 |    0.2085                                      
+             |    0.1488                                      
+          x4 |   -0.6018                                      
+             |    0.0471                                      
+       _cons |    1.6844                                      
+             |    0.0944                                      
+-------------+------------------------------------------------
+TME1         |
+          x1 |    0.4780                  0.4780              
+             |    0.0562                  0.0562              
+          x2 |    0.5557                  0.5557              
+             |    0.0574                  0.0574              
+          x3 |    0.2552                  0.2552              
+             |    0.1893                  0.1893              
+          x4 |   -0.5133                 -0.5133              
+             |    0.0578                  0.0578              
+       _cons |   -1.4160                 -1.4160              
+             |    0.1154                  0.1154              
+--------------------------------------------------------------
+                                                  Legend: b/se
+
+. 
+end of do-file

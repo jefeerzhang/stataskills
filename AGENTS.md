@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建的 8 个现有 skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`、`stata-did-community`、`stata-rdd`）；Proposed ADR-0006 计划新增 `stata-selection` 与 `stata-identification`，目标为 10 个 skills。仓库含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
+Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 10 个 skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`、`stata-did-community`、`stata-rdd`、`stata-selection`、`stata-identification`）。仓库含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
 
 ## 目录
 
@@ -8,7 +8,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建�
 - `CONTEXT.md` — 术语表（强制路径 / 可执行禁令 / 陷阱四件套 / 踢走）
 - `verify/verify-<skill>.do` — 对应验证脚本；`bash verify/run-verify.sh [skill名]` 运行，Stata 19.5 批处理模式
 - `docs/run-stata.md` — 各平台 Stata 批处理路径
-- `docs/adr/` — 架构决策记录
+- `docs/adr/` — 6 份架构决策记录（ADR-0001 至 ADR-0006）
 - `CLAUDE.md` — 旧版项目指令（issue tracker / triage labels / domain docs），保留有效，本文件不重复其内容
 
 ## 关键惯例
@@ -19,10 +19,10 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建�
 - 验证脚本数据的两种来源：
   - AGIS6 教材配套：`data/agis6/`，由 `data/manifest.txt` 单一来源管理。
   - 项目级扩展（非 AGIS6 来源）：`data/<子目录>/`，由 `data/manifest-extra.txt` 单一来源管理。两份清单由 harness 同时校验。
-    - 外部来源/再分发数据：README 记录来源、许可与 provenance；如需下载，保留 `download_*.sh` 和 `EXPECTED_SIZE` 字节校验。
+    - 外部来源/再分发数据：README 记录来源、许可与 provenance；提供 checked-in `download_*.sh`，并用 `EXPECTED_SIZE` 做字节校验。
     - 项目内生成数据：README 记录固定 Stata version、seed、DGP、checked-in build do-file、schema 和数值不变量；不要求下载脚本、`EXPECTED_SIZE` 或外部许可。
 - 中文作图需先询问用户；默认英文标签
-- 每个 SKILL.md 首行钉住 `version 19.5`
+- 新增的 `stata-selection` 与 `stata-identification` 在首个 Stata code fence 中以 `version 19.5` 作为第一条可执行语句（不是 Markdown 物理首行）；每个 `verify/verify-*.do` 的物理首行必须是 `version 19.5`
 - Agent 读 skill 时先执行文首「强制路径」（匹配到第一条就停），再查文末可执行禁令；教材章节不是执行入口。分数线 / 年龄门槛 / 地理边界踢走 DID，改走 `stata-rdd`。
 
 <!-- proma:knowledge-maintenance:start -->

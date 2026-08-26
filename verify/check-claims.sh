@@ -10,24 +10,25 @@
 #   bash verify/check-claims.sh
 #
 # 核心集断言（每条均可 red-capable）：
-#   1. 每个 skill 目录恰有一份 SKILL.md，且经注册表解析出的 verify do-file 存在
-#   2. docs/run-stata.md 首行计数「N 份」与 skill 数一致
+#   1. skill 事实只从实际 `stata-*/SKILL.md` 派生；每个 skill 经 target registry
+#      解析出的 verify do-file 必须存在，反向孤儿 verify 仅允许已登记 delegate
+#   2. docs/run-stata.md 首行计数「N 份」与动态 skill 数一致
 #   3. data/agis6/*.dta 数量与 manifest 登记条数一致
-#   4. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性
-#   5. demo/dofiles 与 demo/logs 数量一致且同名配对
-#   6. 每份 SKILL.md 含「运行 Stata 的方式」章节标题（独立分发约束）
+#   4. manifest-extra.txt 与 data/*/ 下扩展 .dta 双向一致
+#   5. demo/dofiles 与 demo/logs 动态计数一致且同名配对
+#   6. 每份 SKILL.md 含可编号的「运行 Stata 的方式」标题；selection / identification
+#      首个 Stata fence 的第一条可执行语句必须是 `version 19.5`
 #   7. 扩展节「（扩展，教材未覆盖）」的关键词出现在 frontmatter description
-#   8. 所有 SKILL.md 陷阱节统一使用「## 关键陷阱速查」标题
-#   9. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅警告不 FAIL
-#   10. test-prompts.json：Agent 行为回归测试集覆盖全部 skill
-#   11. README 硬编码计数与文件系统事实一致性（skill/dta/PNG/dofile/prompt 数）
+#   8. 所有 SKILL.md 使用可编号的「关键陷阱速查」标题
+#   9. demo↔verify 覆盖矩阵（ADR-0002）：demo 必有 verify；verify 无 demo 仅报告 debt
+#   10. test-prompts.json 与动态 skill 集合双向一致
+#   11. README 的 skill / target / ADR / 数据 / PNG / do-file / log / prompt 声明
+#       必须存在并等于动态 facts
+#   12. README hero 的 skill / target 声明及 skills.sh badge 集合与动态 skill 集合一致
+#   13. 每个 verify-*.do 的 VERIFY CONTRACT、skill 字段和 data 路径有效
 #
-# facts（供人工比对，不自动断言）：
-#   - 各 skill 陷阱条目数
-#   - verify↔demo 覆盖矩阵（verify 无 demo 的 skill 清单，ADR-0002 debt 跟踪）
-#
-# 不检查 README/CITATION 散文里的措辞性计数（散文措辞多变，误报风险高）；
-# 散文数字靠本脚本输出的 facts 供人工比对。
+# facts（供人工比对，不自动断言）：各 skill 陷阱条目数、verify↔demo debt、
+# verify-*.do assert 覆盖率。README/CITATION 的自由散文不做泛数字扫描。
 # ============================================================
 set -u
 
@@ -47,25 +48,36 @@ count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
   echo "$n"
 }
 
-# ---- facts：文件系统真相 ----
-N_SKILLS=$(count "$REPO_ROOT"/stata-*/SKILL.md)
+# ---- facts：文件系统真相；skill 的唯一来源是实际 SKILL.md ----
+SKILL_FILES=()
+TARGET_ENTRIES=()
+for skill_file in "$REPO_ROOT"/stata-*/SKILL.md; do
+  [ -f "$skill_file" ] || continue
+  SKILL_FILES+=("$skill_file")
+  skill_name="$(basename "$(dirname "$skill_file")")"
+  TARGET_ENTRIES+=("verify-${skill_name#stata-}")
+done
+ACTUAL_SKILLS="$(for skill_file in "${SKILL_FILES[@]}"; do basename "$(dirname "$skill_file")"; done | sort -u)"
+N_SKILLS=${#SKILL_FILES[@]}
+N_TARGETS=${#TARGET_ENTRIES[@]}
 N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # 原始 verify-*.do 计数（含委托脚本），仅供 facts 展示
+N_ADR=$(count "$REPO_ROOT"/docs/adr/*.md)
 N_DTA=$(count "$REPO_ROOT"/data/agis6/*.dta)
 N_MANIFEST=$(grep -cE '^[^#[:space:]]' "$REPO_ROOT/data/manifest.txt")
 N_DEMO_DO=$(count "$REPO_ROOT"/demo/dofiles/*.do)
 N_DEMO_LOG=$(count "$REPO_ROOT"/demo/logs/*.log)
 N_DEMO_PNG=$(count "$REPO_ROOT"/demo/output/*.png)
 
-echo "facts: skills=${N_SKILLS} verify=${N_VERIFY} dta=${N_DTA} manifest=${N_MANIFEST} demo_do=${N_DEMO_DO} demo_log=${N_DEMO_LOG} demo_png=${N_DEMO_PNG}"
+echo "facts: skills=${N_SKILLS} targets=${N_TARGETS} verify_files=${N_VERIFY} adr=${N_ADR} dta=${N_DTA} manifest=${N_MANIFEST} demo_do=${N_DEMO_DO} demo_log=${N_DEMO_LOG} demo_png=${N_DEMO_PNG}"
 
 # ---- 1. skill ↔ 验证入口一一对应：每个 skill 经注册表解析出 run do-file
 #      且该 do-file 存在；反向，每个 verify-*.do 要么是某 skill 入口的
 #      do-file、要么是注册表登记的委托（delegate），否则为孤儿。----
 entry_dofs=""
-for s in "$REPO_ROOT"/stata-*; do
-  [ -d "$s" ] || continue
-  name="$(basename "$s")"                        # stata-<name>
-  dof="$(targets_run_dofile "verify-${name#stata-}")"
+for skill_file in "${SKILL_FILES[@]}"; do
+  name="$(basename "$(dirname "$skill_file")")"   # stata-<name>
+  entry="verify-${name#stata-}"
+  dof="$(targets_run_dofile "$entry")"
   entry_dofs="${entry_dofs} ${dof}"
   [ -f "$VERIFY_DIR/$dof.do" ] || bad "缺验证脚本：verify/$dof.do（对应 ${name}）"
 done
@@ -141,19 +153,38 @@ for d in "$REPO_ROOT"/demo/dofiles/*.do; do
   [ -f "$REPO_ROOT/demo/logs/${b}.log" ] || bad "demo log 缺失：demo/logs/${b}.log（对应 ${b}.do）"
 done
 
-# ---- 6. 每份 SKILL.md 含「运行 Stata 的方式」章节标题 ----
-for s in "$REPO_ROOT"/stata-*/SKILL.md; do
-  [ -e "$s" ] || continue
-  if grep -q '^## 运行 Stata 的方式' "$s"; then
-    ok "$(basename "$(dirname "$s")") 含「运行 Stata 的方式」章节"
+# ---- 6. SKILL 运行章节与 version 规则 ----
+for s in "${SKILL_FILES[@]}"; do
+  skill_name="$(basename "$(dirname "$s")")"
+  if grep -qE '^## ([0-9]+\. )?运行 Stata 的方式' "$s"; then
+    ok "${skill_name} 含「运行 Stata 的方式」章节"
   else
-    bad "$(basename "$(dirname "$s")")/SKILL.md 缺「## 运行 Stata 的方式」章节（独立分发须自带运行规矩）"
+    bad "${skill_name}/SKILL.md 缺「运行 Stata 的方式」章节（独立分发须自带运行规矩）"
   fi
+  case "$skill_name" in
+    stata-selection|stata-identification)
+      first_stata_statement=$(awk '
+        /^```stata[[:space:]]*$/ { in_stata=1; next }
+        in_stata && /^```/ { exit }
+        in_stata {
+          line=$0
+          sub(/^[[:space:]]+/, "", line)
+          if (line == "" || line ~ /^\*/ || line ~ /^\/\//) next
+          print line
+          exit
+        }
+      ' "$s")
+      if [ "$first_stata_statement" = "version 19.5" ]; then
+        ok "${skill_name} 首个 Stata fence 以 version 19.5 开始"
+      else
+        bad "${skill_name}/SKILL.md 首个 Stata fence 的第一条可执行语句不是 version 19.5（实际：${first_stata_statement:-无}）"
+      fi
+      ;;
+  esac
 done
 
 # ---- 7. 扩展节触发词完整性：「（扩展，教材未覆盖）」的关键词须出现在 frontmatter ----
-for s in "$REPO_ROOT"/stata-*/SKILL.md; do
-  [ -e "$s" ] || continue
+for s in "${SKILL_FILES[@]}"; do
   skill_name="$(basename "$(dirname "$s")")"
   desc=$(sed -n '1,/^---$/p' "$s" | grep '^description:')
   while IFS= read -r line; do
@@ -176,24 +207,22 @@ for s in "$REPO_ROOT"/stata-*/SKILL.md; do
   done < <(grep '（扩展，教材未覆盖）' "$s" 2>/dev/null)
 done
 
-# ---- 8. 陷阱节标题统一：所有 SKILL.md 必须用「## 关键陷阱速查」----
-for s in "$REPO_ROOT"/stata-*/SKILL.md; do
-  [ -e "$s" ] || continue
+# ---- 8. 陷阱节标题统一：所有 SKILL.md 必须有「关键陷阱速查」（允许编号） ----
+for s in "${SKILL_FILES[@]}"; do
   skill_name="$(basename "$(dirname "$s")")"
-  if grep -q '^## 关键陷阱速查' "$s"; then
-    ok "${skill_name} 陷阱节标题统一（## 关键陷阱速查）"
+  if grep -qE '^## ([0-9]+\. )?关键陷阱速查' "$s"; then
+    ok "${skill_name} 陷阱节标题统一（关键陷阱速查）"
   else
-    bad "${skill_name}/SKILL.md 陷阱节标题不统一（期望「## 关键陷阱速查」）"
+    bad "${skill_name}/SKILL.md 陷阱节标题不统一（期望「关键陷阱速查」）"
   fi
 done
 
 # ---- facts（供人工比对）：各 skill 陷阱条目数 ----
 echo "facts: 各 skill 陷阱条目数"
-for s in "$REPO_ROOT"/stata-*/SKILL.md; do
-  [ -e "$s" ] || continue
+for s in "${SKILL_FILES[@]}"; do
   skill_name="$(basename "$(dirname "$s")")"
   # 计数陷阱节下的条目：以 "- " 或数字编号开头的行
-  pitfall_count=$(sed -n '/^## 关键陷阱速查/,/^## /p' "$s" | grep -cE '^[[:space:]]*(-|\*|[0-9]+\.)[[:space:]]')
+  pitfall_count=$(sed -n '/关键陷阱速查/,/^## /p' "$s" | grep -cE '^[[:space:]]*(-|\*|[0-9]+\.)[[:space:]]')
   echo "  ${skill_name}: ${pitfall_count} 条"
 done
 
@@ -219,8 +248,7 @@ for ds in "${demo_skills[@]}"; do
 done
 # 软警告（不计入 fail）：verify 无 demo 仅 echo，提示 ADR-0002 debt
 echo "facts: verify↔demo 覆盖矩阵（demo 必有 verify；verify 可无 demo，按 ADR-0002）"
-for s in "$REPO_ROOT"/stata-*/SKILL.md; do
-  [ -e "$s" ] || continue
+for s in "${SKILL_FILES[@]}"; do
   name="$(basename "$(dirname "$s")")"
   name="${name#stata-}"
   if ! printf '%s\n' "${demo_skills[@]}" | grep -qx "$name"; then
@@ -231,15 +259,14 @@ done
 ok "demo→verify 配对完整（${#demo_skills[@]} 个 demo do-file 均有 verify 脚本）"
 
 # ---- 10. test-prompts.json：Agent 行为回归测试集 ----
-# 把"Skill 不只是文档，还能被 Agent 实际执行并产生期望锚点"这件事
-# 变成可验证的 CI 断言。覆盖 8 个 skill + 跨 skill 联动：
+# 从实际 stata-*/SKILL.md 动态派生 skill 集合，与 prompt 覆盖双向比对：
 # - JSON 合法（兼容 python3 / python；解释器缺失与 JSON 无效分别报错）
-# - prompts 数组非空、含 id/skill/scenario/expected_actions 字段
-# - 每个 skill 至少有 1 条 prompt 覆盖（避免新 skill 漏登记）
+# - prompts 数组非空、含 skill 字段
+# - 缺失或未知 skill 都 FAIL，不能靠修改固定数字伪造覆盖
 TEST_PROMPTS="$REPO_ROOT/test-prompts.json"
 PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
 if [ ! -f "$TEST_PROMPTS" ]; then
-  bad "test-prompts.json 缺失：repo 根目录应有 Agent 行为回归测试集（覆盖 8 个 skill）"
+  bad "test-prompts.json 缺失：repo 根目录应有覆盖实际 ${N_SKILLS} 个 skill 的行为回归测试集"
 elif [ -z "$PYTHON_BIN" ]; then
   bad "无法校验 test-prompts.json：需要 python3 或 python"
 elif ! "$PYTHON_BIN" -m json.tool "$TEST_PROMPTS" >/dev/null 2>&1; then
@@ -247,138 +274,102 @@ elif ! "$PYTHON_BIN" -m json.tool "$TEST_PROMPTS" >/dev/null 2>&1; then
 else
   N_PROMPTS=$("$PYTHON_BIN" -c 'import json, sys; print(len(json.load(open(sys.argv[1], encoding="utf-8"))["prompts"]))' "$TEST_PROMPTS")
   ok "test-prompts.json 合法，含 ${N_PROMPTS} 条 prompt"
-  # 每个 skill 至少 1 条 prompt（用 awk 提取 skill 字段做覆盖矩阵）
-  if "$PYTHON_BIN" - "$REPO_ROOT" <<'PY'
-import json, sys, os, glob
+  if "$PYTHON_BIN" - "$REPO_ROOT" "$ACTUAL_SKILLS" <<'PY'
+import json, os, sys
 repo_root = sys.argv[1]
 with open(os.path.join(repo_root, "test-prompts.json"), encoding="utf-8") as f:
     d = json.load(f)
+actual = set(sys.argv[2].splitlines())
 covered = set()
 for p in d["prompts"]:
-    # skill 字段可能含 " + " 联动，按 ", " 或 " + " 切分
-    for s in p["skill"].replace("+", ",").split(","):
-        covered.add(s.strip())
-missing = []
-for sdir in sorted(glob.glob(os.path.join(repo_root, "stata-*"))):
-    full_name = os.path.basename(sdir)  # 目录名本来就是 stata-xxx
-    if full_name not in covered:
-        missing.append(full_name)
-if missing:
-    print(f"FAIL  test-prompts 未覆盖以下 skill：{', '.join(missing)}", file=sys.stderr)
+    for skill in p["skill"].replace("+", ",").split(","):
+        covered.add(skill.strip())
+missing = sorted(actual - covered)
+unknown = sorted(covered - actual)
+if missing or unknown:
+    if missing:
+        print(f"FAIL  test-prompts 未覆盖：{', '.join(missing)}", file=sys.stderr)
+    if unknown:
+        print(f"FAIL  test-prompts 含未知 skill：{', '.join(unknown)}", file=sys.stderr)
     sys.exit(1)
-# 把覆盖详情写到 stderr，让 ok 行单独占据 stdout
 print(f"coverage: {len(d['prompts'])} prompts, {len(covered)} skills", file=sys.stderr)
 PY
   then
-    ok "test-prompts.json 覆盖全部 8 个 skill（Python 详情见 stderr）"
+    ok "test-prompts.json 与实际 ${N_SKILLS} 个 skill 双向一致（Python 详情见 stderr）"
   else
-    bad "test-prompts.json 未覆盖全部 skill：见 stderr"
+    bad "test-prompts.json 与实际 skill 集合不一致：见 stderr"
   fi
 fi
 
-# ---- 11. README 硬编码计数与文件系统事实一致性 ----
-# 提取 README 中的数字声明，与 facts 比对。模式：
-#   "N 个 Skill" / "N 个 skill" / "N 个数据集" / "N .dta" / "N 张 demo PNG"
-#   "N do-file" / "N 个 do-file" / "N 条 Agent" / "N 条 prompt"
+# ---- 11. README 结构计数与文件系统事实一致性 ----
+# 每类声明都必须存在且等于动态 facts；缺声明与错数字同样 FAIL。
 README="$REPO_ROOT/README.md"
 if [ ! -f "$README" ]; then
-  bad "README.md 缺失（无法校验硬编码计数）"
+  bad "README.md 缺失（无法校验结构计数）"
 else
   readme_drift=""
+  check_readme_count() {
+    local label="$1" pattern="$2" actual="$3" declared
+    declared=$(grep -oE "$pattern" "$README" | head -1 | grep -oE '^[0-9]+' || true)
+    if [ -z "$declared" ]; then
+      readme_drift="${readme_drift} 缺 ${label} 声明;"
+    elif [ "$declared" -ne "$actual" ]; then
+      readme_drift="${readme_drift} ${label}：README 写 ${declared}，实际 ${actual};"
+    fi
+  }
 
-  # skill 计数（匹配 "6 个 Skill" / "6 个 skill" / "6 个 skills"）
-  readme_skills=$(grep -oE '[0-9]+ 个 [Ss]kill[s]?' "$README" | head -1 | grep -oE '^[0-9]+')
-  if [ -n "$readme_skills" ] && [ "$readme_skills" -ne "$N_SKILLS" ]; then
-    readme_drift="${readme_drift} skill 计数：README 写 ${readme_skills}，实际 ${N_SKILLS};"
-  fi
-
-  # 数据集计数（匹配 "38 个数据集" / "38 .dta"）
-  readme_dta=$(grep -oE '[0-9]+ (个数据集|\.dta)' "$README" | head -1 | grep -oE '^[0-9]+')
-  if [ -n "$readme_dta" ] && [ "$readme_dta" -ne "$N_DTA" ]; then
-    readme_drift="${readme_drift} 数据集计数：README 写 ${readme_dta}，实际 ${N_DTA};"
-  fi
-
-  # demo PNG 计数（匹配 "27 张 demo PNG" / "27 张 PNG"）
-  readme_png=$(grep -oE '[0-9]+ 张 (demo )?PNG' "$README" | head -1 | grep -oE '^[0-9]+')
-  if [ -n "$readme_png" ] && [ "$readme_png" -ne "$N_DEMO_PNG" ]; then
-    readme_drift="${readme_drift} demo PNG 计数：README 写 ${readme_png}，实际 ${N_DEMO_PNG};"
-  fi
-
-  # demo do-file 计数（匹配 "7 do-file" / "7 个 do-file"）
-  readme_dofiles=$(grep -oE '[0-9]+ (个 )?do-file' "$README" | head -1 | grep -oE '^[0-9]+')
-  if [ -n "$readme_dofiles" ] && [ "$readme_dofiles" -ne "$N_DEMO_DO" ]; then
-    readme_drift="${readme_drift} demo do-file 计数：README 写 ${readme_dofiles}，实际 ${N_DEMO_DO};"
-  fi
-
-  # demo log 计数（匹配 "N 个 Stata log" / "N 个 log"）
-  readme_logs=$(grep -oE '[0-9]+ 个 (Stata )?log' "$README" | head -1 | grep -oE '^[0-9]+')
-  if [ -n "$readme_logs" ] && [ "$readme_logs" -ne "$N_DEMO_LOG" ]; then
-    readme_drift="${readme_drift} demo log 计数：README 写 ${readme_logs}，实际 ${N_DEMO_LOG};"
-  fi
-
-  # Agent 行为回归 prompt 计数（匹配 "8 条 Agent" / "8 条 prompt"）
-  readme_prompts=$(grep -oE '[0-9]+ 条 (Agent|prompt)' "$README" | head -1 | grep -oE '^[0-9]+')
-  if [ -n "$readme_prompts" ] && [ -n "${N_PROMPTS:-}" ] && [ "$readme_prompts" -ne "$N_PROMPTS" ]; then
-    readme_drift="${readme_drift} prompt 计数：README 写 ${readme_prompts}，实际 ${N_PROMPTS};"
-  fi
+  check_readme_count "skill 计数" '[0-9]+ 个 [Ss]kill[s]?' "$N_SKILLS"
+  check_readme_count "verify target 计数" '[0-9]+ 个验证入口' "$N_TARGETS"
+  check_readme_count "ADR 计数" '[0-9]+ ADR' "$N_ADR"
+  check_readme_count "AGIS6 数据集计数" '[0-9]+ 个数据集' "$N_DTA"
+  check_readme_count "demo PNG 计数" '[0-9]+ 张 (demo )?PNG' "$N_DEMO_PNG"
+  check_readme_count "demo do-file 计数" '[0-9]+ (个 )?do-file' "$N_DEMO_DO"
+  check_readme_count "demo log 计数" '[0-9]+ 个 (Stata )?log' "$N_DEMO_LOG"
+  check_readme_count "prompt 计数" '[0-9]+ 条 (Agent|prompt)' "${N_PROMPTS:-0}"
 
   if [ -n "$readme_drift" ]; then
-    bad "README 硬编码计数漂移（${readme_drift}）"
+    bad "README 结构计数漂移（${readme_drift}）"
   else
-    ok "README 硬编码计数与文件系统事实一致"
+    ok "README 结构计数一致（skills=${N_SKILLS}, targets=${N_TARGETS}, ADR=${N_ADR}, prompts=${N_PROMPTS}）"
   fi
 fi
 
-# ---- 12. README hero 区 + skills.sh badge 诚实性 ----
-# 防"7/7 verify" / "9 个识别方法" / "DID 唯一入口" 等历史漂移回归；
-# 防 skills.sh 占位 badge 假装已注册。两类都靠纯文本断言，无需联网。
+# ---- 12. README hero 区 + skills.sh badge 动态诚实性 ----
 README="$REPO_ROOT/README.md"
 if [ ! -f "$README" ]; then
   bad "README.md 缺失（无法校验 hero 区 + skills.sh badge）"
 else
   hero_drift=""
-
-  # 12a. Hero 区（前 10 行）禁词：旧漂移措辞不应再出现
   hero_block="$(head -10 "$README")"
-  for banned in "7/7 verify" "9 个识别方法" "DID 唯一入口" "Stata DID 分析的唯一"; do
+  for banned in "7/7 verify" "8/8 verify" "9 个识别方法" "DID 唯一入口" "Stata DID 分析的唯一"; do
     if echo "$hero_block" | grep -qF "$banned"; then
       hero_drift="${hero_drift} hero 区含旧漂移措辞「${banned}」;"
     fi
   done
+  echo "$hero_block" | grep -qF "${N_SKILLS} 个 Skill" || hero_drift="${hero_drift} hero 区缺动态 skill 声明「${N_SKILLS} 个 Skill」;"
+  echo "$hero_block" | grep -qF "${N_TARGETS} 个验证入口" || hero_drift="${hero_drift} hero 区缺动态 target 声明「${N_TARGETS} 个验证入口」;"
 
-  # 12b. Hero 区必含模式："8/8 verify PASS"（防止又掉回 7/7）
-  if ! echo "$hero_block" | grep -qF "8/8 verify"; then
-    hero_drift="${hero_drift} hero 区缺失「8/8 verify」字样（防回归 7/7）;"
-  fi
-
-  # 12c. skills.sh badge 覆盖：README 列的 skills.sh badges 必须 ↔ 实际 skill 目录一一对应
-  # 抓 README 中所有 skills.sh badge 指向的 skill slug（badge 用 -- 分隔，目录用 -）。
-  # regex [a-z][a-z-]*[a-z] 避免吃到 shields.io 的颜色 hash（-4A90D9.svg）。
   readme_badge_slugs="$(grep -oE 'skills\.sh-stata--[a-z][a-z-]*[a-z]' "$README" \
     | sed -e 's/skills\.sh-stata--//' -e 's/--/-/g' -e 's/^/stata-/' \
     | sort -u)"
-  actual_slugs="$(ls -d "$REPO_ROOT"/stata-* 2>/dev/null | xargs -n1 basename | sort -u)"
+  actual_slugs="$ACTUAL_SKILLS"
   missing_badge="$(comm -23 <(printf '%s\n' "$actual_slugs") <(printf '%s\n' "$readme_badge_slugs") | tr '\n' ' ')"
-  if [ -n "$missing_badge" ]; then
-    hero_drift="${hero_drift} skills.sh badge 缺这些 skill: ${missing_badge};"
-  fi
+  extra_badge="$(comm -13 <(printf '%s\n' "$actual_slugs") <(printf '%s\n' "$readme_badge_slugs") | tr '\n' ' ')"
+  [ -z "$missing_badge" ] || hero_drift="${hero_drift} skills.sh badge 缺: ${missing_badge};"
+  [ -z "$extra_badge" ] || hero_drift="${hero_drift} skills.sh badge 多出: ${extra_badge};"
 
-  # 12d. skills.sh 占位 badge 诚实性：如果 README 引用 skills.sh URL 而非真注册 URL，
-  # 必须出现 [待注册] / (TODO: register) 标记。
-  # 当前阶段：jefeerzhang/stataskills 在 skills.sh 未注册，README badge 都是占位符。
-  # 任何 skills.sh 引用块都要标注状态；标记缺则视为虚假声称。
   pending_marks_count=$(grep -cE '\[(待注册|TODO: register)\]|\(pending registration\)' "$README" || true)
   pending_marks_count=${pending_marks_count:-0}
   badge_count=$(grep -cE 'skills\.sh/jefeerzhang' "$README" || true)
   badge_count=${badge_count:-0}
-  if [ "$badge_count" -gt 0 ] && [ "$pending_marks_count" -lt 1 ]; then
-    hero_drift="${hero_drift} README 含 ${badge_count} 个 skills.sh 占位 badge 但无 [待注册]/[TODO: register] 标记（虚假声称）;"
+  if [ "$pending_marks_count" -ne "$badge_count" ]; then
+    hero_drift="${hero_drift} skills.sh 占位 badge=${badge_count}，待注册标记=${pending_marks_count};"
   fi
 
   if [ -n "$hero_drift" ]; then
     bad "README hero + skills.sh 漂移（${hero_drift}）"
   else
-    ok "README hero + skills.sh badge 诚实性 OK（hero 区禁词/必含词 + badge ↔ skill 目录对齐 + 待注册标记）"
+    ok "README hero + skills.sh 动态覆盖一致（${N_SKILLS} skills / ${badge_count} badges）"
   fi
 fi
 
@@ -468,7 +459,7 @@ fi
 
 # ---- 14. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
 # 借鉴 luban 报告 P3：每个 verify-*.do 应有 assert 断言验证关键不变量；
-# 当前 8 个脚本均依赖 "跑完不报错"。此处只 print 事实，不 FAIL——
+# 部分脚本只依赖「跑完不报错」，部分含数值 assert；此处动态 print 事实，不 FAIL——
 # 是否补 assert 由 verify 脚本维护者决定（教学型 verify 偏向 end-of-do exit 0）。
 assert_total=0
 assert_with=0
