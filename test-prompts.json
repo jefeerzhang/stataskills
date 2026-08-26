@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖 8 个 skill + 2 个跨 skill 联动场景。每条 prompt 新增三个元字段：difficulty（easy/medium/hard）、gotchas（对应陷阱速查编号）、requires_package（前置 SSC 包列表；null=全部内置）。配合 verify/check-claims.sh 第 10 条断言使用（见 verify/check-claims.sh 注释）。",
-  "version": "2.3.0",
+  "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖实际 stata-*/SKILL.md 及跨 skill 路由场景；route_branch 与 expected_actions 提供机器可审计的路由合同。difficulty、gotchas 与 requires_package 分别记录难度、陷阱编号和前置 SSC 包（null=全部内置）。",
+  "version": "3.0.0",
   "prompts": [
     {
       "id": "basics-01-reverse-coding",
@@ -389,6 +389,185 @@
         "rdrobust",
         "rddensity"
       ]
+    },
+    {
+      "id": "identification-01-router-entry",
+      "skill": "stata-identification",
+      "route_branch": "router-entry",
+      "difficulty": "medium",
+      "requires_package": null,
+      "gotchas": ["keywords_are_not_design_evidence"],
+      "scenario": "用户只有一份含处理、结果、面板列和政策年份的数据，问该选什么因果设计、能否识别。",
+      "expected_actions": [
+        "首先加载 stata-identification SKILL.md 和 identification-decision-tree.md",
+        "先定义 treatment、outcome、unit、时间结构、处理时点、目标总体与 estimand",
+        "按 stop rules 顺序要求制度或设计证据，不能凭列名或关键词跳分支"
+      ],
+      "expected_outputs": ["逐项设计 gate 问题与暂定路由"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-02-rct",
+      "skill": "stata-identification + stata-regression",
+      "route_branch": "rct",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["random_assignment_does_not_fix_estimand"],
+      "scenario": "用户有可审计的随机分配协议，部分受试者未依从且存在退出，问应该估计什么因果量。",
+      "expected_actions": [
+        "由 stata-identification router 检查随机化完整性，并在条件成立时停止在 RCT 分支",
+        "区分 assignment 与 actual uptake，先定义 ITT 等 estimand 和目标总体",
+        "审计共同假设：attrition、consistency、SUTVA / no interference；noncompliance 若需 LATE 则转 IV 条件检查"
+      ],
+      "expected_outputs": ["RCT estimand、共同假设与 attrition / noncompliance 处理边界"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-03-rdd-route",
+      "skill": "stata-identification + stata-rdd",
+      "route_branch": "rdd",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["cutoff_column_is_not_design_evidence"],
+      "scenario": "用户未点名方法，只说明奖学金由预先公布的连续考试分数 70 分阈值决定，阈值附近处理概率跳跃。",
+      "expected_actions": [
+        "先由 stata-identification router 核验阈值规则、时间先后和 running variable",
+        "检查 cutoff 附近连续性、无精确操纵与局部 positivity",
+        "进入条件可辩护后转 stata-rdd"
+      ],
+      "expected_outputs": ["RDD 进入证据、关键假设与 stata-rdd 路由"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-04-iv-route",
+      "skill": "stata-identification + stata-regression",
+      "route_branch": "iv",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["instrument_name_is_not_exclusion_evidence"],
+      "scenario": "用户未点名方法，只说一项按行政轮换产生的资格会改变培训参与，想估计培训效果。",
+      "expected_actions": [
+        "先由 stata-identification router 审计资格的制度来源及所有可能 outcome 通道",
+        "检查 relevance、independence、exclusion；解释 LATE 时再检查 monotonicity 与 SUTVA",
+        "条件可辩护后转 stata-regression 的 iv.md、iv-testing.md 与 iv-identification.md"
+      ],
+      "expected_outputs": ["IV 制度证据、识别假设与 IV references 路由"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-05-standard-did-route",
+      "skill": "stata-identification + stata-did",
+      "route_branch": "standard-did",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["panel_columns_do_not_pass_policy_gate"],
+      "scenario": "用户未点名方法；政策面板有明确处理时点、处理前后和可信未处理比较组，具体 timing 下 parallel trends 可辩护。",
+      "expected_actions": [
+        "先通过面板政策公共 gate：时间线、comparison 来源、no anticipation、SUTVA 与稳定构成",
+        "再单独检查 standard DID 的 parallel trends、overlap、composition 与 treatment timing",
+        "分层条件均通过后转 stata-did；不机械运行 synth / sdid"
+      ],
+      "expected_outputs": ["面板公共 gate 与 standard DID 本地 gate 的分层证据"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-06-synth-sdid-route",
+      "skill": "stata-identification + stata-did-community",
+      "route_branch": "synth-sdid",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["synth_sdid_are_disjunctive_entries"],
+      "scenario": "用户未点名方法；政策面板通过公共 gate，但 standard DID parallel trends 不可辩护。数据有长处理前期、可信 donor pool，也有充分 pre/post 和 untreated comparison units。",
+      "expected_actions": [
+        "保持在面板政策支柱并检查 synth / sdid 的析取入口；两者都不要求先通过 standard DID parallel trends 父 gate",
+        "synth 检查一个或极少处理单位、donor pool 可比性、pre-fit、同期冲击与 placebo / 推断条件",
+        "sdid 检查充分 pre / post periods、untreated / not-yet-treated comparison units，允许单个或多个处理单位及当前实现支持的多个处理日期，并检查 weighting、latent-factor / regularity 与方法特定推断",
+        "任一入口成立后转 stata-did-community 对应 reference"
+      ],
+      "expected_outputs": ["synth 或 sdid 的方法特定 gate 与社区 skill 路由"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-07-selection-route",
+      "skill": "stata-identification + stata-selection",
+      "route_branch": "selection",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["many_controls_do_not_prove_exchangeability"],
+      "scenario": "用户只有横截面二元处理，全部候选混杂在处理前测量，并有实质证据支持共同原因已观测。",
+      "expected_actions": [
+        "由 stata-identification router 确认前序 RCT、RDD、IV 与面板政策设计均失败后检查 selection 入口",
+        "确认 adjustment set 全为 pre-treatment，并审计 conditional exchangeability、positivity / overlap、SUTVA 与 ATET estimand",
+        "条件可辩护后转 stata-selection"
+      ],
+      "expected_outputs": ["selection-on-observables 设计 gate 与 stata-selection 路由"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-08-stop-causal",
+      "skill": "stata-identification",
+      "route_branch": "stop-causal",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["precision_cannot_replace_identification"],
+      "scenario": "用户没有随机机制、阈值规则、可信工具或可用政策比较，也无法辩护横截面无未观测混杂，但仍想写政策造成结果变化。",
+      "expected_actions": [
+        "由 stata-identification router 记录哪个 gate 失败，以及缺少的数据支持或制度 / 设计证据",
+        "停止因果声明并明确禁止使用因果措辞 effect / impact / caused，只允许描述 / 关联分析",
+        "说明当前数据可回答的问题及需要补充的设计证据或重新设计方案"
+      ],
+      "expected_outputs": ["stop causal 合同：失败 gate、可做分析、禁用措辞与下一步证据"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-09-psmatch2-direct",
+      "skill": "stata-selection",
+      "route_branch": "named-method-direct",
+      "difficulty": "hard",
+      "requires_package": ["psmatch2"],
+      "gotchas": ["named_method_still_runs_local_gate"],
+      "scenario": "用户明确点名 psmatch2：请用 psmatch2 做 ATET 匹配，并说明应该加载哪个 skill 和 reference。",
+      "expected_actions": [
+        "直接进入 stata-selection，不先加载 stata-identification router",
+        "先执行 stata-selection 设计 gate，确认 pre-treatment confounders 与 adjustment set、无未观测混杂与 overlap",
+        "gate 通过后进入 stata-selection/references/psmatch2.md；psmatch2 只作社区敏感性 / 兼容性对照"
+      ],
+      "expected_outputs": ["psmatch2 的 named-method 直达路径与本地 gate"],
+      "verify_keywords": []
+    },
+    {
+      "id": "identification-10-did-gate-failure-return",
+      "skill": "stata-did + stata-did-community + stata-identification + stata-selection",
+      "route_branch": "gate-failure-return",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["did_failure_must_check_same_pillar_first"],
+      "scenario": "用户明确点名 standard DID，但具体 timing 下 parallel trends 失败；少数处理单位没有可信 donor pool，sdid 也没有充分 pre/post 或 untreated comparison units。",
+      "expected_actions": [
+        "standard DID parallel trends 失败后先检查同支柱 synth / sdid，不得直接转 selection",
+        "确认 synth 与 sdid 两个析取入口均失败后才返回 stata-identification router",
+        "离开面板政策支柱后才检查横截面 selection；selection gate 也失败则 stop causal"
+      ],
+      "expected_outputs": ["standard DID → synth / sdid → router → selection 的失败回退证据"],
+      "verify_keywords": []
+    },
+    {
+      "id": "selection-01-complete-atet",
+      "skill": "stata-selection",
+      "difficulty": "hard",
+      "requires_package": ["psmatch2"],
+      "gotchas": ["postestimation_after_estimation", "psmatch2_is_sensitivity_only"],
+      "scenario": "用户要对横截面二元处理做完整 selection-on-observables ATET 分析，并把官方估计与 psmatch2 对照分开报告。",
+      "expected_actions": [
+        "先执行设计 gate，再做 treatment、missing、outcome 与原始失衡检查",
+        "以 teffects ipwra ..., atet 为主估计并立即 estimates store",
+        "估计后运行 tebalance summarize 与不带 atet 的 teffects overlap",
+        "依次运行并 store 官方 teffects psmatch、teffects ipw 与 teffects nnmatch 对照",
+        "读取 stata-selection/references/psmatch2.md，把 psmatch2 仅作为社区敏感性 / 兼容性对照",
+        "原尺度 ATET 主表与 balance / overlap 诊断分表报告"
+      ],
+      "expected_outputs": ["IPWRA ATET 主表、官方对照、独立诊断与 psmatch2 敏感性结果"],
+      "verify_keywords": []
     }
   ]
 }
