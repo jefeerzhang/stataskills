@@ -242,15 +242,15 @@ tebalance summarize
 teffects overlap
 
 teffects psmatch (y) (treat x1-x4), atet nneighbor(1)
-estimates store psm_atet
+estimates store psmatch_atet
 
 teffects ipw (y) (treat x1-x4), atet
 estimates store ipw_atet
 
 teffects nnmatch (y x1-x4) (treat), atet
-estimates store nn_atet
+estimates store nnmatch_atet
 
-estimates table ipwra_atet psm_atet ipw_atet nn_atet, ///
+estimates table ipwra_atet psmatch_atet ipw_atet nnmatch_atet, ///
     b(%9.3f) se(%9.3f) stats(N)
 ```
 
@@ -342,7 +342,7 @@ ssc install psmatch2
 psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate
 ```
 
-若要社区 ATT，使用经本机 `help` / source 核实的 `att` 选项。selection 主 estimand ATET 与社区 ATT 只是术语对齐，不能把上述 `ate` 示例称为 ATT；`psmatch2` 不是 `teffects psmatch` 的同一实现。若返回结果或变量名未先由本机 `help psmatch2` / source 检查，不锁定 `r(att)`、`r(ate)`、匹配权重或 `_support` 名称；烟测只断言实际返回结果非缺失，并断言匹配权重或匹配样本存在。
+本机 `psmatch2.ado` v4.0.12 的 `syntax` 已核实：不存在 `att` option；默认不写 `ate` 时是 treated-effect/ATT 语义，写 `ate` 才切换到 ATE。selection 主 estimand ATET 与社区默认 ATT 只是术语对齐，不能把上述 `ate` 示例称为 ATT；`psmatch2` 不是 `teffects psmatch` 的同一实现。若返回结果或变量名未先由本机 `help psmatch2` / source 检查，不锁定 `r(att)`、`r(ate)`、匹配权重或 `_support` 名称；烟测只断言实际返回结果非缺失，并断言匹配权重或匹配样本存在。
 
 `verify-selection.do` 必须使用 optional sentinel `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__`：缺包在默认和 `--community` 两模式都 PASS，已安装时运行上述最小烟测并断言结果非缺失及匹配权重或匹配样本存在；真实 Stata 错误必须 FAIL。verify 只探测已安装包，绝不强制安装或联网。
 
@@ -422,7 +422,7 @@ version 19.5
 4. **balance**：首次诊断紧接 IPWRA，先输出 `=== BALANCE APPENDIX: IPWRA ATET ===`，再运行 `tebalance summarize`。模型归属必须是 `ipwra_atet`；若 table section 重印，先 `estimates restore ipwra_atet`。verify 只要求 log 中独立、带标题的输出，不生成单独表文件。
 5. **propensity overlap**：运行 `teffects overlap` 并只检查命令成功；不保存、不 export、不跟踪图形产物，也不把目测重叠写成 conditional exchangeability 的证明。
 6. **PSM**：显式 `, atet`，`estimates store psm_atet`，断言 ATET 非缺失。
-7. **optional psmatch2**：先 `capture which psmatch2`；缺包只输出纯 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__`。已安装时运行最小 ATE 示例 `psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate`；若要社区 ATT，使用经 help/source 核实的 `att` 选项。selection 主 estimand ATET 与社区 ATT 只是术语对齐，不能把 `ate` 称 ATT。先检查本机 help/source，再断言实际返回结果非缺失，并断言匹配权重或匹配样本存在；不锁定未经检查的返回名。真实 Stata 错误必须 FAIL，不强制安装。
+7. **optional psmatch2**：先 `capture which psmatch2`；缺包只输出纯 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__`。已安装时运行最小 ATE 示例 `psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate`；默认不写 `ate` 时是 treated-effect/ATT 语义，本机 v4.0.12 不存在 `att` option。selection 主 estimand ATET 与社区默认 ATT 只是术语对齐，不能把 `ate` 称 ATT。先检查本机 help/source，再断言实际返回结果非缺失，并断言匹配权重或匹配样本存在；不锁定未经检查的返回名。真实 Stata 错误必须 FAIL，不强制安装。
 8. **IPW**：显式 `, atet`，`estimates store ipw_atet`，断言 ATET 非缺失。
 9. **NN**：显式 `, atet`，`estimates store nn_atet`，断言 ATET 非缺失。
 10. **optional ebalance**：逐行采用第 8.5 节已实测代码。缺包只输出纯 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ebalance__`；已安装时同时验证默认 `_webal` 与指定 `ebw_verify`，断言收敛、适用样本无缺失、权重非负，并在结束后恢复主数据和 `ipwra_atet`。
@@ -548,7 +548,7 @@ selection 完整分析另有 prompt，期望动作固定为：设计 gate → �
 - [ ] v1 平衡附表只要求 verify log 中独立、带标题输出；可选导出只在 paper-writing reference，主结果表不自动拼入 balance。
 - [ ] `teffects overlap` verify 只检查命令成功，没有保存或跟踪图形；selection / identification 均无 v1 demo。
 - [ ] `ebalance` 只存在于可选 reference 与 optional verify section；安装、默认 `_webal`、指定 `generate(ebw_verify)`、状态保护和权重断言与第 8.5 节一致。
-- [ ] `psmatch2.md` 是独立 reference；`teffects-psmatch.md` 只负责官方命令。`psmatch2` optional section 锁定 `ssc install psmatch2`、最小 ATE 语法 `psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate`；若要社区 ATT，使用经 help/source 核实的 `att` 选项。selection 主 estimand ATET 与社区 ATT 只是术语对齐，不能把 `ate` 称 ATT；同时保留非同一实现声明及不确定返回值的安全断言策略；不强制安装、不作为默认主路径。
+- [ ] `psmatch2.md` 是独立 reference；`teffects-psmatch.md` 只负责官方命令。`psmatch2` optional section 锁定最小 ATE 语法 `psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate`；默认不写 `ate` 时为 treated-effect/ATT 语义，本机 v4.0.12 不存在 `att` option。selection 主 estimand ATET 与社区默认 ATT 只是术语对齐，不能把 `ate` 称 ATT；安装只放用户明确授权小节，同时保留非同一实现声明及不确定返回值的安全断言策略；默认路径不强制安装、不作为主估计。
 
 ### 12.3 数据治理
 
@@ -590,7 +590,7 @@ selection 完整分析另有 prompt，期望动作固定为：设计 gate → �
 
 3. **Selection 主 skill 与 8 references**
    文件：`stata-selection/SKILL.md` 及第 4.1 节列出的 8 个 references。
-   完成条件：frontmatter 至少含 `name` / `description` / `compatibility`；首个 Stata fence 的第一条可执行语句为 `version 19.5`；强制路径、错误码速查、ATET 的四类 estimation 命令量词、IPWRA 边界、postestimation 归属、对照估计、经核实的 `ebalance` 与 `psmatch2` 语法（最小 ATE 示例与经核实的 ATT 选项）、两个 optional sentinel 和 v1 分表规则全部可定位；reference 数量恰好为 8。
+   完成条件：frontmatter 至少含 `name` / `description` / `compatibility`；首个 Stata fence 的第一条可执行语句为 `version 19.5`；强制路径、错误码速查、ATET 的四类 estimation 命令量词、IPWRA 边界、postestimation 归属、对照估计、经核实的 `ebalance` 与 `psmatch2` 语法（默认 treated-effect/ATT 语义与最小 ATE 示例）、两个 optional sentinel 和 v1 分表规则全部可定位；reference 数量恰好为 8。
 
 4. **Identification router 与 3 references**
    文件：`stata-identification/SKILL.md` 及第 4.1 节列出的 3 个 references。
