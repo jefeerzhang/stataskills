@@ -421,10 +421,10 @@ version 19.5
 3. **IPWRA ATET**：运行规范主估计并 `estimates store ipwra_atet`；用 `_b[ATET:r1vs0.treat]` 断言 `abs(atet_hat-0.5)<=0.15`。
 4. **balance**：首次诊断紧接 IPWRA，先输出 `=== BALANCE APPENDIX: IPWRA ATET ===`，再运行 `tebalance summarize`。模型归属必须是 `ipwra_atet`；若 table section 重印，先 `estimates restore ipwra_atet`。verify 只要求 log 中独立、带标题的输出，不生成单独表文件。
 5. **propensity overlap**：运行 `teffects overlap` 并只检查命令成功；不保存、不 export、不跟踪图形产物，也不把目测重叠写成 conditional exchangeability 的证明。
-6. **PSM**：显式 `, atet`，`estimates store psm_atet`，断言 ATET 非缺失。
+6. **PSM**：显式 `, atet`，`estimates store psmatch_atet`，断言 ATET 非缺失。
 7. **optional psmatch2**：先 `capture which psmatch2`；缺包只输出纯 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__psmatch2__`。已安装时运行最小 ATE 示例 `psmatch2 treat x1 x2 x3 x4, outcome(y) neighbor(1) ate`；默认不写 `ate` 时是 treated-effect/ATT 语义，本机 v4.0.12 不存在 `att` option。selection 主 estimand ATET 与社区默认 ATT 只是术语对齐，不能把 `ate` 称 ATT。先检查本机 help/source，再断言实际返回结果非缺失，并断言匹配权重或匹配样本存在；不锁定未经检查的返回名。真实 Stata 错误必须 FAIL，不强制安装。
 8. **IPW**：显式 `, atet`，`estimates store ipw_atet`，断言 ATET 非缺失。
-9. **NN**：显式 `, atet`，`estimates store nn_atet`，断言 ATET 非缺失。
+9. **NN**：显式 `, atet`，`estimates store nnmatch_atet`，断言 ATET 非缺失。
 10. **optional ebalance**：逐行采用第 8.5 节已实测代码。缺包只输出纯 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ebalance__`；已安装时同时验证默认 `_webal` 与指定 `ebw_verify`，断言收敛、适用样本无缺失、权重非负，并在结束后恢复主数据和 `ipwra_atet`。
 11. **tables**：用存储的四个内置估计输出原尺度 ATET 主表。平衡附表只保留 log 中独立标题输出；可选文件导出属于 `selection-paper-writing.md`，不把 `tebalance` 自动拼入主表。
 

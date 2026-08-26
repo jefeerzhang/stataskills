@@ -89,7 +89,7 @@ version 19.5
 3. **使用 `eform`** → **触发**：把 ATET 当 odds ratio 或指数化系数 → **Fix**：报告 ATET 原尺度；不要 `eform` → **验证**：主表单位与 `y` 相同。
 4. **把 balance 当因果证明** → **触发**：平衡后就宣称无混杂 → **Fix**：把 balance/overlap 写成诊断，并报告制度假设与限制 → **验证**：论文没有“balance proves identification”。
 5. **加入 post-treatment controls** → **触发**：控制变量由处理发生后测量或受处理影响 → **Fix**：删掉，回到处理前 covariates；必要时改研究设计 → **验证**：变量时间线逐项标记为 pre-treatment。
-6. **默认同时跑全部 estimator** → **触发**：把命令清单当主结果 → **Fix**：先跑 IPWRA ATET；只按明确问题运行一个对照 → **验证**：主表标出唯一预先指定主估计。
+6. **跳过完整对照链** → **触发**：完整 selection 分析只报告 IPWRA 而省略规范对照 → **Fix**：按 IPWRA → balance/overlap → 官方 PSM/IPW → NN → 分表执行；快速单方法咨询才可只运行相关 reference → **验证**：完整分析 log 中四个内置估计均有 stored estimates。
 
 ## 可执行禁令
 
@@ -99,7 +99,7 @@ version 19.5
 - ❌ **禁止**把 mediator 或 post-treatment outcome 放入 adjustment set；**替代**：使用处理前、因果角色可解释的共同原因，或有明确精度目的的处理前 outcome predictor。
 - ❌ **禁止**控制 collider，或仅因其提高 treatment 预测就加入 instrument；**替代**：先画变量角色/时间线，只调整可辩护的处理前共同原因；角色无法解释时返回 `stata-identification`。
 - ❌ **禁止**把 balance 或 overlap 诊断当作因果识别证明；**替代**：同时陈述 selection-on-observables、positivity、SUTVA 与未观测混杂限制。
-- ❌ **禁止**默认同时跑所有 estimator；**替代**：IPWRA 为主，按研究问题选择官方对照。
+- ❌ **禁止**把所有 estimator 当作多个主结果；**替代**：完整分析按锁定对照链运行，IPWRA 是唯一预先指定主估计；快速单方法咨询才按研究问题选择相关 reference。
 - ❌ **禁止**把 `psmatch2` 当默认主估计或声称优于 IPWRA；**替代**：optional 社区敏感性/兼容性对照，主结果仍为官方 IPWRA。
 
 ## 错误码速查（错误码 → 触发 → 修复）
