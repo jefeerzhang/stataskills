@@ -8,7 +8,7 @@ compatibility: >-
 
 # Stata 断点回归：rdrobust 命令族（RDD / sharp / fuzzy）
 
-**本仓库唯一识别策略是 DID（`stata-did` / `stata-did-community`）。** RDD 是**第二根独立支柱**——处理由一个**运行变量的阈值**决定，不是由时间决定。两者识别框架不同，**不要混用**（详见「强制路径 / 踢走」）。
+本仓库当前由 `stata-identification` 在四个设计支柱之间路由：随机分配、RDD、IV、面板政策设计；横截面 selection-on-observables 是后续可检查分支。标准 RDD 的处理概率由一个**运行变量的阈值**产生跳跃；当运行变量是时间时，必须在 RDiT、ITS 与 DID 之间按时间设计、comparison units 和 parallel-trends 依据重新判断，不能仅凭“时间 cutoff”机械选方法（详见「强制路径 / 踢走」）。
 
 本 skill 对应 Cattaneo 团队的 rdpackages 协议（`rdrobust` / `rdplot` / `rddensity` / `rdbwselect`），全部为**社区包**，需 `ssc install`。官方 Stata 手册（*Causal Inference* / `teffects` / `cate` / `lateffects`）**没有** RDD 命令——RDD 在 Stata 里由社区包承载，手册只在「识别策略判断」层有用。
 
@@ -34,10 +34,10 @@ ssc install lpdensity, replace     // rddensity 的底包（画密度图需要�
 
 匹配到第一条就停。不要把 `rdrobust` / `rdplot` / `rddensity` 全跑一遍当稳健性；只用命中的那条链。详细签名见 `references/`；禁令见文末黑名单。
 
-**何时用**：处理由一个**连续（或细粒度）运行变量**在**事先给定的阈值**上决定——分数线、年龄门槛、地理边界、评分阈值。
+**何时用**：处理由一个**连续（或细粒度）运行变量**在**事先给定的阈值**上决定——分数线、年龄门槛、地理边界、评分阈值；阈值规则、时间先后、cutoff 附近连续性和无精确操纵等本地 gate 也必须可辩护。用户明确点名 RDD 时先执行本地 gate；失败返回 `stata-identification`，不要用普通回归、DID 或更复杂 RDD 变体绕过。完整判断只读 `stata-identification/references/identification-decision-tree.md`。
 **何时踢走**：
-- 处理由**时间**决定（政策实施年月、错时处理）→ 这是 DID，不是 RDD，**走 `stata-did`（默认 `hdidregress aipw`）或 `stata-did-community`**
-- 截面可观测选择（无阈值，只看协变量）→ 不是 RDD；走 `teffects`（本仓库未覆盖，向用户说明）
+- 运行变量是**时间**（政策实施年月、时间 cutoff、错时处理）→ 不要机械判作 DID 或标准 RDD：有可定义 comparison units 且能为具体设计辩护 parallel trends 时才进入 `stata-did` / `stata-did-community`；单一时间序列干预按时间结构与反事实证据区分 RDiT / ITS。RDD 本地 gate 失败一律返回 `stata-identification` router 重新判断
+- 截面可观测选择（无阈值，只看协变量）→ 不是 RDD；走 `stata-selection`
 - 运行变量只有少数离散值（mass points）→ 连续性框架变弱；用 `rdlocrand`（见 `references/extensions.md`）
 - 只要回归 / 系数图 → `stata-regression` / `stata-coefplot`
 
@@ -57,7 +57,7 @@ ssc install lpdensity, replace     // rddensity 的底包（画密度图需要�
 ### sharp vs fuzzy
 
 - **sharp**：处理是运行变量的确定函数（100% 合规、无交叉）。`tab treat` 显示两组完全对齐。
-- **fuzzy**：阈值改变的是处理**概率**（部分人跨线、或有人未按规则接受）。`tab treat` 有交叉。**必须显式 `fuzzy(treat)`**，否则 `rdrobust` 估计的是意向处理（ITT），不是 LATE。
+- **fuzzy**：阈值改变的是处理**概率**（部分人跨线、或有人未按规则接受）。`tab treat` 有交叉。**必须显式 `fuzzy(treat)`**，否则 `rdrobust` 估计的是意向处理（ITT），不是 LATE。写成 LATE 前还必须通过 IV 类 gate：cutoff 有非零且足够强的 first stage、cutoff 对结果只经处理起作用（exclusion）、处理响应满足 monotonicity、SUTVA / no interference 可辩护，并把 estimand 限定为 cutoff 附近的 compliers。
 
 ```stata
 * sharp（tutoring 数据）
@@ -68,7 +68,7 @@ rdrobust exit_exam entrance_exam, c(70)
 rdrobust y x, c(c0) fuzzy(treat)
 ```
 
-**fuzzy 的 LATE 解释**：`rdrobust ..., fuzzy(treat)` 的第二阶段是 complier 平均因果效应（LATE）；必须同时报告第一阶段（cutoff 对 `treat` 的跳跃强度）。
+**fuzzy 的 LATE 解释**：只有在标准 RDD 的局部连续性 / 无精确操纵 gate 与上述 first stage、exclusion、monotonicity、SUTVA / no-interference gate 均可辩护时，`rdrobust ..., fuzzy(treat)` 才能解释为 cutoff 附近 compliers 的局部平均处理效应；必须报告第一阶段，并明确 complier / local estimand，不能外推为全样本 ATE。任一 gate 失败则返回 `stata-identification` router。
 
 ## 详细参考（references/）
 
@@ -125,20 +125,20 @@ rdrobust y x, c(c0) fuzzy(treat)
    - **Fix**：报告 mass points；考虑 `rdlocrand`（`rdwinselect` + `rdrandinf`），不要假装分数是连续的。
    - **验证**：`tab runningvar` 看是否只有少数取值；有则走 `references/extensions.md`。
 
-9. **fuzzy 不写 `fuzzy(D)`**
-   - **触发**：未按规则接受处理时，sharp 估计的是意向治疗而非 LATE。
-   - **Fix**：`tab` 合规后 `rdrobust y x, c(c0) fuzzy(D)`；同时报告第一阶段（cutoff 对 D 的跳跃）。
-   - **验证**：`rdrobust ..., fuzzy(D)` 输出应含第一阶段 + 第二阶段 LATE。
+9. **fuzzy 只加 `fuzzy(D)`、不审计 LATE gate**
+   - **触发**：未按规则接受处理时，只看到 treatment probability 跳跃就把结果称为 LATE。
+   - **Fix**：`rdrobust y x, c(c0) fuzzy(D)` 之外，逐项说明 first stage、exclusion、monotonicity、SUTVA / no interference，并把 estimand 限定为 cutoff 附近 compliers；任一 gate 失败返回 `stata-identification`。
+   - **验证**：结果同时报告第一阶段与第二阶段，正文明确写出 exclusion、monotonicity、SUTVA / no interference 和 complier / local estimand，不出现全样本 ATE 外推。
 
 10. **协变量不是识别条件**
     - **触发**：把中介 / 结果后代放进 `covs()`，或指望 `covs()` 弥补坏的识别。
     - **Fix**：`covs()` 只缩小 CI；把预处理变量当结果跑一遍 RD 做平衡（robust p 应不显著）。
     - **验证**：`foreach v in $covs { rdrobust \`v' x, c(c0) }` 看 p 值；不显著才平衡。
 
-11. **时间断点当 RDD**
-    - **触发**：政策实施年月被当成「cutoff」跑 `rdrobust`。
-    - **Fix**：政策年月 → 走 `stata-did`（时间决定处理）；RDiT 不能做密度检验，混淆项随时间平滑的假设通常不成立。
-    - **验证**：确认运行变量是连续评分/连续量，不是时间戳。
+11. **把时间 cutoff 机械等同标准 RDD 或 DID**
+    - **触发**：看到政策实施年月就直接跑 `rdrobust`，或反向地只因运行变量是时间就直接指定 DID。
+    - **Fix**：返回 `stata-identification` router；按时间序列结构、可用 comparison units 与反事实证据区分 RDiT / ITS，只有具体 DID 设计的 comparison units 和 parallel trends 可辩护时才进入 DID。RDiT 不能沿用可操纵运行变量的密度检验，且需单独论证 cutoff 附近随时间变化的混淆因素。
+    - **验证**：报告明确写出时间设计、comparison units 是否存在及 parallel-trends 依据；不能只用“政策前后”或“时间 cutoff”命名识别策略。
 
 12. **placebo 手抄，或只跑 1 个假 cutoff**
     - **触发**：只放 1-2 个 placebo cutoff，或手工抄结果易错。
@@ -149,8 +149,9 @@ rdrobust y x, c(c0) fuzzy(treat)
 
 > 与 ADR-0001 联动：本节是「主动反模式」。Agent 在写 RDD do-file 前必查一遍。RDD 的识别假设与 DID 不同，不要抄袭 DID 的坑。
 
-- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那是时间处理，不是阈值处理。**替代**：本 skill 的 `rdrobust`；时间断点 → `stata-did`。
+- ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：这些是阈值分配候选，不是时间处理。**替代**：先执行本 skill 的标准 RDD / 扩展方法本地 gate；失败返回 `stata-identification`。
 - ❌ **不要在 sharp 场景用 `fuzzy(treat)`**：无交叉时 fuzzy 退化为 sharp，徒增无效假设。
+- ❌ **不要只凭 first stage 把 fuzzy RDD 解释为 LATE**：**替代**：同时审计 exclusion、monotonicity、SUTVA / no interference，并限定 cutoff 附近的 complier / local estimand。
 - ❌ **不要读 `e(tau)` 用 conventional，正确读 `e(tau_cl)` 用 robust**：主报告必须 robust CI。
 - ❌ **不要用全样本高阶多项式当主结果**：`regress y c.x##i.treat` 或 3/4 次多项式在边界振荡。**替代**：`rdrobust` 局部线性主估计 + 低阶参数对照。
 - ❌ **不要把 `rdrobust` 的负号直接说成「项目有害」**：符号是左→右跳跃方向。**替代**：先确认处理在哪一侧。
@@ -159,7 +160,7 @@ rdrobust y x, c(c0) fuzzy(treat)
 - ❌ **不要把 RDD 解释成全样本 ATE**：是 cutoff 处 LATE。**替代**：写「局部到 cutoff」。
 - ❌ **不要让 `covs()` 承担识别**：协变量只提效率，识别靠连续性。**替代**：预处理变量当结果跑 RD 平衡检验。
 - ❌ **不要在离散 mass points 上假装连续性框架**：**替代**：`rdlocrand` 局部随机化。
-- ❌ **不要对政策实施日期跑 `rdrobust`**：那是 RDiT（DID），非标准 RDD。
+- ❌ **不要把政策实施日期机械归为 RDiT、ITS 或 DID**：**替代**：按时间设计、comparison units 与 parallel-trends 依据返回 `stata-identification` router 判别。
 
 ## 🔍 错误码速查（错误码 → 触发 → 修复）
 

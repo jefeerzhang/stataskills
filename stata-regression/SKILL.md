@@ -22,7 +22,7 @@ compatibility: >-
 
 匹配到第一条就停。第 9–11 章与扩展方法语法见「详细参考（references/）」；禁令见文末黑名单。
 
-**何时用**：ANOVA / ANCOVA、多元回归诊断、逻辑回归、`margins`、多层 FE（`reghdfe`）、多层 FE 下的 2SLS（`ivreghdfe`）。
+**何时用**：ANOVA / ANCOVA、多元回归诊断、逻辑回归、`margins`、多层 FE（`reghdfe`）、多层 FE 下的 2SLS（`ivreghdfe`）。用户明确点名 IV / 2SLS / LATE 时，先读对应 references 并执行 named-method gate；关键识别条件失败返回 `stata-identification`，不得用回归规格或更强统计检验替代设计证据。完整判断只读 `stata-identification/references/identification-decision-tree.md`。
 **何时踢走**：
 - 政策评估 / 平行趋势 / 错时 DID → `stata-did`（默认 `hdidregress aipw`）
 - `fect` 是错时 DID 偏差修正，**不是**本 skill 的主估计；用户要 `fect` 时转到 `stata-did` / `stata-did-community`

@@ -60,7 +60,8 @@ estat trendplot                        // 图形诊断
 | staggered + 想做 DR/IPW/Reg 三方法对照 | CS 估计量 | `ssc install csdid`（第 1 节） |
 | staggered + 非线性结果变量（计数/二元） | ETWFE | `ssc install jwdid`（第 1 节） |
 | staggered + 想要 leaveout 方差修正 / 单位特定趋势 / 灵活 FE | BJS 插补法 | `ssc install did_imputation`（第 1 节） |
-| 少数处理单元 | Synthetic Control / Synthetic DiD | `ssc install synth`（第 2 节）/ `ssc install sdid`（第 3 节） |
+| 一个或极少处理单位 + 较长 pre-period + 可辩护 donor pool | Synthetic Control | `ssc install synth`（第 2 节）；用 placebo / permutation 推断 |
+| 充分 pre / post + untreated 或 not-yet-treated comparison units；单个或多个处理单位、当前实现支持的多个处理日期 | Synthetic DiD | `ssc install sdid`（第 3 节）；审计单位 / 时间 weighting、latent-factor / regularity 与方法特定推断条件 |
 | 复杂共同因子 | TROP | `ssc install trop` |
 | 内生选择 + 因子 | TROP / Imputation | 社区包 |
 

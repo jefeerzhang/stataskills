@@ -19,7 +19,8 @@ compatibility: >-
 
 匹配到第一条就停。不要把 `didregress` / `hdidregress` / `xtreg` 交互项全跑一遍。禁令见文末黑名单。
 
-**何时用**：处理随**时间**开关，有处理组与对照组，要估计 ATET。本 skill 只走 Stata 内置命令。
+**何时用**：处理随**时间**开关，有处理组与对照组，要估计 ATET；本地 standard DID 条件（parallel-trends / overlap 等）也必须可辩护。本 skill 只走 Stata 内置命令。
+**本地 gate 失败动作**：先审计公共面板政策 gate：政策时点、pre/post 信息、comparison units、no anticipation、no interference 和稳定构成。公共 gate 任一项不能辩护时，立即返回 `stata-identification`，不检查 `synth` / `sdid`。公共 gate 通过但 standard DID 的 parallel-trends 或其他本地条件失败时，必须先检查同一面板政策支柱的 `stata-did-community` `synth` / `sdid`；两者均失败再回 router。不要只改 `hdidregress`、继续把结果宣称为因果，或复制完整 stop rules。用户明确点名 DID 时先执行本地 gate。完整判断只读 `stata-identification/references/identification-decision-tree.md`。
 **何时踢走**：
 - 分数线 / 年龄门槛 / 地理边界（不是时间断点）→ `stata-rdd`，**不要改走 DID**
 - 截面匹配 / 可观测选择 → 不要冒充 DID
@@ -33,7 +34,8 @@ compatibility: >-
 | 错时（≥2 个首次处理期） | `hdidregress aipw (y) (treat), group(id) time(t)`（面板用 `xthdidregress aipw`，先 `xtset`，**不要**写 `time()`）→ `estat aggregation, dynamic graph` → `estat atetplot` |
 | 错时且要诊断 TWFE 负权重 | 另起一份 `collapse (mean) y treat, by(g t)` → `didregress (y) (treat), group(g) time(t)` → `estat bdecomp, graph` |
 | 组数 < 5 | **不要** `wildbootstrap`；改 `aggregate(dlang)` |
-| 平行趋势被拒 | `estat trendplot` → 加**先验**协变量 → 改 `hdidregress aipw`；不要堆后处理控制 |
+| 公共 gate 无法辩护 | 立即返回 `stata-identification`；不检查 `synth` / `sdid` |
+| 公共 gate 通过，但 standard DID parallel-trends / 本地条件失败 | `estat trendplot` → 检查同一面板政策支柱的 `synth` / `sdid` → 两者均失败再回 `stata-identification` |
 
 默认错时估计量是 `hdidregress aipw`，不是 `didregress` 的 TWFE。第 8 节 `xtreg` 交互项只用于读老论文，不是新分析主路径。
 
@@ -200,20 +202,14 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 
 **这种时候标准做法**（按优先级）：
 
-1. **看平行趋势图**：`estat trendplot`（或上面的手工 line 图）——判断是"处理前趋势本身就不平行"还是"预处理期太短/数据噪音大"。
-2. **检查政策时间线**：是不是真的有"同期对照"？会不会某对照国其实在那段时间也有政策影响？通常需重读文献。
-3. **加协变量平衡趋势差**：`xtdidregress (y x1 x2) (treat), group(id) time(t)`，看加协变量后 ptrends 是否变得不显著。
-4. **改用合成 DID / 异质性稳健估计**：
-   - `hdidregress aipw`——双重稳健，能在趋势差异存在时给出一致估计
-   - `xthdidregress aipw`（面板版）
-   - **不要简单地加更多控制变量**——这是过度反应，且会引入 bad control
-5. **跑 Honest DiD 敏感性分析**（Rambachan & Roth 2023）：
-   - 安装：`ssc install honestdid`（社区包，Stata 内置无）
-   - 跑：`honestdid, m(0)` 与 `honestdid, m(0.5)`——报告 PT 违反幅度 ≤ 0.5 SD 下的稳健 CI 上界
-   - 这是审稿人最常要求的稳健性检查；缺失等于"只信主估计"
-6. **报告与解释**：在论文里诚实报告平行趋势假设被拒，给出**视觉证据 + 协变量敏感性 + 异质性估计 + Honest DiD 上下界的对照三角化**；不应隐藏或回避。
+1. **看平行趋势图**：`estat trendplot`（或上面的手工 line 图）——记录支持性诊断，不把检验当作假设证明。
+2. **检查公共面板政策 gate**：逐项审计政策时点、pre/post 信息、comparison units、no anticipation、no interference 和稳定构成；任一项缺少可辩护证据就立即返回 `stata-identification`，不检查 `synth` / `sdid`。
+3. **公共 gate 通过但 standard DID 本地条件失败时**，先检查同一面板政策支柱的合成分支：按 `stata-did-community` 的本地 gate 分别检查 `synth`（通常少数处理单位、长前期、donor pool）与 `sdid`（充分 pre / post、comparison units、方法特定 weighting / latent-factor / regularity 条件）。
+4. **不要把 `hdidregress aipw` 当作平行趋势失败的自动修复**，也不要继续把 standard DID 结果宣称为因果；合成分支均失败时回 `stata-identification` 并停止因果措辞。
+5. **若 gate 仍可辩护但允许的 parallel-trends 偏离需量化**，再把 Honest DiD 敏感性分析作为支持性分析：`honestdid, m(0)` 与 `honestdid, m(0.5)`；它不能替代失败的设计 gate。
+6. **报告与解释**：明确哪项 gate 失败、合成分支是否成立、当前可支持的描述 / 关联和下一步设计证据；不应隐藏或回避。
 
-**关键提醒**：平行趋势被拒 ≠ DID 估计一定错，但意味着"因果解读"需要更强论证。
+**关键提醒**：平行趋势被拒不是靠换 estimator 就自动恢复因果；公共 gate 通过时必须先检查同一面板政策支柱的 `synth` / `sdid`，两者均失败再回 router。
 
 ## 关键陷阱速查
 
@@ -264,10 +260,10 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
    - **Fix**：`encode country, gen(country_id)` 把字符串转数值（自动带值标签）；后面所有 `group()`/`absorb()`/`cluster()` 用 `country_id`。
    - **验证**：`xtset country_id year` 应成功；`encode` 后 `country_id` 是数值。
 
-10. 平行趋势假设被拒的处理
-    - **触发**：实操里 `estat ptrends` 报 p < 0.05 是常事——直接放弃 DID 是过度反应。
-    - **Fix**：按优先级（详见第 11 节）：(1) 看 `estat trendplot` 判断是"真趋势差"还是"数据噪音"；(2) 加协变量平衡趋势差；(3) 改用 `hdidregress aipw` 或 `xthdidregress aipw`；(4) 诚实报告 + 三角化论证，**不要简单加更多控制变量**（可能引入 bad control）。
-    - **验证**：`estat ptrends` 报 p < 0.05 时看 `estat trendplot`；优先尝试协变量 + AIPW；不放弃 DID。
+10. standard DID 本地条件或公共 gate 失败
+    - **触发**：政策时点、pre/post、comparison units、no anticipation、no interference 或稳定构成审计失败，或 `estat ptrends` / 趋势图显示 parallel-trends 等 standard DID 本地条件不能辩护。
+    - **Fix**：公共 gate 失败时立即返回 `stata-identification`，不检查 `synth` / `sdid`；公共 gate 通过而 standard DID 本地条件失败时，先检查同一面板政策支柱的 `synth` / `sdid`。不要只改 `hdidregress`、堆控制变量或继续宣称因果。
+    - **验证**：记录失败的是公共 gate 还是 4a 本地 gate；只有 4a 失败才记录两条合成分支的 comparison / donor 与推断条件，均失败后才回 router。
 
 11. `reghdfe` 旧代码迁移到 `hdidregress`
     - **触发**：`reghdfe y (time_to_event*), absorb(...) cluster(...)` 是 Stata 17 主流写法；Stata 18+ 可改用 `hdidregress aipw (y) (treat), group(id) time(t)`，结果在代数上不等价（异质性估计 vs 平均 TWFE）——不能直接说"一样的"。
@@ -285,7 +281,7 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 - ❌ **不要在 wildbootstrap 后跑 `estat vce`**：官方明确禁止。**替代**：wildbootstrap 后只能看原始估计表（CI 用 percentile）；要看 vce 必须去掉 `wildbootstrap()` 重跑。
 - ❌ **不要把 wildbootstrap 种子写 `seed()`**：报 `invalid 'reps'`。**替代**：`wildbootstrap(reps(99) rseed(20260816))`——rseed 是 didregress 的选项名。
 - ❌ **不要在 `estat bdecomp` 前不收缩到组×期均值**：报 `unbalanced data not allowed`。**替代**：先 `collapse (mean) y treat, by(group time)` 强平衡化。
-- ❌ **不要简单加更多控制变量平衡平行趋势**：可能引入 bad control。**替代**：看 `estat trendplot`；加**先验**协变量；改 `hdidregress aipw`；三角化论证。
+- ❌ **不要把 `hdidregress aipw` 或更多控制变量当作 gate 失败的自动修复**：可能掩盖 bad control 或未解决趋势反事实。**替代**：公共 gate 失败立即返回 `stata-identification`，不检查 `synth` / `sdid`；只有公共 gate 通过而 standard DID 本地 gate 失败时，才先检查两条合成分支，均失败再回 router。
 - ❌ **不要直接说 `reghdfe` 和 `hdidregress` 估计"一样的"**：代数上不等价（异质性估计 vs 平均 TWFE）。**替代**：报告方法节明示；保留 `reghdfe` 输出作对照；不混用同一政策效应的两个估计量。
 - ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那不是时间断点，平行趋势框架套不上。**替代**：转到 `stata-rdd`，不要用 `didregress` / `hdidregress` 冒充。
 - ❌ **不要在错时设计默认跑 `didregress` 再「顺便」跑 `hdidregress`**：强制路径命中错时就只走 `hdidregress aipw`（+ 事件研究图）。**替代**：需要 TWFE 负权重诊断时另起 `collapse` + `estat bdecomp`，不要把工具箱全跑一遍。
