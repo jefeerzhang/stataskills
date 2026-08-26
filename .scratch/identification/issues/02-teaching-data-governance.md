@@ -12,3 +12,12 @@
 - [x] 发布数据严格只含 `id treat y x1-x6`，oracle/build-time 变量不发布。
 - [x] manifest、README provenance、重建命令、schema 和数值不变量记录完整。
 - [x] 发布 variable labels 使用英文。
+
+## Verification evidence
+
+- Formal build: `data/selection/build-teaching.do` executed with Stata 19.5; exit 0 and reached `end of do-file`.
+- Observed: `N=2000`, treatment rate `0.254`, raw mean difference `1.461`.
+- IPWRA: ATET `0.5016781`, robust SE `0.06099`; `abs(ATET - 0.5) <= 0.15` passed.
+- Publication constraints: exact varlist `id treat y x1 x2 x3 x4 x5 x6`, no oracle variables, English labels.
+- Static manifest check: `bash verify/run-verify.sh --static` — 9 passed, 0 failed.
+- Sanitized formal-build evidence is recorded in `data/selection/README.md` under “Formal build evidence”; raw local Stata logs are not committed because they contain machine/license metadata.

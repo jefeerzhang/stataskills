@@ -56,3 +56,15 @@ The build script asserts:
 - exact published varlist and absence of `oracle`.
 
 The file is registered by basename `teaching-treatment` in `data/manifest-extra.txt`.
+
+## Formal build evidence
+
+On 2026-08-26, the formal `data/selection/build-teaching.do` was executed with Stata 19.5 from the repository root and exited without a Stata return-code error. The run reached `end of do-file` after all pre-save checks passed.
+
+Observed outputs:
+
+- Treatment rate: `0.254` (required range `[0.20, 0.30]`)
+- Unadjusted treated-minus-control outcome difference: `1.461`
+- IPWRA ATET: `0.5016781` (robust SE `0.06099`)
+- ATET assertion: `abs(0.5016781 - 0.5) <= 0.15`
+- Published schema and oracle-exclusion assertions: passed before `save`
