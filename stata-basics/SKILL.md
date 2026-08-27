@@ -284,3 +284,15 @@ command varlist if/in, options
 - **`r(7)`** — 命令语法错（漏逗号、漏 /// 续行、错用 = 写 ==）。**修复**：do-file 里 grep -nE 找无逗号行；选项前永远先 , option
 - **`r(111)`** — by / bysort 前未 sort。**修复**：用 bysort id: ... 一行替代 sort id + by id: ...
 - **`r(121)`** — varlist 含重复变量（如 keep x x y）。**修复**：isid 检查唯一；summarize 前 assert !duplicated(varlist)
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+> 与「关键陷阱速查」「黑名单」互补：本节是交付前的最终核对。交付 do-file 前逐条勾选，缺项先补再交付。
+
+- [ ] do-file 以 `version 19.5` 开头，运行无 `command ... not found`（命令全部小写）
+- [ ] 反向编码：`clonevar` 留底变量仍在（`describe` 可见）；`tab old new, miss` 边缘合计与理论分布一致
+- [ ] `.a`/`.b` 等特殊缺失码原样保留（`tab ..., miss` 显示 `.a` → `.a`，不是 → `.`）；未用算术法 `gen new = 5 - old`
+- [ ] 数值比较的 `if` 子句全部带 `& var < .`，或先 `mvdecode`；`==` 与 `=` 使用正确（无 `invalid syntax`）
+- [ ] 无 `drop _all` / `clear all` 破坏性操作；需要暂存数据时用了 `preserve` / `restore`
+- [ ] 路径为相对路径（无 `cd "~/..."`）；无中文变量名（用拼音 + `label variable`）
+- [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`；`do myscript.do` 可复现

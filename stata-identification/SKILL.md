@@ -84,3 +84,12 @@ references 数量固定为 3；完整树不得复制到本文件或其他运行�
 ## 8. 发布 gate
 
 本 Ticket 04 只交付 router 文档和 3 个 references。正式行为 prompts、`verify/verify-identification.do`、Stata 实测日志以及全量发布声明分别由 Ticket 06/07 及后续发布 gate 承担；在这些证据完成前，不宣称完整行为回归或 Stata verify 已通过。
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] 路由依据：named-method 直达对应方法 skill 并执行本地 gate；通用选择走了 decision tree，未凭变量名/关键词跳分支
+- [ ] 进入方法前先定义 treatment、outcome、unit、时间结构、处理时点、目标总体与 estimand
+- [ ] 每个放弃/选中的支柱都同时列出「数据中观察到什么」与「哪项外部制度/设计证据」；gate 失败去向符合同支柱顺序（标准 DID → synth/sdid → router）
+- [ ] 论文表述：只有 gate 可辩护才用因果措辞（effect/impact/caused）；否则用 association/difference 并停止因果声明
+- [ ] 诊断未被写成识别证明（balance/pretrend/density/first-stage/overidentification 均为支持性证据）；power/precision 单列
+- [ ] 未在本文件或其他 skill 复制完整 stop rules（decision tree 保持唯一）；发布 gate 证据（prompts/verify）未被提前宣称

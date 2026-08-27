@@ -387,3 +387,13 @@ power onecorrelation 0 0.20        // H0: r=0 vs Ha: r=0.20，功效 0.80，输�
 - **`r(3)`** — varlist 类型不匹配（如 summarize 用字符串变量）。**修复**：先 describe 看类型；字符串需 encode 转数值标签
 - **`r(5)`** — 矩阵非正定（如因子分析相关矩阵奇异）。**修复**：corr 前 summarize 看分布；剔除零方差变量或加 force
 - **`r(6)`** — 矩阵不匹配（多组统计量合并时维度错）。**修复**：逐组检查 N；tab ..., matcell(A) 后 matrix list A 验维度
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] 推断报告含效应量（Cramér's V / Cohen's d / OR / R² / β），不只报 p；p 值文本用 `<0.001`，不写 `0.000`
+- [ ] 交叉表语法 `tab row col, chi2 V`（`V` 大写）；小写 `v` 会报 `option v not allowed`
+- [ ] 比例检验前变量已 recode 成 0/1（`tab newvar, miss` 只有 0/1/`.`）
+- [ ] 正态性结论基于「直方图 + Q-Q 图 + sktest/swilk」三件齐备，不单凭一个 p
+- [ ] 涉及随机数 / 自助法的 do-file 固定 `set seed`（跑两次结果一致）
+- [ ] N>10k 的散点用 `binscatter` 或加了 `jitter`，无 raw scatter 黑团
+- [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`

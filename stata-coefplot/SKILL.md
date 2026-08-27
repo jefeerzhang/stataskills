@@ -306,3 +306,13 @@ coefplot (rep2, label(rep78=2)) (rep3, label(rep78=3)), bylabel(Low record) ///
 ## 引用
 
 > Ben Jann. 2025. coefplot: Stata module for plotting regression coefficients and other estimates. Statistical Software Components, Boston College Department of Economics. https://repec.sowi.unibe.ch/stata/coefplot/
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] `margins` 图已加 `post`（否则画的是原模型系数）；`estimates restore` 后验证
+- [ ] OR/Hazard 图 `eform` + `xline(1)`；未在 OR 图上误用 `xline(0)`
+- [ ] `vertical` 后 `xline`↔`yline`、`xtitle`↔`ytitle` 已对调
+- [ ] `bycoefs` 的 `headings()` 用整数编号（先跑一次看 `e(b)` 顺序），未用系数名
+- [ ] 多模型尺度差异大已加 `byopts(xrescale)`；同名系数已 `rename()` 或分模型 label
+- [ ] `addplot` 已加 `norescaling`；多方程模型已 `keep(eq1: eq2:)`
+- [ ] 比例变量 CI 已 `citype(logit)`；图已导出 PNG 且文件存在（中文标签前已与用户确认，默认英文）

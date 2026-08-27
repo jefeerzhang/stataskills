@@ -113,3 +113,12 @@ version 19.5
 
 - 内置命令示例必须在 Stata 19.5 临时副本/教学数据上试跑；不要运行会覆盖 `.dta` 的 build。
 - `psmatch2`、`ebalance` 示例标记为 optional；只有包存在时才实测，缺包应使用 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__` sentinel，不阻断默认路径。
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] 设计 gate：treatment/outcome/estimand（ATET）明确；adjustment set 全部处理前测量且因果角色可解释（无 mediator/post-treatment/collider/instrument 混入）
+- [ ] 锁链顺序：`teffects ipwra ..., atet` → 立即 `estimates store ipwra_atet` → `tebalance summarize` → `teffects overlap`（未在估计前跑 balance；overlap 未写 `atet`）
+- [ ] 官方对照链完整：`teffects psmatch`、`teffects ipw`、`teffects nnmatch` 均已估计并 store；`psmatch2` 只作兼容性对照，未当主估计
+- [ ] 主表 `estimates table ipwra_atet psmatch_atet ipw_atet nnmatch_atet` 为原尺度（未 `eform`）；diagnostics 单独记录
+- [ ] 报告未把 balance/overlap 当识别证明；限制段写明 selection-on-observables、positivity、SUTVA 与未观测混杂
+- [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`（r(198)/r(2000)/r(459)/r(498) 已按错误码速查排掉）

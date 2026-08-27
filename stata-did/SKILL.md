@@ -299,3 +299,13 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 - 本 skill 全部内置命令语法经 `verify/verify-did.do` 在 Stata 19.5（StataNow MP）批处理模式实测通过；数据全部本地模拟（`set seed` 固定），不依赖网络与额外 `.dta`。
 - 运行：`bash verify/run-verify.sh did`（默认）；全量六个 skill：`bash verify/run-verify.sh`。
 - 真实研究中需注意：2-cluster 演示场景（如医院 0/1）跑 wildbootstrap 会报 CI 不可识别，应改用 `aggregate(dlang)`——见第 8 条陷阱。
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] 强制路径命中：单时点走 `didregress`/`xtdidregress`；错时（时点 ≥ 2）默认 `hdidregress aipw`/`xthdidregress aipw`，未把 TWFE 当主结果
+- [ ] gate 审计：公共 gate（政策时点/pre-post/comparison units/no anticipation/no interference/稳定构成）与 parallel-trends 可辩护；记录失败的是哪层
+- [ ] 处理变量语法 (结局 [协变量]) (处理变量)；`xthdidregress` 未写 `time()`（已先 `xtset`）
+- [ ] 错时估计后看了 `estat aggregation, dynamic graph` 事件研究图；需要时跑了 `estat bdecomp, graph` 诊断 TWFE 负权重
+- [ ] wildbootstrap：种子写 `rseed()`；组数 < 5 改用 `aggregate(dlang)`；bootstrap 后未跑 `estat vce`
+- [ ] 字符串组变量已 `encode`；`xtset` 成功；`isid group time` 通过
+- [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`（r(451)/r(459)/r(1499) 已排查）

@@ -148,3 +148,13 @@ compatibility: >-
   1. **FE 估计时变量组内方差为 0**（xtreg fe）。**修复**：时不变变量跑 xtreg fe 自动 drop；改 `regress i.id, noconstant`。
   2. **`estat overid` 在恰好识别（L=K）时报 "no overidentifying restrictions"**。**修复**：这不是失败，是 Stata 表达"无过度识别可做"的合法退出码。要把过度识别检验跑出来就多放一把工具；脚本里用 `capture noisily estat overid` 兜住，跑命令后写 `display "overid_rc=" _rc`，_rc=498 表示恰好识别，0 表示有结果。
 - **`r(7)`** — reghdfe 报 option absorb() not allowed。**修复**：reghdfe 吸收 FE 必放 absorb() 而非 i.；详见 references/reghdfe.md
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] ANCOVA 连续协变量写法 `c.x`（未按分类处理）；交互/二次项结论读 `margins, dydx(*)`，不读主效应
+- [ ] 逻辑回归：`logit y x, or` + `margins, dydx(*)`；OR 未当风险比
+- [ ] 高维 FE：`reghdfe ..., absorb(...) vce(cluster ...)`；多层 FE 2SLS 用 `ivreghdfe` 且报告第一阶段
+- [ ] IV 分析：命令走 `references/iv.md` 选择路径；弱工具/过度识别/内生性检验齐全；relevance/exclusion/monotonicity/SUTVA 有制度证据，未把统计检验当识别证明
+- [ ] 恰好识别：无 Hansen J 时明确写出（未误报）；KP LM / KP Wald F 已报告并解读
+- [ ] 需要系数图时已 `estimates store`；log 无 `option not allowed` / `variable not found`
+- [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`

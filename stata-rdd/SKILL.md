@@ -191,3 +191,14 @@ rdrobust y x, c(c0) fuzzy(treat)
 - **Cattaneo, Titiunik & Vazquez-Bare (2016)** *Stata Journal* [对应 `rdlocrand`]。 — 局部随机化。
 - 教程：Carlos Mendez, *RDD in Stata: Evaluating a Tutoring Program.* https://carlos-mendez.org/post/stata_rd/ — 本 skill 数据与工作流来源。
 - 官方手册：*Stata 19 Causal Inference and Treatment-Effects Estimation Reference Manual* — **无 RDD 命令**，只在识别策略判断层参考。
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] 六步强制路径命中：`tab treat` → `rdplot` → `rdrobust` → `rddensity` → 带宽敏感性 → placebo；未把工具箱全跑一遍
+- [ ] 主估计 `rdrobust y x, c(c0)`；报告用 `e(tau_cl)`（robust），未误读 `e(tau)`
+- [ ] 符号解读：先说清处理在 cutoff 哪一侧（左/右），未把负号直接说成「项目有害」
+- [ ] fuzzy 已显式 `fuzzy(treat)` 并审计 first stage/exclusion/monotonicity/SUTVA，estimand 限定 cutoff 附近 compliers
+- [ ] 未用全样本高阶多项式当主结果；未把 RDD 解释成全样本 ATE（用「局部到 cutoff」）
+- [ ] 操纵检验跑了 `rddensity`（`lpdensity` 已装）；密度图用 `kdensity` 自画，未依赖内置 plot
+- [ ] 离散 mass points 已报告并考虑 `rdlocrand`；时间 cutoff 未机械归为 RDiT/ITS/DID
+- [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`（r(2001)/r(498)/r(198) 已排查）

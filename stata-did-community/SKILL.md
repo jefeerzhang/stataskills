@@ -332,3 +332,13 @@ compatibility: >-
     - `synth_runner` / `drdid` / `hdfe` 标记为可选——缺包仅打 sentinel，不影响 PASS。
   - 网络受限时本节方法与 `synthdid` R 包 / diff-diff 的 `SyntheticDiD` 同源，可跨语言替代。
 - 运行：`bash verify/run-verify.sh did-community`（默认）/ `bash verify/run-verify.sh did-community --community`（强制）；全量 10 个 skill：`bash verify/run-verify.sh`。
+
+## ✅ 交付前自检清单（跑完命令后逐条核对）
+
+- [ ] 方法选择命中决策树单条链，未把 9 个社区包全跑一遍当稳健性；错时默认回 `stata-did` 的 `hdidregress aipw`
+- [ ] 编码契约：`csdid`/`jwdid` 的 never-treated 用 `0`/`.`；`did_imputation` 的 `Ei` 用 `.` 缺失（两套编码未混用）
+- [ ] `synth`：`trunit()` 数值 id；预测变量期段 ≤ `trperiod()-1`；跑了 placebo 置换推断（`synth_runner`），不只报点估计
+- [ ] `sdid`：处理变量是 treat×post 哑变量（未把「属于处理组」当全期处理）；面板 `vce(jackknife)`、重复截面用默认
+- [ ] `did_multiplegt`：模式是位置参数 (dyn)；`placebo(#)` ≤ `effects(#)`；时间变量已 `tsfill` 等间距
+- [ ] `stacked`：跑前 `save original.dta`；`fe(interacted)` 已装 `reghdfe`；`lpdid` 用 `pre()` ≥ 2 且结果读 `e(results)`
+- [ ] log 恰好一次 `end of do-file`；`--community` 模式下无必需包（csdid/jwdid/did_imputation/synth/sdid）sentinel
