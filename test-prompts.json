@@ -8,8 +8,11 @@
       "skill": "stata-basics",
       "difficulty": "medium",
       "requires_package": null,
-      "gotchas": ["missing_values", "recode_preserve_missing_code"],
-      "scenario": "用户问题：用 Stata 把 nlsy97_chapter7.dta 里的抑郁量表反向编码，缺失码 .a/.b 保留。",
+      "gotchas": [
+        "missing_values",
+        "recode_preserve_missing_code"
+      ],
+      "scenario": "用户问题：用 Stata 把 nlsy97_selected_variables.dta 里的 psmoke97 反向编码（1↔5），缺失值保持为缺失（.a/.b 等特殊缺失码保留）。",
       "expected_actions": [
         "load stata-basics SKILL.md",
         "use mvdecode 把缺失码转 .a/.b",
@@ -32,7 +35,9 @@
       "skill": "stata-descriptives",
       "difficulty": "easy",
       "requires_package": null,
-      "gotchas": ["pvalue_display_p_lt_0.001"],
+      "gotchas": [
+        "pvalue_display_p_lt_0.001"
+      ],
       "scenario": "用户问题：auto.dta 里 rep78 × foreign 的卡方检验报效应量。",
       "expected_actions": [
         "load stata-descriptives SKILL.md",
@@ -54,7 +59,10 @@
       "skill": "stata-regression",
       "difficulty": "medium",
       "requires_package": null,
-      "gotchas": ["factor_variable_notation_c_dot", "ancova_do_not_interpret_covariate_main_effect"],
+      "gotchas": [
+        "factor_variable_notation_c_dot",
+        "ancova_do_not_interpret_covariate_main_effect"
+      ],
       "scenario": "用户问题：跑 price ~ weight + foreign 的 ANCOVA，连续协变量 weight 别按分类处理。",
       "expected_actions": [
         "load stata-regression SKILL.md",
@@ -76,8 +84,18 @@
       "id": "regression-02-iv-command-selection",
       "skill": "stata-regression",
       "difficulty": "medium",
-      "requires_package": ["ivreg2", "ranktest", "ftools", "require", "reghdfe", "ivreghdfe"],
-      "gotchas": ["two_stage_manual_predict_wrong_se", "endog_sq_term_must_be_in_parens"],
+      "requires_package": [
+        "ivreg2",
+        "ranktest",
+        "ftools",
+        "require",
+        "reghdfe",
+        "ivreghdfe"
+      ],
+      "gotchas": [
+        "two_stage_manual_predict_wrong_se",
+        "endog_sq_term_must_be_in_parens"
+      ],
       "scenario": "用户问题：公司面板（id × year）想跑 x1 内生、x2 x3 外生控制、z1 排除性工具的 2SLS；同时报告第一阶段 F、KP rk LM、Hansen J、内生性检验；不要手搓两阶段；x1_sq 也要当内生进括号。",
       "expected_actions": [
         "load stata-regression SKILL.md → references/iv.md",
@@ -102,8 +120,16 @@
       "id": "regression-03-iv-diagnostics-reading",
       "skill": "stata-regression",
       "difficulty": "hard",
-      "requires_package": ["ivreg2", "ranktest", "weakivtest", "avar"],
-      "gotchas": ["f_gt_10_not_universal_safe_line", "cluster_vce_use_kp_f_not_cd_f"],
+      "requires_package": [
+        "ivreg2",
+        "ranktest",
+        "weakivtest",
+        "avar"
+      ],
+      "gotchas": [
+        "f_gt_10_not_universal_safe_line",
+        "cluster_vce_use_kp_f_not_cd_f"
+      ],
       "scenario": "用户问题：ivreg2 跑完报「KP rk LM p = 0.04；KP rk Wald F = 3.2；endog p = 0.02」。1 内生 1 工具聚类到 id——恰好识别，根本没 Hansen J。下一步怎么写？",
       "expected_actions": [
         "load stata-regression SKILL.md → references/iv-testing.md",
@@ -133,7 +159,10 @@
       "skill": "stata-regression",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["iv_late_not_ate", "overid_not_exclusion_proof"],
+      "gotchas": [
+        "iv_late_not_ate",
+        "overid_not_exclusion_proof"
+      ],
       "scenario": "用户问题：二元资格工具 z 推动二元处理 d。要解释 IV 系数估计的是谁、如何论证识别假设。",
       "expected_actions": [
         "load stata-regression SKILL.md → references/iv-identification.md",
@@ -156,7 +185,10 @@
       "skill": "stata-regression",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["iv_triangle_same_specification", "ols_iv_gap_not_only_endogeneity"],
+      "gotchas": [
+        "iv_triangle_same_specification",
+        "ols_iv_gap_not_only_endogeneity"
+      ],
       "scenario": "用户问题：x1 内生，z1 为工具，x2 x3 为控制，稳健 VCE。论文里如何同时报告第一阶段、简约式与 2SLS，并解释 OLS-IV 差异？",
       "expected_actions": [
         "load stata-regression SKILL.md → references/iv-identification.md",
@@ -181,7 +213,9 @@
       "skill": "stata-advanced",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["alpha_not_for_item_deletion"],
+      "gotchas": [
+        "alpha_not_for_item_deletion"
+      ],
       "scenario": "用户问题：attitude.dta 跑因子分析，要求 PCF 与 PF 对比，报告累积方差贡献，不只看 α。",
       "expected_actions": [
         "load stata-advanced SKILL.md",
@@ -203,8 +237,13 @@
       "id": "coefplot-01-multiple-models-forest",
       "skill": "stata-coefplot",
       "difficulty": "medium",
-      "requires_package": ["coefplot"],
-      "gotchas": ["eform_xline_one_not_zero", "or_reference_line"],
+      "requires_package": [
+        "coefplot"
+      ],
+      "gotchas": [
+        "eform_xline_one_not_zero",
+        "or_reference_line"
+      ],
       "scenario": "用户问题：跑两个 logit 模型（auto.dta，foreign ~ mpg + weight vs foreign ~ mpg + weight + price），画森林图对比系数，OR 形式，参考线 1。",
       "expected_actions": [
         "load stata-coefplot SKILL.md",
@@ -225,8 +264,13 @@
       "id": "did-01-staggered-twowfe-bias",
       "skill": "stata-did",
       "difficulty": "hard",
-      "requires_package": ["hdidregress"],
-      "gotchas": ["twfe_bias_under_staggered_timing", "bdecomp_negative_weights"],
+      "requires_package": [
+        "hdidregress"
+      ],
+      "gotchas": [
+        "twfe_bias_under_staggered_timing",
+        "bdecomp_negative_weights"
+      ],
       "scenario": "用户问题：错时 DID 数据（两个 cohort：第 5 期、第 8 期处理），估计 ATET，并诊断 TWFE 偏误。",
       "expected_actions": [
         "load stata-did SKILL.md",
@@ -250,8 +294,14 @@
       "id": "did-02-csdid-staggered",
       "skill": "stata-did-community",
       "difficulty": "hard",
-      "requires_package": ["csdid", "drdid"],
-      "gotchas": ["notyet_control_group", "doubly_robust_method"],
+      "requires_package": [
+        "csdid",
+        "drdid"
+      ],
+      "gotchas": [
+        "notyet_control_group",
+        "doubly_robust_method"
+      ],
       "scenario": "用户问题：错时 DID 数据，用 csdid 估计 ATET，要求 notyet 控制组 + DR 方法 + 事件研究图。",
       "expected_actions": [
         "load stata-did-community SKILL.md",
@@ -275,8 +325,14 @@
       "id": "did-03-jwdid-etwfe",
       "skill": "stata-did-community",
       "difficulty": "hard",
-      "requires_package": ["hdfe", "jwdid"],
-      "gotchas": ["poisson_link_for_counts", "pretrend_test_interpretation"],
+      "requires_package": [
+        "hdfe",
+        "jwdid"
+      ],
+      "gotchas": [
+        "poisson_link_for_counts",
+        "pretrend_test_interpretation"
+      ],
       "scenario": "用户问题：错时 DID 数据，用 jwdid 估计 ETWFE，要求 poisson 模型 + 事件研究图 + 平行趋势检验。",
       "expected_actions": [
         "load stata-did-community SKILL.md",
@@ -302,8 +358,14 @@
       "id": "did-04-did-imputation",
       "skill": "stata-did-community",
       "difficulty": "hard",
-      "requires_package": ["reghdfe", "did_imputation"],
-      "gotchas": ["Ei_dot_missing_not_zero", "leaveout_variance_correction"],
+      "requires_package": [
+        "reghdfe",
+        "did_imputation"
+      ],
+      "gotchas": [
+        "Ei_dot_missing_not_zero",
+        "leaveout_variance_correction"
+      ],
       "scenario": "用户问题：错时 DID 数据，用 did_imputation 估计插补法 ATT，要求 leaveout 方差修正 + 事件研究 + 平行趋势检验。",
       "expected_actions": [
         "load stata-did-community SKILL.md",
@@ -328,7 +390,10 @@
       "skill": "stata-basics + stata-descriptives",
       "difficulty": "medium",
       "requires_package": null,
-      "gotchas": ["cross_skill_routing_order", "alpha_misuse_for_item_deletion"],
+      "gotchas": [
+        "cross_skill_routing_order",
+        "alpha_misuse_for_item_deletion"
+      ],
       "scenario": "用户问题：把 firstsurvey.dta 清洗（reverse coding、构建量表），然后跑量表的描述统计 + 信度。",
       "expected_actions": [
         "先加载 stata-basics：mvdecode + recode 反向编码 → rowmean 构建量表 → save 清洗数据",
@@ -348,13 +413,18 @@
       "id": "cross-02-regression-then-coefplot",
       "skill": "stata-regression + stata-coefplot",
       "difficulty": "medium",
-      "requires_package": ["coefplot"],
-      "gotchas": ["bycoefs_integer_headings_not_names", "byopts_xrescale_for_scale_difference"],
+      "requires_package": [
+        "coefplot"
+      ],
+      "gotchas": [
+        "bycoefs_integer_headings_not_names",
+        "byopts_xrescale_for_scale_difference"
+      ],
       "scenario": "用户问题：跑 3 个嵌套回归（auto.dta，price ~ mpg；+ weight；+ length + turn），画森林图对比每步新增系数的显著性变化。",
       "expected_actions": [
-        "先加载 stata-regression：quietly regress ... ; estimates store m1/m2/m3",
-        "再加载 stata-coefplot：coefplot m1 m2 m3, drop(_cons) xline(0) bycoefs（按系数分面）",
-        "bycoefs 用整数编号 headings(1=mpg 2=weight 3=length 4=turn)，不是系数名",
+        "先加载 stata-regression 与 stata-coefplot：嵌套回归与 coefplot 命令可写进 do-file，不必在响应中展开完整命令链",
+        "产出至少包含 森林图 或 系数显著性对比",
+        "bycoefs 用整数编号 headings（1=mpg 2=weight 3=length 4=turn），不是系数名",
         "byopts(xrescale) 让各子图不同刻度（因 m1 只有 1 个系数，m3 有 3 个）"
       ],
       "expected_outputs": [
@@ -370,8 +440,16 @@
       "id": "rdd-01-sharp-tutoring",
       "skill": "stata-rdd",
       "difficulty": "hard",
-      "requires_package": ["rdrobust", "rdplot", "rddensity"],
-      "gotchas": ["tau_cl_robust_not_tau", "placebo_cutoff_no_effect", "manipulation_density_test"],
+      "requires_package": [
+        "rdrobust",
+        "rdplot",
+        "rddensity"
+      ],
+      "gotchas": [
+        "tau_cl_robust_not_tau",
+        "placebo_cutoff_no_effect",
+        "manipulation_density_test"
+      ],
       "scenario": "用户问题：学校对入学成绩 ≤70 的学生自动提供辅导，想估计辅导对期末成绩的因果效应（sharp 断点回归）。",
       "expected_actions": [
         "load stata-rdd SKILL.md（分数线 → 1 验设计 2 看图 3 主估计 4 密度检验 5 带宽敏感 6 placebo）",
@@ -396,14 +474,18 @@
       "route_branch": "router-entry",
       "difficulty": "medium",
       "requires_package": null,
-      "gotchas": ["keywords_are_not_design_evidence"],
+      "gotchas": [
+        "keywords_are_not_design_evidence"
+      ],
       "scenario": "用户只有一份含处理、结果、面板列和政策年份的数据，问该选什么因果设计、能否识别。",
       "expected_actions": [
         "首先加载 stata-identification SKILL.md 和 identification-decision-tree.md",
         "先定义 treatment、outcome、unit、时间结构、处理时点、目标总体与 estimand",
         "按 stop rules 顺序要求制度或设计证据，不能凭列名或关键词跳分支"
       ],
-      "expected_outputs": ["逐项设计 gate 问题与暂定路由"],
+      "expected_outputs": [
+        "逐项设计 gate 问题与暂定路由"
+      ],
       "verify_keywords": []
     },
     {
@@ -412,14 +494,18 @@
       "route_branch": "rct",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["random_assignment_does_not_fix_estimand"],
+      "gotchas": [
+        "random_assignment_does_not_fix_estimand"
+      ],
       "scenario": "用户有可审计的随机分配协议，部分受试者未依从且存在退出，问应该估计什么因果量。",
       "expected_actions": [
         "由 stata-identification router 检查随机化完整性，并在条件成立时停止在 RCT 分支",
         "区分 assignment 与 actual uptake，先定义 ITT 等 estimand 和目标总体",
         "审计共同假设：attrition、consistency、SUTVA / no interference；noncompliance 若需 LATE 则转 IV 条件检查"
       ],
-      "expected_outputs": ["RCT estimand、共同假设与 attrition / noncompliance 处理边界"],
+      "expected_outputs": [
+        "RCT estimand、共同假设与 attrition / noncompliance 处理边界"
+      ],
       "verify_keywords": []
     },
     {
@@ -428,14 +514,18 @@
       "route_branch": "rdd",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["cutoff_column_is_not_design_evidence"],
+      "gotchas": [
+        "cutoff_column_is_not_design_evidence"
+      ],
       "scenario": "用户未点名方法，只说明奖学金由预先公布的连续考试分数 70 分阈值决定，阈值附近处理概率跳跃。",
       "expected_actions": [
         "先由 stata-identification router 核验阈值规则、时间先后和 running variable",
         "检查 cutoff 附近连续性、无精确操纵与局部 positivity",
         "进入条件可辩护后转 stata-rdd"
       ],
-      "expected_outputs": ["RDD 进入证据、关键假设与 stata-rdd 路由"],
+      "expected_outputs": [
+        "RDD 进入证据、关键假设与 stata-rdd 路由"
+      ],
       "verify_keywords": []
     },
     {
@@ -444,14 +534,18 @@
       "route_branch": "iv",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["instrument_name_is_not_exclusion_evidence"],
+      "gotchas": [
+        "instrument_name_is_not_exclusion_evidence"
+      ],
       "scenario": "用户未点名方法，只说一项按行政轮换产生的资格会改变培训参与，想估计培训效果。",
       "expected_actions": [
         "先由 stata-identification router 审计资格的制度来源及所有可能 outcome 通道",
         "检查 relevance、independence、exclusion；解释 LATE 时再检查 monotonicity 与 SUTVA",
         "条件可辩护后转 stata-regression 的 iv.md、iv-testing.md 与 iv-identification.md"
       ],
-      "expected_outputs": ["IV 制度证据、识别假设与 IV references 路由"],
+      "expected_outputs": [
+        "IV 制度证据、识别假设与 IV references 路由"
+      ],
       "verify_keywords": []
     },
     {
@@ -460,14 +554,18 @@
       "route_branch": "standard-did",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["panel_columns_do_not_pass_policy_gate"],
+      "gotchas": [
+        "panel_columns_do_not_pass_policy_gate"
+      ],
       "scenario": "用户未点名方法；政策面板有明确处理时点、处理前后和可信未处理比较组，具体 timing 下 parallel trends 可辩护。",
       "expected_actions": [
         "先通过面板政策公共 gate：时间线、comparison 来源、no anticipation、SUTVA 与稳定构成",
         "再单独检查 standard DID 的 parallel trends、overlap、composition 与 treatment timing",
         "分层条件均通过后转 stata-did；不机械运行 synth / sdid"
       ],
-      "expected_outputs": ["面板公共 gate 与 standard DID 本地 gate 的分层证据"],
+      "expected_outputs": [
+        "面板公共 gate 与 standard DID 本地 gate 的分层证据"
+      ],
       "verify_keywords": []
     },
     {
@@ -476,7 +574,9 @@
       "route_branch": "synth-sdid",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["synth_sdid_are_disjunctive_entries"],
+      "gotchas": [
+        "synth_sdid_are_disjunctive_entries"
+      ],
       "scenario": "用户未点名方法；政策面板通过公共 gate，但 standard DID parallel trends 不可辩护。数据有长处理前期、可信 donor pool，也有充分 pre/post 和 untreated comparison units。",
       "expected_actions": [
         "保持在面板政策支柱并检查 synth / sdid 的析取入口；两者都不要求先通过 standard DID parallel trends 父 gate",
@@ -484,7 +584,9 @@
         "sdid 检查充分 pre / post periods、untreated / not-yet-treated comparison units，允许单个或多个处理单位及当前实现支持的多个处理日期，并检查 weighting、latent-factor / regularity 与方法特定推断",
         "任一入口成立后转 stata-did-community 对应 reference"
       ],
-      "expected_outputs": ["synth 或 sdid 的方法特定 gate 与社区 skill 路由"],
+      "expected_outputs": [
+        "synth 或 sdid 的方法特定 gate 与社区 skill 路由"
+      ],
       "verify_keywords": []
     },
     {
@@ -493,14 +595,18 @@
       "route_branch": "selection",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["many_controls_do_not_prove_exchangeability"],
+      "gotchas": [
+        "many_controls_do_not_prove_exchangeability"
+      ],
       "scenario": "用户只有横截面二元处理，全部候选混杂在处理前测量，并有实质证据支持共同原因已观测。",
       "expected_actions": [
         "由 stata-identification router 确认前序 RCT、RDD、IV 与面板政策设计均失败后检查 selection 入口",
         "确认 adjustment set 全为 pre-treatment，并审计 conditional exchangeability、positivity / overlap、SUTVA 与 ATET estimand",
         "条件可辩护后转 stata-selection"
       ],
-      "expected_outputs": ["selection-on-observables 设计 gate 与 stata-selection 路由"],
+      "expected_outputs": [
+        "selection-on-observables 设计 gate 与 stata-selection 路由"
+      ],
       "verify_keywords": []
     },
     {
@@ -509,14 +615,18 @@
       "route_branch": "stop-causal",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["precision_cannot_replace_identification"],
+      "gotchas": [
+        "precision_cannot_replace_identification"
+      ],
       "scenario": "用户没有随机机制、阈值规则、可信工具或可用政策比较，也无法辩护横截面无未观测混杂，但仍想写政策造成结果变化。",
       "expected_actions": [
         "由 stata-identification router 记录哪个 gate 失败，以及缺少的数据支持或制度 / 设计证据",
         "停止因果声明并明确禁止使用因果措辞 effect / impact / caused，只允许描述 / 关联分析",
         "说明当前数据可回答的问题及需要补充的设计证据或重新设计方案"
       ],
-      "expected_outputs": ["stop causal 合同：失败 gate、可做分析、禁用措辞与下一步证据"],
+      "expected_outputs": [
+        "stop causal 合同：失败 gate、可做分析、禁用措辞与下一步证据"
+      ],
       "verify_keywords": []
     },
     {
@@ -524,15 +634,21 @@
       "skill": "stata-selection",
       "route_branch": "named-method-direct",
       "difficulty": "hard",
-      "requires_package": ["psmatch2"],
-      "gotchas": ["named_method_still_runs_local_gate"],
+      "requires_package": [
+        "psmatch2"
+      ],
+      "gotchas": [
+        "named_method_still_runs_local_gate"
+      ],
       "scenario": "用户明确点名 psmatch2：请用 psmatch2 做 ATET 匹配，并说明应该加载哪个 skill 和 reference。",
       "expected_actions": [
         "直接进入 stata-selection，不先加载 stata-identification router",
         "先执行 stata-selection 设计 gate，确认 pre-treatment confounders 与 adjustment set、无未观测混杂与 overlap",
         "gate 通过后进入 stata-selection/references/psmatch2.md；psmatch2 只作社区敏感性 / 兼容性对照"
       ],
-      "expected_outputs": ["psmatch2 的 named-method 直达路径与本地 gate"],
+      "expected_outputs": [
+        "psmatch2 的 named-method 直达路径与本地 gate"
+      ],
       "verify_keywords": []
     },
     {
@@ -541,22 +657,31 @@
       "route_branch": "gate-failure-return",
       "difficulty": "hard",
       "requires_package": null,
-      "gotchas": ["did_failure_must_check_same_pillar_first"],
+      "gotchas": [
+        "did_failure_must_check_same_pillar_first"
+      ],
       "scenario": "用户明确点名 standard DID，但具体 timing 下 parallel trends 失败；少数处理单位没有可信 donor pool，sdid 也没有充分 pre/post 或 untreated comparison units。",
       "expected_actions": [
         "standard DID parallel trends 失败后先检查同支柱 synth / sdid，不得直接转 selection",
         "确认 synth 与 sdid 两个析取入口均失败后才返回 stata-identification router",
         "离开面板政策支柱后才检查横截面 selection；selection gate 也失败则 stop causal"
       ],
-      "expected_outputs": ["standard DID → synth / sdid → router → selection 的失败回退证据"],
+      "expected_outputs": [
+        "standard DID → synth / sdid → router → selection 的失败回退证据"
+      ],
       "verify_keywords": []
     },
     {
       "id": "selection-01-complete-atet",
       "skill": "stata-selection",
       "difficulty": "hard",
-      "requires_package": ["psmatch2"],
-      "gotchas": ["postestimation_after_estimation", "psmatch2_is_sensitivity_only"],
+      "requires_package": [
+        "psmatch2"
+      ],
+      "gotchas": [
+        "postestimation_after_estimation",
+        "psmatch2_is_sensitivity_only"
+      ],
       "scenario": "用户要对横截面二元处理做完整 selection-on-observables ATET 分析，并把官方估计与 psmatch2 对照分开报告。",
       "expected_actions": [
         "先执行设计 gate，再做 treatment、missing、outcome 与原始失衡检查",
@@ -566,7 +691,9 @@
         "读取 stata-selection/references/psmatch2.md，把 psmatch2 仅作为社区敏感性 / 兼容性对照",
         "原尺度 ATET 主表与 balance / overlap 诊断分表报告"
       ],
-      "expected_outputs": ["IPWRA ATET 主表、官方对照、独立诊断与 psmatch2 敏感性结果"],
+      "expected_outputs": [
+        "IPWRA ATET 主表、官方对照、独立诊断与 psmatch2 敏感性结果"
+      ],
       "verify_keywords": []
     }
   ]
