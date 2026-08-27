@@ -1,8 +1,9 @@
 # Stata Skills（基于《A Gentle Introduction to Stata》第 6 版）
 
-> **中文实证研究者装上即可调用覆盖数据管理、建模与因果识别的 Stata skills。** 10 skills · 10 个验证入口 · 6 ADR · 38 个 AGIS6 数据集 · 一行 `npx skills add` 安装（本机同轮 `bash verify/run-verify.sh` 实测 10/10 PASS）。
+> **装上即让 Agent 会跑 Stata 因果推断：9 个 DiD 估计量 · 10/10 实测验证 · 一条命令安装。**
 >
-> 把 Alan C. Acock《A Gentle Introduction to Stata》第 6 版（800 页 Stata Press）压成 4 个教材章节 Skill，并扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router，共 10 个可被 Agent 调用的中文 Skill。
+> 10 个 Skill · 10 个验证入口 · 38 个 AGIS6 数据集 · 27 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
+> 再扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router——中文实证研究者装上即可用。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
@@ -40,6 +41,18 @@
 ![MPG 按产地箱线图](demo/output/02_hbox_mpg_by_foreign.png)
 ![reghdfe 残差与 regress i.fe 残差对比（数学等价性证据）](demo/output/03_reghdfe_resid_compare.png)
 ![Bacon 分解（错时 DID 的 TWFE 权重诊断）](demo/output/07_bdecomp.png)
+
+## 为什么做这个项目
+
+给 Agent 写 Stata 代码，最怕的不是它不会写，而是它写得像会。
+
+问一句「帮我跑个错时 DID」，常见的结果是一段结构完整的代码——命令名对、选项像样，但它可能在这一版 Stata 上根本没跑过，用的估计量也可能配不上你的数据。期刊审稿人不会因为「这是 Agent 生成的」就少看半行；你得对每一个命令负责。stataskills 想消掉这层赌的成分：凡是写进 SKILL.md 的命令链，都在这台机器上用 Stata 19.5 批处理跑过，原始 log 留在 `verify/` 里当证据。
+
+另一个动机是「方法选择」这类知识太散。错时 DID 该走 hdidregress、csdid 还是 jwdid？断点回归读 `e(tau_cl)` 还是 `e(tau)`？恰好识别时 Hansen J 去哪了？这些答案散在论坛、期刊附录和 help 文件里，每次现查一遍等于让 Agent 重新踩一遍坑。把它们固化进强制路径、陷阱四件套和黑名单，就是把踩过的坑变成路标。
+
+最后是对教材的尊重。Acock 的《A Gentle Introduction to Stata》本来就把「从数据到结果」讲得清清楚楚，我们做的不是另起炉灶，而是让 Agent 能按章节级粒度调用它——教材提供为什么，仓库提供怎么跑、跑完怎么验证。
+
+这个仓库的验收标准只有一条：**写进去的命令都有日志，没验证过的都不写。**
 
 ## 你什么时候需要它？
 
