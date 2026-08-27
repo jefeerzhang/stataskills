@@ -129,7 +129,7 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 个 AGIS6 `.dta` + 受治理的项目级扩展数据 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令动态运行 10 个验证入口 | ❌ | ⚠️ log 验证 |
-| Agent 行为回归 | ✅ `test-prompts.json` 27 条 prompt + 动态 skill / route_branch 断言 | ❌ | ❌ |
+| Agent 行为回归 | ✅ `test-prompts.json` 27 条 prompt + 动态 skill / route_branch 断言；`--llm` 模式本机实测转绿 | ❌ | ❌ |
 | Demo 报告 | ✅ 8 个 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 至 ADR-0006 | ❌ | ❌ |
 | 单一来源 | ✅ 双 manifest + target registry + `verify/stata.conf` | ❌ | ❌ |
@@ -195,6 +195,7 @@ stataskills/
 bash verify/run-verify.sh --static  # 静态层（无需 Stata，与 CI 同款）
 bash verify/test-harness.sh         # harness 与社区 sentinel 语义
 bash verify/test-prompts.sh         # 动态 skill / route_branch 文档回归
+bash verify/test-prompts.sh --llm   # Agent 行为回归实测（claude CLI + API key 或 OAuth 登录态任一）
 bash verify/check-claims.sh          # 文件系统 facts 与活跃声明
 bash verify/run-verify.sh            # 全量 10 个验证入口（需本机 Stata）
 bash verify/run-verify.sh selection  # 单个 skill
@@ -261,7 +262,7 @@ bash verify/run-verify.sh
 | `stata-selection` | extension | cross-sectional binary treatment under selection on observables: IPWRA ATET, balance/overlap, official matching/IPW comparisons, optional community sensitivity checks |
 | `stata-identification` | extension | cross-design stop rules, common identification assumptions, estimand definition, and causal-claim stopping rules |
 
-Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 8-do-file, 27-PNG layer. The verify harness dynamically discovers 10 verification entry points, and `test-prompts.json` contains 27 prompts covering all 10 skills and the locked routing branches.
+Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 8-do-file, 27-PNG layer. The verify harness dynamically discovers 10 verification entry points, and `test-prompts.json` contains 27 prompts covering all 10 skills and the locked routing branches. The `--llm` mode has been executed end-to-end against a real agent backend (2026-08-27, MiniMax M3): 25/27 straight PASS, with the 2 remaining FAILs traced to a fixture/data mismatch and a matcher dot-stripping defect, both fixed and re-verified - see `verify/llm-results.md`.
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
