@@ -9,7 +9,8 @@
 #   --prompts     : Stata 子集层——跑现有 verify-<skill>.do（run-verify.sh harness）
 #                   + 断言 verify_keywords 出现在实际命令行；需要本机 Stata
 #   --llm         : Claude CLI 层——调用 `claude -p <prompt>` 跑 prompt，断言期望
-#                   输出；需要 claude CLI + ANTHROPIC_API_KEY；不存在时 SKIP 不报错
+#                   输出；需要 claude CLI，且 ANTHROPIC_API_KEY 或 OAuth 登录态
+#                   （~/.claude/.credentials.json）任一可用；不具备时 SKIP 不报错
 #
 # 模式设计理由（与项目 ADR-0001 / 0003 一致）：
 #   - 默认模式让 CI 不被网络/Stata 包绑定（与 run-verify.sh --static 同款）
@@ -515,14 +516,20 @@ run_prompts_mode() {
 # ============================================================
 run_llm_mode() {
   if ! command -v claude >/dev/null 2>&1; then
-    echo "SKIP  --llm 模式：claude CLI 不存在；需要安装 Claude CLI 并配置 ANTHROPIC_API_KEY"
+    echo "SKIP  --llm 模式：claude CLI 不存在；需要安装 Claude CLI（并用 API key 或 OAuth 登录）"
     echo "      安装：npm install -g @anthropic-ai/claude-code"
     exit 0
   fi
 
-  if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-    echo "SKIP  --llm 模式：ANTHROPIC_API_KEY 未设置"
+  if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ ! -f "$HOME/.claude/.credentials.json" ]; then
+    echo "SKIP  --llm 模式：需要 ANTHROPIC_API_KEY 或 claude CLI OAuth 登录态（~/.claude/.credentials.json）"
     exit 0
+  fi
+
+  if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "INFO  --llm 认证：ANTHROPIC_API_KEY"
+  else
+    echo "INFO  --llm 认证：claude CLI OAuth 登录态（~/.claude/.credentials.json）"
   fi
 
   local pass=0 fail=0 i=0
@@ -557,11 +564,17 @@ run_llm_mode() {
     fi
     local hit=0 kw
     for kw in $expected_actions; do
-      # 取关键词（如 "load stata-basics" → "stata-basics"）
+      # 逐词检查（join(" ") 后按空白拆分）：先用去标点字面串做固定串匹配；
+      # 若去点号改变了词形（如 SKILL.md → SKILLmd），再用原词做正则，
+      # 点号留作通配（'.' 未转义）兜底——修复 "*.md" 引用永远匹配不上的缺陷。
       local cleaned
-      cleaned="$(echo "$kw" | sed 's/[`(){},.]//g' | awk '{print $NF}')"
+      cleaned="$(echo "$kw" | sed 's/[`(){},.]//g')"
       [ "${#cleaned}" -lt 3 ] && continue
-      if echo "$response" | grep -qE "$(echo "$cleaned" | sed 's/[][\.*^$/]/\\&/g')"; then
+      if echo "$response" | grep -qF "$cleaned"; then
+        hit=1
+        break
+      fi
+      if [ "$cleaned" != "$kw" ] && echo "$response" | grep -qE "$(echo "$kw" | sed 's/[][\\*^$\/()]/\\&/g')"; then
         hit=1
         break
       fi
