@@ -2,7 +2,7 @@
 
 > **装上即让 Agent 会跑 Stata 因果推断：9 个 DiD 估计量 · 10/10 实测验证 · 一条命令安装。**
 >
-> 10 个 Skill · 10 个验证入口 · 38 个 AGIS6 数据集 · 27 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
+> 10 个 Skill · 10 个验证入口 · 6 ADR · 38 个 AGIS6 数据集 · 27 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
 > 再扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router——中文实证研究者装上即可用。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
