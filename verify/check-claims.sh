@@ -360,10 +360,12 @@ else
 
   pending_marks_count=$(grep -cE '\[(待注册|TODO: register)\]|\(pending registration\)' "$README" || true)
   pending_marks_count=${pending_marks_count:-0}
+  live_marks_count=$(grep -cE '\[已上架\]' "$README" || true)
+  live_marks_count=${live_marks_count:-0}
   badge_count=$(grep -cE 'skills\.sh/jefeerzhang' "$README" || true)
   badge_count=${badge_count:-0}
-  if [ "$pending_marks_count" -ne "$badge_count" ]; then
-    hero_drift="${hero_drift} skills.sh 占位 badge=${badge_count}，待注册标记=${pending_marks_count};"
+  if [ "$((pending_marks_count + live_marks_count))" -ne "$badge_count" ]; then
+    hero_drift="${hero_drift} skills.sh 占位 badge=${badge_count}，状态标记=${pending_marks_count}(待注册)+${live_marks_count}(已上架);"
   fi
 
   if [ -n "$hero_drift" ]; then
