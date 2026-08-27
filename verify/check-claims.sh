@@ -364,8 +364,11 @@ else
   live_marks_count=${live_marks_count:-0}
   badge_count=$(grep -cE 'skills\.sh/jefeerzhang' "$README" || true)
   badge_count=${badge_count:-0}
-  if [ "$((pending_marks_count + live_marks_count))" -ne "$badge_count" ]; then
-    hero_drift="${hero_drift} skills.sh 占位 badge=${badge_count}，状态标记=${pending_marks_count}(待注册)+${live_marks_count}(已上架);"
+  if [ "$live_marks_count" -ne 0 ]; then
+    hero_drift="${hero_drift} skills.sh badge 残留 [已上架] 标记=${live_marks_count}（上架后徽章为活链接，无需标记）;"
+  fi
+  if [ "$pending_marks_count" -ne 0 ] && [ "$pending_marks_count" -ne "$badge_count" ]; then
+    hero_drift="${hero_drift} skills.sh 占位 badge=${badge_count}，待注册标记=${pending_marks_count}（须 0 或全量成对）;"
   fi
 
   if [ -n "$hero_drift" ]; then

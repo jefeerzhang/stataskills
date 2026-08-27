@@ -14,16 +14,16 @@
 [![verify](https://github.com/jefeerzhang/stataskills/actions/workflows/verify.yml/badge.svg)](https://github.com/jefeerzhang/stataskills/actions/workflows/verify.yml)
 [![GitHub](https://img.shields.io/badge/GitHub-jefeerzhang%2Fstataskills-181717)](https://github.com/jefeerzhang/stataskills)
 
-[![skills.sh: stata-basics](https://img.shields.io/badge/skills.sh-stata--basics-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-basics) [已上架]
-[![skills.sh: stata-descriptives](https://img.shields.io/badge/skills.sh-stata--descriptives-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-descriptives) [已上架]
-[![skills.sh: stata-regression](https://img.shields.io/badge/skills.sh-stata--regression-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-regression) [已上架]
-[![skills.sh: stata-advanced](https://img.shields.io/badge/skills.sh-stata--advanced-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-advanced) [已上架]
-[![skills.sh: stata-coefplot](https://img.shields.io/badge/skills.sh-stata--coefplot-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-coefplot) [已上架]
-[![skills.sh: stata-did](https://img.shields.io/badge/skills.sh-stata--did-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-did) [已上架]
-[![skills.sh: stata-did-community](https://img.shields.io/badge/skills.sh-stata--did--community-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-did-community) [已上架]
-[![skills.sh: stata-rdd](https://img.shields.io/badge/skills.sh-stata--rdd-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-rdd) [已上架]
-[![skills.sh: stata-selection](https://img.shields.io/badge/skills.sh-stata--selection-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-selection) [已上架]
-[![skills.sh: stata-identification](https://img.shields.io/badge/skills.sh-stata--identification-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-identification) [已上架]
+[![skills.sh: stata-basics](https://img.shields.io/badge/skills.sh-stata--basics-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-basics)
+[![skills.sh: stata-descriptives](https://img.shields.io/badge/skills.sh-stata--descriptives-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-descriptives)
+[![skills.sh: stata-regression](https://img.shields.io/badge/skills.sh-stata--regression-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-regression)
+[![skills.sh: stata-advanced](https://img.shields.io/badge/skills.sh-stata--advanced-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-advanced)
+[![skills.sh: stata-coefplot](https://img.shields.io/badge/skills.sh-stata--coefplot-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-coefplot)
+[![skills.sh: stata-did](https://img.shields.io/badge/skills.sh-stata--did-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-did)
+[![skills.sh: stata-did-community](https://img.shields.io/badge/skills.sh-stata--did--community-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-did-community)
+[![skills.sh: stata-rdd](https://img.shields.io/badge/skills.sh-stata--rdd-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-rdd)
+[![skills.sh: stata-selection](https://img.shields.io/badge/skills.sh-stata--selection-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-selection)
+[![skills.sh: stata-identification](https://img.shields.io/badge/skills.sh-stata--identification-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-identification)
 
 
 ## 特性
