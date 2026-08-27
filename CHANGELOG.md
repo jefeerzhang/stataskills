@@ -8,10 +8,21 @@ versioned by Stata compatibility).
 ## [Unreleased]
 
 ### Added
+
+### Fixed
+
+### Changed
+
+## [1.2.0] - 2026-08-27
+
+方向 A 传播收尾 + LLM 行为回归实测后的首个 GitHub Release：10 skills 全部 skills.sh 上架（10/10 可访问）、English Summary 量化钩子、--llm 全量行为回归（25/27 直接 PASS，2 条判定问题经 fixture/matcher 修复重放转绿）、10 个 SKILL.md 交付前自检清单。
+
+### Added
 - feat(回归+IV): 增加识别与论文解释路径 — 新增 `references/iv-identification.md`（联合识别 / relevance+independence+exclusion+monotonicity+SUTVA / LATE/complier / 第一阶段-简约式-2SLS 结果三角 + Wald ratio / OLS-IV 差异 / 论文主表与限制模板）；SKILL.md description 增 LATE/complier/简约式/识别假设触发词 + 强制路径表 +1 行 + references 表新增 10.10 行 + 陷阱 10「验证」段改写为联合秩条件 + 引用识别文档；`references/iv.md` / `iv-testing.md` 边界约定加 pointer；`test-prompts.json` schema 2.2.0→2.3.0 新增 2 条 IV prompt（regression-04/05）需 `verify-regression.do` 真实 `assert` 执行证据；verify-regression.do ch10.10 新增官方结果三角（ivregress/egress 三类回归共享样本 + vce + Wald-ratio 数值断言），VERIFY CONTRACT checks: 增 `iv-identification`；README prompt 计数 14→16。
 - feat(回归+IV): 工具变量五命令 + 全套检验体系（教材未覆盖扩展）— 新增 `references/iv.md`（268 行）五命令全景 + `references/iv-testing.md`（412 行）检验体系；`stata-regression/SKILL.md` 新增 6 处改动（description 触发词 / compatibility 包列表 / 强制路径 +1 行 / 路由表 +3 行 10.8/10.9/10.6a / 陷阱四件套 +4 条 9-12 号 / 黑名单 +2 条）；`test-prompts.json` schema 2.1.0→2.2.0 新增 2 条 IV prompt（regression-02/03）；README prompt 计数 12→14 — `da91f8f`。
 - fix(回归+IV): 修复恰好识别时 `estat overid` r(498) 导致 verify-regression 失败 — verify-regression.do 恰好识别段改 `capture noisily estat overid` + 另起过度识别段；SKILL.md r(498) 条目补充第二种触发；test-prompts.json regression-03 场景改为恰好识别 — `084fcfd`。
 - feat(验证): `test-prompts.sh --llm` 全量实跑 27 条 Agent 行为回归（claude CLI + OAuth 登录态 / MiniMax M3 后端）：25/27 直接 PASS；2 条 FAIL 经重放归因并修复（见下文 Changed）；台账 `verify/llm-results.md`、`verify/llm-smoke-results.md` — `b52609d`、`9529f5c`。
+- feat(传播): skills.sh 徽章 `[待注册]`→`[已上架]`（10 个 URL 实测 200 可访问、npx skills add 可发现）；English Summary 增加量化钩子「10 skills · 10/10 verified · 9 DiD estimators · 27 prompts · live on skills.sh」；check-claims 断言同步支持 `[已上架]` 状态 — `8812a87`。
 
 ### Fixed
 - fix(回归+IV): 让 `test-prompts.sh --prompts` 只以真实执行的 Stata 命令作为覆盖证据；新增 `ivreg2` 非线性内生项与 `weakivtest` 实跑段，补齐 `ranktest` / `avar` 等依赖声明，并修正 KP LM 与 KP Wald F 的结果表述。
@@ -24,6 +35,7 @@ versioned by Stata compatibility).
 - docs(验证): 提交最新 verify 日志快照（8 份），按 ADR-0005 保留完整原始日志 — `261997a`。
 - test(行为): basics-01 场景改指仓库真实数据（`nlsy97_selected_variables.dta` 的 `psmoke97`，1–5 取值 + 扩展缺失实测存在；原 scenario 指向仓库不存在的抑郁量表）；cross-02 expected_actions 改为执行型语义（森林图 + 显著性对比为交付物，命令链不强求展开） — `8f1583d`。
 - chore(仓库): 忽略 `.scratch` Agent 运行产物（`*.do` / `*.dta` / `*.png` / `llm-smoke/`）与 `stata_batch__*.log` — `5a0e457`。
+- docs(skills): 10 个 SKILL.md 增加「交付前自检清单」（LUBAN 检查点设计 P2）——强制路径/陷阱/黑名单提炼为交付前逐条核对 — `1b43a3e`。
 
 ## [1.1.0] - 2026-08-25
 
