@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "stataskills Agent 行为回归测试 prompt 与期望锚点。覆盖实际 stata-*/SKILL.md 及跨 skill 路由场景；route_branch 与 expected_actions 提供机器可审计的路由合同。difficulty、gotchas 与 requires_package 分别记录难度、陷阱编号和前置 SSC 包（null=全部内置）。",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "prompts": [
     {
       "id": "basics-01-reverse-coding",
