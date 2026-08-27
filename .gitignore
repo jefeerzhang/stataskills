@@ -12,3 +12,11 @@ demo/.png
 # Windows 临时文件
 Thumbs.db
 .DS_Store
+
+# Agent 运行产物（--llm 行为回归 / 本地演示临时物）
+/.scratch/llm-smoke/
+/.scratch/*.do
+/.scratch/*.dta
+/stata_batch__*.log
+/logit-forest-or.png
+/.scratch/*.png
