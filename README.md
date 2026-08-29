@@ -13,6 +13,7 @@
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
 [![verify](https://github.com/jefeerzhang/stataskills/actions/workflows/verify.yml/badge.svg)](https://github.com/jefeerzhang/stataskills/actions/workflows/verify.yml)
 [![GitHub](https://img.shields.io/badge/GitHub-jefeerzhang%2Fstataskills-181717)](https://github.com/jefeerzhang/stataskills)
+[![Release v1.2.0](https://img.shields.io/badge/Release-v1.2.0-2ea44f.svg)](https://github.com/jefeerzhang/stataskills/releases/latest)
 
 [![skills.sh: stata-basics](https://img.shields.io/badge/skills.sh-stata--basics-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-basics)
 [![skills.sh: stata-descriptives](https://img.shields.io/badge/skills.sh-stata--descriptives-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-descriptives)
@@ -65,9 +66,11 @@
 ### Marketplace 一行安装（推荐）
 
 ```bash
-# ClawHub / skills.sh marketplace
+# ClawHub / skills.sh marketplace（已上架，10/10 可发现）
 npx skills add jefeerzhang/stataskills
 ```
+
+> 已发布 `v1.2.0`（2026-08-27）：skills.sh 全部 10 个 skill 上架，含 `--llm` Agent 行为回归实测与 10 个交付前自检清单。
 
 ### 传统 git clone
 
@@ -191,7 +194,7 @@ stataskills/
 │   ├── run-verify.sh               ← 动态发现并运行 10 个验证入口
 │   ├── check-claims.sh             ← 文档断言检查（facts vs 计数）
 │   ├── test-harness.sh             ← 判定逻辑与 sentinel 回归测试
-│   ├── test-prompts.sh             ← 动态 skill / route_branch 回归测试
+│   ├── test-prompts.sh             ← 动态 skill / route_branch 回归 + `--llm` Agent 行为实测（docs / Stata 子集 / 真实 Agent 三层）
 │   ├── stata.conf                  ← 平台路径（单一来源）
 │   ├── lib/                        ← 共享 report 与 target registry
 │   └── verify-<skill>.{do,log}     ← 10 个验证入口（did-community 使用 registry 委托）
@@ -280,6 +283,8 @@ bash verify/run-verify.sh
 | `stata-identification` | extension | cross-design stop rules, common identification assumptions, estimand definition, and causal-claim stopping rules |
 
 Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 8-do-file, 27-PNG layer. The verify harness dynamically discovers 10 verification entry points, and `test-prompts.json` contains 27 prompts covering all 10 skills and the locked routing branches. The `--llm` mode has been executed end-to-end against a real agent backend (2026-08-27, MiniMax M3): 25/27 straight PASS, with the 2 remaining FAILs traced to a fixture/data mismatch and a matcher dot-stripping defect, both fixed and re-verified - see `verify/llm-results.md`.
+
+Latest release: `v1.2.0` (2026-08-27) - https://github.com/jefeerzhang/stataskills/releases/latest
 
 ```bash
 git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
