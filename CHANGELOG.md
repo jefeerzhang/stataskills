@@ -12,6 +12,7 @@ versioned by Stata compatibility).
 ### Fixed
 
 ### Changed
+- chore(仓库): 删除 `.scratch/identification/` 已完工的规划产物（12 个文件、1098 行）——ponytail-audit 复盘的第一笔。`spec.md` 是 2026-08-25 锁定的 Proposed 实施契约，10 个 skill 已全部落地，其自述「仓库当前仍有 8 个 skill」已过期；`ADR-0006` 副本与 `build-teaching.do` 分别被 `docs/adr/0006-identification-four-pillars.md` 和 `data/selection/build-teaching.do` 取代；非目标（Heckman / cem / DML / xtpsmatch / psmatch2 / ebalance）在正式 ADR 第 73、211 行均有记录，无孤本内容丢失。`.gitignore` 本就将 `.scratch/` 视为 Agent 草稿区。
 
 ## [1.2.0] - 2026-08-27
 
