@@ -26,6 +26,9 @@
 [![skills.sh: stata-selection](https://img.shields.io/badge/skills.sh-stata--selection-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-selection)
 [![skills.sh: stata-identification](https://img.shields.io/badge/skills.sh-stata--identification-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-identification)
 
+## 项目展示
+
+![stataskills 仓库架构图：教材 → SKILL.md → verify/ → Stata 19.5 验证主路径，上层 AGENTS.md/ADR 路由与 Agent 消费，下层 test-prompts / data / check-claims 质量门](docs/stataskills-architecture.png)
 
 ## 特性
 
