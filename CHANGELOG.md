@@ -10,6 +10,7 @@ versioned by Stata compatibility).
 ### Added
 
 ### Fixed
+- fix(coefplot): 移除 `stata-coefplot/SKILL.md` 指向不存在锚点的鲁班报告引用——`LUBAN-REPORT.md` 只有 P0/P1/P2 三段，不存在被引用的 `P2-C`，日期也对不上（SKILL.md 写 2026-08-17，报告为 2026-08-18）；该断链先于本次仓库清理存在，且 coefplot 独立分发后会让用户看到指向仓库外不存在文档的引用。拆分理由已由上文「主文件保留第 1–7 章（入门）和所有陷阱速查」自包含，直接删除括号指针，不补新断言。
 
 ### Changed
 - chore(仓库): 删除 `.scratch/identification/` 已完工的规划产物（12 个文件、1098 行）——ponytail-audit 复盘的第一笔。`spec.md` 是 2026-08-25 锁定的 Proposed 实施契约，10 个 skill 已全部落地，其自述「仓库当前仍有 8 个 skill」已过期；`ADR-0006` 副本与 `build-teaching.do` 分别被 `docs/adr/0006-identification-four-pillars.md` 和 `data/selection/build-teaching.do` 取代；非目标（Heckman / cem / DML / xtpsmatch / psmatch2 / ebalance）在正式 ADR 第 73、211 行均有记录，无孤本内容丢失。`.gitignore` 本就将 `.scratch/` 视为 Agent 草稿区。

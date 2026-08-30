@@ -279,7 +279,7 @@ coefplot (rep2, label(rep78=2)) (rep3, label(rep78=3)), bylabel(Low record) ///
 | `references/intermediate.md` | 第 8–25 章：按系数分面 bycoefs、通配符模型名、系数匹配、排序、矩阵绘图、recast、连续轴 at、eform、缩放/变换/标准化、margins/OR/CI 读法 | 入门已掌握，需多模型 + 子图 + 排序 + OR + margins 中任一能力时 |
 | `references/advanced.md` | 第 26–50 章：Bootstrap CI / cismooth / 比例 CI / 标签定制 / mlabels / addplot 子图级元素 / asequation + swapnames | 常用已掌握，需 Bootstrap CI / 自定义标签 / 子图级元素 / 矩阵绘图 中任一能力时 |
 
-拆分理由：coefplot 50 章全部塞在主 SKILL.md 里会让 Agent 上下文窗口紧张时分不清主次；按常用度分级便于分批加载（详见鲁班打磨报告 2026-08-17 P2-C）。
+拆分理由：coefplot 50 章全部塞在主 SKILL.md 里会让 Agent 上下文窗口紧张时分不清主次；按常用度分级便于分批加载。
 
 ## ❌ Agent 不该做的事（黑名单）
 
