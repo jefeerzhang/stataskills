@@ -122,6 +122,7 @@ if [ "$STATIC_ONLY" -eq 1 ]; then
   # ---- AGIS6 清单（data/agis6/ 下 .dta 文件）----
   # shellcheck disable=SC2013  # manifest 每行一个基名，无空格，词分割即行分割
   for ds in $(grep -vE '^#|^[[:space:]]*$' "$MANIFEST"); do
+    ds="${ds%$'\r'}"
     [ -f "$DATA_DIR/$ds.dta" ] || manifest_drift="${manifest_drift} agis6 清单有但文件缺: ${ds}.dta;"
   done
   for f in "$DATA_DIR"/*.dta; do
