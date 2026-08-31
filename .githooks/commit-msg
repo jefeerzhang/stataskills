@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# commit-msg hook for stataskills
+#
+# Enforces project conventions documented in AGENTS.md:
+#   1. Every commit must end with `Made-with: Proma` trailer.
+#   2. Commits must NOT contain `Co-Authored-By:` lines (project禁止 by AGENTS.md).
+#
+# Hook path: .githooks/commit-msg
+# Enable via: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+MSG_FILE="$1"
+MSG=$(cat "$MSG_FILE")
+
+# Allow merge / revert commits to bypass trailer requirement (they have fixed messages).
+SUBJECT=$(printf '%s' "$MSG" | head -n1)
+case "$SUBJECT" in
+    Merge\ *|Revert\ *) exit 0 ;;
+esac
+
+err() { printf '\n[commit-msg hook] %s\n\n' "$*" >&2; }
+
+# 1. Must end with `Made-with: Proma` trailer.
+if ! printf '%s' "$MSG" | grep -q '^Made-with: Proma$'; then
+    err "Commit message must end with trailer: Made-with: Proma
+
+  当前 message 末尾未找到 'Made-with: Proma'。请在 commit message 末尾加：
+
+    Made-with: Proma
+
+  例（详见 AGENTS.md）：
+
+    docs(did-community): TROP 完整章节 + verify 脚本
+
+    PR-D 4 tickets 落地...
+    ...
+    Closes #13 #14 #15 #16
+
+    Made-with: Proma
+"
+    exit 1
+fi
+
+# 2. Must NOT contain `Co-Authored-By:` (项目明令禁止 — 详见 AGENTS.md).
+if printf '%s' "$MSG" | grep -q '^Co-Authored-By:'; then
+    err "Commit message must NOT contain 'Co-Authored-By:' trailers (AGENTS.md 禁止).
+
+  发现 Co-Authored-By 行。改用 'Made-with: Proma' trailer，或在 message 正文里说明协作者。
+"
+    exit 1
+fi
+
+exit 0
