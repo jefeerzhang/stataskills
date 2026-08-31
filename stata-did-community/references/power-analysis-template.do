@@ -126,10 +126,10 @@ forvalues att = 0.05(0.05)0.50 {
         gen t_stat = beta / se
         summarize t_stat, detail
         local mean_t = r(mean)
-        gen rejected_`att' = (abs(t_stat) > invnormal(0.975))
-        summarize rejected_`att'
+        gen rejected = (abs(t_stat) > invnormal(0.975))
+        summarize rejected
         local pwr = r(mean)
-        drop beta se t_stat rejected_`att'
+        drop beta se t_stat rejected
     }
     display as result "  " %5.2f `att' "  |  " %5.3f `pwr' "  |  " %6.3f `mean_t'
 }

@@ -124,10 +124,9 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
 > panel DGP with ρ=0.5 within-cluster correlation (500-rep Monte Carlo, simulation method
 > per Burlig et al. 2020; `verify/verify-power.do` 段 2 一致性断言全 PASS)."
 
-> 注：本仓库模板的 ATT 取 **0.3 SD**（而非 spec issue 字面写的 0.2 SD）——plan 笔误修正
-> 已写入 commit `3cae231`，理由是「0.2 SD 在异质 ATT DGP 下 power 仅 0.33 远低于期望；
-> 0.3 SD 接近 staggered DID 实际效应幅度」。`verify/verify-power.do` 段 2 assert 把 power 钳在
-> [0.5, 0.95]（实际跑出 0.656）。
+> 注：本仓库模板的 ATT 取 **0.3 SD**（而非早期 plan 字面写的 0.2 SD）——理由是「0.2 SD 在异质 ATT DGP 下 power 仅 0.33 远低于期望；
+> 0.3 SD 接近 staggered DID 实际效应幅度」。数值与 `verify/verify-power.do` 段 2 实测一致（power=0.656，assert 钳在
+> [0.5, 0.95]）。
 
 ### 步骤 6 — 敏感性分析
 

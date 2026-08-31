@@ -70,6 +70,8 @@ compatibility: >-
 | 想要 TWFE 偏误诊断 / 大数据 100M+ 行 | [stacked.md](references/stacked.md) | `stacked` 堆叠 DID + Q 权重 + D 统计量 |
 | 局部投影事件研究 / 冲击型处理 / 少聚类 | [lpdid.md](references/lpdid.md) | `lpdid` 长差分 + 干净对照条件 |
 | 完整 DID 研究项目工作流（目标→稳健性） | [workflow-8step.md](references/workflow-8step.md) | Baker et al. (2025) 8 步 practitioner 工作流 |
+| 错时 DID + 高维共同因子 + 处理与潜在因子相关 | [trop.md](references/trop.md) | `trop` Triply Robust Panel Estimator（TROP）|
+| 面板 MDE / 功效分析 / sample size justification | [power-analysis-template.do](references/power-analysis-template.do) | Bloom 1995 analytical MDE + Burlig et al. 2020 面板仿真 |
 
 ## 方法选择决策树
 
@@ -312,6 +314,22 @@ compatibility: >-
     - **触发**：universal policy 设计（全国最低工资、普惠补贴，所有单位都收到处理 D > 0）跑 `did_multiplegt (had)` 报"DID_M 未识别"或结果怪异。
     - **Fix**：quasi-stayer（剂量约等于 0 的单位）是 `did_multiplegt (had)` 的必要条件；如果所有单位 D > 0 严格正，DID_M 在该框架下未识别。**改用 `did_had` v2.0.0 的 boundary identification**——只需剂量分布在 0 附近连续或最小剂量 d > 0 附近连续，不依赖 PT。安装：`net install did_had, from("https://raw.githubusercontent.com/Credible-Answers/did_had/main") replace`。
     - **验证**：跑前先 `tab D` 看是否有 D ≈ 0 的单位（QUG），无则改 `did_had`。见 [references/dcdh.md](references/dcdh.md) § 识别假设对比（关键）。
+21. **`trop` 的因子个数 k 不要盲用默认**
+    - **触发**：直接 `trop ..., factors(k=3)` 不看 IC 表，或跳过 `factors(ic=bic)`。
+    - **Fix**：先 `trop ..., factors(ic=bic)` 看 IC 表再定 k；需要固定 k 时再写 `factors(k=# method=nuclear)`。
+    - **验证**：对照 IC 表所选 k 与报告的因子数一致；见 [references/trop.md](references/trop.md)。
+22. **`trop` 的 nuclear-norm lambda 需 CV，默认可能过拟合**
+    - **触发**：用默认 lambda 在高维因子设定下点估计偏大 / 方差偏小。
+    - **Fix**：`trop ..., lambda(cv)` 走 cross-validation。
+    - **验证**：报告 CV 选出的 lambda；敏感时再扫一小组 lambda。
+23. **`trop` bootstrap reps 过少会让 CI 偏窄**
+    - **触发**：multiplier bootstrap `reps` < 200 就报正式 CI。
+    - **Fix**：建议 `reps(500)`（或至少 ≥ 200）。
+    - **验证**：提高 reps 后 CI 宽度稳定；见 [references/trop.md](references/trop.md)。
+24. **`trop` + `nprobust` 小样本带宽不稳**
+    - **触发**：聚类数 < 30 时仍依赖 nprobust 默认带宽做推断。
+    - **Fix**：少聚类时改用更稳健的推断路径或增大样本；带宽需 ≥ 30 cluster 才较稳。
+    - **验证**：`tab`/`distinct` 聚类数；不足则在论文中声明带宽限制并换方法（如 `lpdid bootstrap`）。
 
 ## 🔍 错误码速查（错误码 → 触发 → 修复）
 

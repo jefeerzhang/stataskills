@@ -517,7 +517,105 @@ if [ -f "$DC_SKILL" ]; then
   fi
 fi
 
-# ---- 16. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
+# ---- 16. did-community references 索引表登记 trop + power 模板（CONTRIBUTING 同步规矩）----
+# 决策树/能力表已链到 trop.md / power-analysis-template.do，但「详细方法参考」表漏行
+# 会让 Agent 只靠索引时找不到入口。
+DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
+DC_REF_INDEX_MISS=""
+if [ -f "$DC_SKILL" ]; then
+  # 只在「详细方法参考」表到下一 ## 之间查链接（避免误命中决策树正文）
+  idx_block=$(awk '/^## 详细方法参考/{p=1} p && /^## / && !/^## 详细方法参考/{exit} p' "$DC_SKILL")
+  echo "$idx_block" | grep -q 'references/trop\.md' || DC_REF_INDEX_MISS="${DC_REF_INDEX_MISS} trop.md;"
+  echo "$idx_block" | grep -q 'power-analysis-template\.do' || DC_REF_INDEX_MISS="${DC_REF_INDEX_MISS} power-analysis-template.do;"
+  if [ -n "$DC_REF_INDEX_MISS" ]; then
+    bad "stata-did-community 详细方法参考表缺登记：${DC_REF_INDEX_MISS}"
+  else
+    ok "stata-did-community 详细方法参考表已登记 trop.md 与 power-analysis-template.do"
+  fi
+fi
+
+# ---- 17. power-analysis-template.do ATT 扫描不得用浮点插值作 Stata 变量名 ----
+# `gen rejected_`att'` 在 att=0.05 时展开为 rejected_0.05，点号非法，扫描段无法跑通。
+POWER_TMPL="$REPO_ROOT/stata-did-community/references/power-analysis-template.do"
+if [ -f "$POWER_TMPL" ]; then
+  if grep -nE 'rejected_`att'\''' "$POWER_TMPL" >/dev/null 2>&1 || grep -nE 'rejected_`att`' "$POWER_TMPL" >/dev/null 2>&1; then
+    bad "power-analysis-template.do 用 rejected_\`att' 作变量名（浮点插值含点号，Stata 非法）"
+  else
+    ok "power-analysis-template.do ATT 扫描未使用浮点插值变量名"
+  fi
+fi
+
+# ---- 18. CHANGELOG [Unreleased] 不得保留已否决/错误的 PR-A/D 措辞 ----
+# #15 明确不加「特征对照矩阵 TROP 列」；TROP = Triply Robust（非 Targeted Robust OP）；
+# #1 AC 为 method(dr)/method(ipw)，不是 method(dripw)。
+CL="$REPO_ROOT/CHANGELOG.md"
+if [ -f "$CL" ]; then
+  cl_unreleased=$(awk '/^## \[Unreleased\]/{p=1; next} /^## \[/{exit} p' "$CL")
+  cl_bad=""
+  echo "$cl_unreleased" | grep -q 'method(dripw)' && cl_bad="${cl_bad} method(dripw);"
+  echo "$cl_unreleased" | grep -q 'Targeted Robust OP' && cl_bad="${cl_bad} Targeted Robust OP;"
+  echo "$cl_unreleased" | grep -q '特征对照矩阵 TROP 列' && cl_bad="${cl_bad} 特征对照矩阵 TROP 列;"
+  if [ -n "$cl_bad" ]; then
+    bad "CHANGELOG [Unreleased] 含已否决/错误措辞：${cl_bad}"
+  else
+    ok "CHANGELOG [Unreleased] 无 dripw / Targeted Robust OP / 矩阵 TROP 列漂移"
+  fi
+fi
+
+# ---- 19. PR-A 关键词耐久锁（#5）：SA-IW / twostage / Roth 不得从文档 silently 消失 ----
+CSJ="$REPO_ROOT/stata-did-community/references/csdid-jwdid-imputation.md"
+WF8="$REPO_ROOT/stata-did-community/references/workflow-8step.md"
+pra_miss=""
+if [ -f "$CSJ" ]; then
+  grep -q 'SA-IW' "$CSJ" || pra_miss="${pra_miss} csdid-jwdid-imputation.md 缺 SA-IW;"
+  grep -q 'method(twostage)' "$CSJ" || pra_miss="${pra_miss} csdid-jwdid-imputation.md 缺 method(twostage);"
+else
+  pra_miss="${pra_miss} csdid-jwdid-imputation.md 缺失;"
+fi
+if [ -f "$WF8" ]; then
+  grep -q 'Roth 2022' "$WF8" || pra_miss="${pra_miss} workflow-8step.md 缺 Roth 2022;"
+else
+  pra_miss="${pra_miss} workflow-8step.md 缺失;"
+fi
+if [ -n "$pra_miss" ]; then
+  bad "PR-A 关键词锁失败：${pra_miss}"
+else
+  ok "PR-A 关键词锁：SA-IW + method(twostage) + Roth 2022 均在位"
+fi
+
+# ---- 20. TROP 陷阱只在主 SKILL.md（ADR-0001 / 陷阱四件套单一来源）----
+# trop.md 头部自述「陷阱统一收录在主 SKILL.md」；references 不得另开「关键陷阱」节。
+TROP_MD="$REPO_ROOT/stata-did-community/references/trop.md"
+DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
+trop_layer=""
+if [ -f "$TROP_MD" ]; then
+  if grep -qE '^## 关键陷阱' "$TROP_MD"; then
+    trop_layer="${trop_layer} trop.md 仍有「## 关键陷阱」节;"
+  fi
+fi
+if [ -f "$DC_SKILL" ]; then
+  # 主文件关键陷阱速查须含至少一条可识别的 TROP 陷阱（四件套格式由既有陷阱标题断言覆盖）
+  trap_block=$(awk '/^## 关键陷阱速查/{p=1} p && /^## / && !/^## 关键陷阱速查/{exit} p' "$DC_SKILL")
+  echo "$trap_block" | grep -qiE 'TROP|`trop`' || trop_layer="${trop_layer} SKILL.md 关键陷阱速查无 TROP 条目;"
+fi
+if [ -n "$trop_layer" ]; then
+  bad "TROP 陷阱分层违规：${trop_layer}"
+else
+  ok "TROP 陷阱仅在主 SKILL.md（trop.md 无独立关键陷阱节）"
+fi
+
+# ---- 21. workflow-8step 不得引用 orphan SHA 3cae231 ----
+# filter-branch / rebase 后该短 SHA 不再是 HEAD 祖先；留在文档会误导溯源。
+WF8="$REPO_ROOT/stata-did-community/references/workflow-8step.md"
+if [ -f "$WF8" ]; then
+  if grep -qE '\b3cae231\b' "$WF8"; then
+    bad "workflow-8step.md 仍引用 orphan SHA 3cae231"
+  else
+    ok "workflow-8step.md 未引用 orphan SHA 3cae231"
+  fi
+fi
+
+# ---- 22. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
 # 借鉴 luban 报告 P3：每个 verify-*.do 应有 assert 断言验证关键不变量；
 # 部分脚本只依赖「跑完不报错」，部分含数值 assert；此处动态 print 事实，不 FAIL——
 # 是否补 assert 由 verify 脚本维护者决定（教学型 verify 偏向 end-of-do exit 0）。

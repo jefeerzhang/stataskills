@@ -74,13 +74,6 @@ trop y, id(id) time(t) treat(D) covariates(x1 x2) factors(k=3)
 honestdid, m(0.5)                   // 在 TROP 估计上做敏感性
 ```
 
-## 关键陷阱
-
-1. **k 选择**：因子个数 k 默认由 `trop, factors(ic=bic)` 选；先看 IC 表，不要直接用默认 k=3。
-2. **nuclear norm lambda**：用 `trop, lambda(cv)` 走 cross-validation；默认 lambda 可能过拟合。
-3. **bootstrap**：TROP 用 multiplier bootstrap；少于 200 reps 时 CI 偏窄，建议 `reps(500)`。
-4. **小样本**：nprobust 带宽需要 ≥ 30 cluster 才稳定；少聚类时带宽估计不准。
-
 ## 文献
 
 - Athey, S., Imbens, G.W., Qu, Z., & Viviano, D. (2025). "Triply Robust Panel Estimators."
