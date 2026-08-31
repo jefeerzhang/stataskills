@@ -22,7 +22,7 @@ Notes:
       4. Maximum number of variables is set to 5,000 but can be increased;
           see help set_maxvar.
 
-. do c:\Users\jefeer\Downloads\stataskills\verify\verify-power.do 
+. do C:\Users\jefeer\Downloads\stataskills\verify\verify-power.do 
 
 . version 19.5
 
@@ -32,7 +32,7 @@ Notes:
 . * skill:    stata-did-community
 . * chapter:  power-analysis
 . * data:     sim:200x10
-. * checks:   bloom-analytical+burlig-simulation+consistency
+. * checks:   bloom-known-value+dgp-invariants+burlig-simulation+consistency
 . * ============================
 . * 手动调用：`cd data/agis6 && stata-mp /e do ../../verify/verify-power.do`
 . * （Stata for Windows 的 do-file 路径必须从当前目录计算，参考 run-verify.sh）
@@ -54,11 +54,17 @@ Notes:
 === 段 1：Bloom 1995 Analytical MDE ===
 
 . 
-. local N = 200
+. local N_treated = 100
 
-. local T = 10
+. local N_control = 100
 
-. local sigma_tau = 0.2
+. local T_pre = 4
+
+. local T_post = 6
+
+. local N = `N_treated' + `N_control'
+
+. local T = `T_pre' + `T_post'
 
 . local sigma_eps = 1.0
 
@@ -71,24 +77,34 @@ Notes:
 
 . local z_beta  = invnormal(`power_target')
 
-. local mde_sd = (`z_alpha' + `z_beta') * sqrt(2 * (`sigma_eps'^2) / (`N' * `T'
-> ))
+. local var_did = (`sigma_eps'^2) * (1/`N_treated' + 1/`N_control') * ///
+>     (1/`T_pre' + 1/`T_post')
+
+. local mde_sd = (`z_alpha' + `z_beta') * sqrt(`var_did')
 
 . 
-. display as result "  N = `N', T = `T', alpha = `alpha', power = `power_target
-> '"
-  N = 200, T = 10, alpha = .05, power = .8
+. * 已知 worked example：两组各 100 个单位、4 pre + 6 post、iid sigma_eps=1。
+. * Var(DID)=sigma_eps^2*(1/N_treated+1/N_control)*(1/T_pre+1/T_post)，
+. * 因而双侧 alpha=.05 / power=.80 的 MDE = 0.2557485701。
+. assert abs(`mde_sd' - 0.2557485701) < 1e-6
+
+. 
+. display as result "  N = `N' (`N_treated' treated / `N_control' control), " /
+> //
+>     "T = `T' (`T_pre' pre / `T_post' post), alpha = `alpha', power = `power_t
+> arget'"
+  N = 200 (100 treated / 100 control), T = 10 (4 pre / 6 post), alpha = .05, po
+> wer = .8
 
 . display as result "  Bloom MDE (in SD units) = " %6.4f `mde_sd'
-  Bloom MDE (in SD units) = 0.0886
+  Bloom MDE (in SD units) = 0.2557
 
 . 
-. * 断言：MDE 应在 [0.05, 0.15] SD 范围（与 Burlig-Preonas-Woerman 2020 Table 1
->  一致）
-. assert inrange(`mde_sd', 0.05, 0.15)
+. * 断言：worked example 的 MDE 应在 [0.25, 0.26] SD。
+. assert inrange(`mde_sd', 0.25, 0.26)
 
-. display as result "  ✓ Bloom MDE 在预期范围 [0.05, 0.15] SD"
-  ✓ Bloom MDE 在预期范围 [0.05, 0.15] SD
+. display as result "  ✓ Bloom MDE 在预期范围 [0.25, 0.26] SD"
+  ✓ Bloom MDE 在预期范围 [0.25, 0.26] SD
 
 . 
 . * ===========================================================================
@@ -132,43 +148,60 @@ Notes:
   3.     set obs `N'
   4.     gen id = _n
   5.     gen treat = (_n > `N'/2)
-  6.     expand `T'
-  7.     sort id
-  8.     by id: gen t = _n
-  9. 
-.     gen cohort = cond(treat==1, 5, 0)
- 10.     gen post   = (t >= cohort)
- 11.     gen D      = treat * post
- 12. 
-.     * 单元固定效应 alpha_i ~ N(0,1)（跨时不变）
+  6. 
+.     * 单位层随机量必须在 expand 前生成，扩展后才能保持跨期不变。
 .     gen alpha_i = rnormal(0, 1)
- 13. 
-.     * 年固定效应 year_eff ~ N(0, 0.3)（与 alpha_i 正交）
-.     gen year_eff = 0
- 14.     bys t: replace year_eff = rnormal(0, 0.3)
+  7.     gen att_draw = runiform()
+  8.     summarize att_draw if treat, meanonly
+  9.     local att_draw_mean = r(mean)
+ 10.     gen ATT_g = `eff' * (1 + 0.5 * (att_draw - `att_draw_mean'))
+ 11.     drop att_draw
+ 12. 
+.     expand `T'
+ 13.     sort id
+ 14.     by id: gen t = _n
  15. 
-.     * 等相关 cluster 扰动
-.     egen cluster_id = group(id)
- 16.     gen z = rnormal(0, 1)
- 17.     gen eps = `rho' * alpha_i + sqrt(1 - `rho'^2) * z
+.     gen cohort = cond(treat==1, 5, 0)
+ 16.     gen post   = (t >= cohort)
+ 17.     gen D      = treat * post
  18. 
-.     * 异质 ATT（cohort-specific）：ATT_g 在 [eff, 1.5*eff] 均匀分布
-.     gen ATT_g = `eff' * (1 + 0.5 * runiform())
- 19. 
+.     * 年固定效应每期只抽一次，同一期所有单位共享。
+.     bysort t (id): gen year_eff = rnormal(0, 0.3) if _n == 1
+ 19.     by t: replace year_eff = year_eff[1]
+ 20. 
+.     * 单位内 AR(1) 扰动，rho 是一阶序列相关系数。
+.     sort id t
+ 21.     by id: gen eps = rnormal(0, 1) if _n == 1
+ 22.     by id: replace eps = `rho' * eps[_n-1] + ///
+>         sqrt(1 - `rho'^2) * rnormal(0, 1) if _n > 1
+ 23.     egen cluster_id = group(id)
+ 24. 
+.     * DGP 契约：单位 FE / 单位 ATT 跨期恒定，时间 FE 在同一期横截面恒定；
+.     * 处理组平均 ATT 等于传入的 eff，误差的一阶相关接近 rho。
+.     bysort id (t): assert alpha_i == alpha_i[1]
+ 25.     bysort id (t): assert ATT_g == ATT_g[1]
+ 26.     bysort t (id): assert year_eff == year_eff[1]
+ 27.     summarize ATT_g if treat, meanonly
+ 28.     assert abs(r(mean) - `eff') < 1e-8
+ 29.     sort id t
+ 30.     by id: gen eps_lag = eps[_n-1] if _n > 1
+ 31.     correlate eps eps_lag
+ 32.     assert inrange(r(rho), `rho' - 0.10, `rho' + 0.10)
+ 33.     drop eps_lag
+ 34. 
 .     * 结局 = 单元 FE + 年 FE + 异质 ATT * D + 扰动
 .     gen y = alpha_i + year_eff + ATT_g * D + eps
- 20. 
+ 35. 
 .     * TWFE 估计
 .     reghdfe y D, absorb(id t) cluster(cluster_id)
- 21.     return scalar beta = _b[D]
- 22.     return scalar se   = _se[D]
- 23. end
+ 36.     return scalar beta = _b[D]
+ 37.     return scalar se   = _se[D]
+ 38. end
 
 . 
 . * 在 ATT=0.3 SD 下跑 power（500 reps）
-. * （注：0.3 SD 是为了确保在 200 cluster × 10 period × 异质 ATT DGP 下 power >
->  0.5；
-. * 0.2 SD 太接近 MDE 0.0886 + ATT_g 异质性下 beta std 增大 → power 仅 ~0.33）
+. * （注：0.3 SD 略高于 iid 均匀效应解析 MDE 0.2557；simulation 另含
+. * 单位异质 ATT 与 AR(1) 扰动，因此以 Monte Carlo 直接估计实际 power。）
 . simulate beta = r(beta) se = r(se), ///
 >     reps(500) seed(20260831): power_dgp 200 10 0.3 0.5
 
@@ -190,13 +223,13 @@ Simulations (500): .........10.........20.........30.........40.........50.....
 
     Variable |        Obs        Mean    Std. dev.       Min        Max
 -------------+---------------------------------------------------------
-        beta |        500    .3711514    .1484872  -.1163699   .8477857
+        beta |        500    .2867258    .1163872  -.0218958   .6266922
 
 . summarize se
 
     Variable |        Obs        Mean    Std. dev.       Min        Max
 -------------+---------------------------------------------------------
-          se |        500    .1604077    .0081687   .1355103    .184449
+          se |        500     .122857    .0058646   .1053087    .139599
 
 . gen t_stat = beta / se
 
@@ -206,13 +239,13 @@ Simulations (500): .........10.........20.........30.........40.........50.....
 
     Variable |        Obs        Mean    Std. dev.       Min        Max
 -------------+---------------------------------------------------------
-    rejected |        500        .656    .4755168          0          1
+    rejected |        500        .666     .472112          0          1
 
 . local power_at_03 = r(mean)
 
 . display as result "  Power at ATT=0.3 SD (N=200, T=10, rho=0.5) = " %5.3f `po
 > wer_at_03'
-  Power at ATT=0.3 SD (N=200, T=10, rho=0.5) = 0.656
+  Power at ATT=0.3 SD (N=200, T=10, rho=0.5) = 0.666
 
 . 
 . * 断言：ATT=0.3 SD 下 power 应在 [0.5, 0.95] 范围
@@ -237,14 +270,14 @@ Simulations (500): .........10.........20.........30.........40.........50.....
 
 . 
 . * Bloom MDE 是在均匀效应假设下达到 80% power 的最小效应；
-. * simulation 用异质 ATT + 等相关结构 ATT=0.3 应能检测（power > 0.5）
+. * simulation 用异质 ATT + AR(1) 扰动，ATT=0.3 应能检测（power > 0.5）
 . * 一致性断言：Bloom 给的 MDE（均匀效应）应 < simulation 用的 ATT（异质 ATT）
-. * Bloom MDE ≈ 0.09 SD < 0.3 SD，断言成立
+. * Bloom MDE ≈ 0.256 SD < 0.3 SD，断言成立
 . assert (`mde_sd' < 0.30)
 
 . display as result "  ✓ Bloom MDE (" %6.4f `mde_sd' ") < ATT=0.3 SD（Burlig si
 > mulation ATT 阈值）"
-  ✓ Bloom MDE (0.0886) < ATT=0.3 SD（Burlig simulation ATT 阈值）
+  ✓ Bloom MDE (0.2557) < ATT=0.3 SD（Burlig simulation ATT 阈值）
 
 . 
 . display as result ""

@@ -10,7 +10,7 @@ set more off
 *     Design." Journal of Development Economics 144:102458.
 *
 * 两套方法（按精度需求选，非优劣）：
-*   (A) Analytical（Bloom 1995 推导）：已知 σ²_τ、σ²_ε、cluster 数 N、treatment 比例
+*   (A) Analytical（Bloom 1995 推导）：已知 σ²_ε、处理/对照单位数、pre/post 期数
 *       → 给出 z-power 下的 MDE 解析式；快速但要求 effect 均匀
 *   (B) Simulation（方法依 Burlig-Preonas-Woerman 2020 panel 版）：DGP 内嵌 ATT 异质性
 *       + 聚类结构 → 用 simulate 命令 + Monte Carlo → power 曲线。
@@ -18,40 +18,44 @@ set more off
 *       原论文为多 cohort staggered 设计；验证的是方法流程，不宣称复现原论文数值。
 *
 * 使用方式：本文件是模板，逐段复制到自己的 do-file 跑（不要 do 整个文件，会刷数据）。
-* 配套 verify: verify/verify-power.do（手动调用：`cd verify && stata-mp -b do verify-power.do`）
+* 配套 verify: verify/verify-power.do
+* 手动调用：`cd data/agis6 && stata-mp -b do ../../verify/verify-power.do`
 * =============================================================================
 
 * =============================================================================
 * 方法 (A) — Analytical MDE (Bloom 1995)
 * =============================================================================
-* 假设：平衡面板 N=200 单元 × T=10 期；处理比例 50%；效应均匀；聚类 SE
-local N = 200
-local T = 10
-local sigma_tau = 0.2         // 真实 ATT 标准差（SD 单位）
+* 假设：平衡面板 N=200 单元 × T=10 期；处理/对照各 100；4 pre + 6 post；
+* iid 扰动 sigma_eps=1；效应均匀。序列相关与异质效应交给下方 simulation。
+local N_treated = 100
+local N_control = 100
+local T_pre = 4
+local T_post = 6
+local N = `N_treated' + `N_control'
+local T = `T_pre' + `T_post'
 local sigma_eps = 1.0         // 个体扰动 SD
 local alpha = 0.05            // 显著性水平
 local power_target = 0.80     // 目标功效
 
 * Bloom 1995 解析公式：
-*   MDE = (z_{1-α/2} + z_{1-β}) * sqrt(Var(DD) / N_eff)
-* 其中 Var(DD) ≈ 2*σ²_ε / (N*T)（简化版，假设无协变量）
-*       N_eff = N_treated_post + N_control_post
-* 简化下界（平衡面板 + 处理比例 50%）：Var(DD) ≈ 2*σ²_ε / (N*T)
+*   MDE = (z_{1-α/2} + z_{1-β}) * sqrt(Var(DID))
+*   Var(DID) = σ²_ε * (1/N_treated + 1/N_control) * (1/T_pre + 1/T_post)
 local z_alpha = invnormal(1 - `alpha'/2)
 local z_beta  = invnormal(`power_target')
-local mde_sd = (`z_alpha' + `z_beta') * sqrt(2 * (`sigma_eps'^2) / (`N' * `T'))
+local var_did = (`sigma_eps'^2) * (1/`N_treated' + 1/`N_control') * ///
+    (1/`T_pre' + 1/`T_post')
+local mde_sd = (`z_alpha' + `z_beta') * sqrt(`var_did')
 
 di as result "Bloom 1995 Analytical MDE:"
 di as result "  N = `N', T = `T', alpha = `alpha', power = `power_target'"
 di as result "  MDE (in SD units) = " %6.4f `mde_sd'
 * 验证：N=200 T=10 α=0.05 power=0.8 σ_eps=1.0 下
-*   MDE ≈ (1.96 + 0.84) * sqrt(2/2000) ≈ 2.80 * 0.0316 ≈ 0.0886 SD
-* 与 Burlig-Preonas-Woerman 2020 Table 1 近似一致（同一参数化下 ~0.07-0.09 SD）
+*   MDE ≈ (1.96 + 0.84) * sqrt((1/100+1/100)*(1/4+1/6)) ≈ 0.2557 SD
 
 * =============================================================================
 * 方法 (B) — Simulation-based power（方法依 Burlig-Preonas-Woerman 2020；单 cohort 简化 DGP）
 * =============================================================================
-* DGP：TWFE 数据 + 异质 ATT（cohort-specific）+ 等相关 cluster 结构 (ρ=0.5)
+* DGP：TWFE 数据 + 单位异质 ATT（处理组均值 = eff）+ 单位内 AR(1) 扰动 (ρ=0.5)
 * 估计量：reghdfe y D, absorb(id t) cluster(cluster_id)
 * 用 simulate 命令 + Monte Carlo 跑 power vs ATT 曲线
 
@@ -65,6 +69,15 @@ program define power_dgp, rclass
     set obs `N'
     gen id = _n
     gen treat = (_n > `N'/2)                       // 后半部分处理（处理比例 50%）
+
+    * 单位层随机量在 expand 前生成，扩展后跨期保持不变。
+    gen alpha_i = rnormal(0, 1)
+    gen att_draw = runiform()
+    summarize att_draw if treat, meanonly
+    local att_draw_mean = r(mean)
+    gen ATT_g = `eff' * (1 + 0.5 * (att_draw - `att_draw_mean'))
+    drop att_draw
+
     expand `T'
     sort id
     by id: gen t = _n
@@ -74,21 +87,28 @@ program define power_dgp, rclass
     gen post   = (t >= cohort)
     gen D      = treat * post
 
-    * 单元固定效应 alpha_i ~ N(0,1)（跨时不变）
-    gen alpha_i = rnormal(0, 1)
+    * 年固定效应每期只抽一次，同一期所有单位共享。
+    bysort t (id): gen year_eff = rnormal(0, 0.3) if _n == 1
+    by t: replace year_eff = year_eff[1]
 
-    * 年固定效应 year_eff ~ N(0, 0.3)（与 alpha_i 正交）
-    gen year_eff = 0
-    bys t: replace year_eff = rnormal(0, 0.3)
-
-    * 等相关 cluster 扰动
-    * Var(eps) = rho² * Var(alpha_i) + (1-rho²) * Var(z),  z ~ N(0,1)
+    * 单位内 AR(1) 扰动，rho 是一阶序列相关系数。
+    sort id t
+    by id: gen eps = rnormal(0, 1) if _n == 1
+    by id: replace eps = `rho' * eps[_n-1] + ///
+        sqrt(1 - `rho'^2) * rnormal(0, 1) if _n > 1
     egen cluster_id = group(id)
-    gen z = rnormal(0, 1)
-    gen eps = `rho' * alpha_i + sqrt(1 - `rho'^2) * z
 
-    * 异质 ATT（cohort-specific）：ATT_g 在 [eff, 1.5*eff] 均匀分布
-    gen ATT_g = `eff' * (1 + 0.5 * runiform())
+    * DGP 不变量；复制模板后保留，防止生成逻辑悄悄漂移。
+    bysort id (t): assert alpha_i == alpha_i[1]
+    bysort id (t): assert ATT_g == ATT_g[1]
+    bysort t (id): assert year_eff == year_eff[1]
+    summarize ATT_g if treat, meanonly
+    assert abs(r(mean) - `eff') < 1e-8
+    sort id t
+    by id: gen eps_lag = eps[_n-1] if _n > 1
+    correlate eps eps_lag
+    assert inrange(r(rho), `rho' - 0.10, `rho' + 0.10)
+    drop eps_lag
 
     * 结局 = 单元 FE + 年 FE + 异质 ATT * D + 扰动
     gen y = alpha_i + year_eff + ATT_g * D + eps
@@ -136,12 +156,11 @@ forvalues att = 0.05(0.05)0.50 {
 
 * =============================================================================
 * 典型审查答复模板（数字与本仓库实测一致：verify/verify-power.do
-* 实跑 MDE=0.0886 SD / ATT=0.3 SD 下 power=0.656，勿套用其它来源的数字）
+* 实跑 MDE=0.2557 SD / ATT=0.3 SD 下 power=0.666，勿套用其它来源的数字）
 * =============================================================================
 * "With N=200 clusters × T=10 periods and ATT of 0.3 SD, our design achieves 80%
-*  power to detect effects of ~0.089 SD (analytical Bloom 1995, uniform-effect
-*  assumption) and ~66% power at 0.3 SD under a single-cohort heterogeneous-ATT
-*  panel DGP with rho=0.5 within-cluster correlation (500-rep Monte Carlo,
+*  power to detect effects of ~0.256 SD (analytical Bloom 1995, uniform-effect,
+*  iid-error assumption) and ~67% power at 0.3 SD under a single-cohort
+*  heterogeneous-ATT panel DGP with rho=0.5 AR(1) errors (500-rep Monte Carlo,
 *  simulation method per Burlig et al. 2020)."
 * =============================================================================
-

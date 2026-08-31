@@ -107,7 +107,7 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
 **两套方法**（按精度需求选）：
 
 1. **Analytical (Bloom 1995)**：闭式公式，快速但假设均匀效应
-   - 输入：N、T、σ_τ、σ_ε、α、power_target
+   - 输入：处理/对照单位数、pre/post 期数、σ_ε、α、power_target
    - 输出：MDE in SD units（论文"sample size justification"段引用）
 
 2. **Simulation（方法依 Burlig-Preonas-Woerman 2020, panel 版）**：DGP 内嵌异质 ATT + 聚类结构；本仓库模板用单 cohort 简化 DGP，验证方法流程而非复现原论文数值
@@ -119,13 +119,13 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
 **典型审查答复**（与本仓库 verify 实际跑出数字一致——见 `verify/verify-power.do` 段 1/2）：
 
 > "With N=200 clusters × T=10 periods and ATT of 0.3 SD, our design achieves 80% power
-> to detect effects of ~0.089 SD (analytical Bloom 1995, uniform-effect assumption; balance-checked
-> against the 0.05–0.15 SD 区间) and ~66% power at 0.3 SD under a single-cohort heterogeneous-ATT
-> panel DGP with ρ=0.5 within-cluster correlation (500-rep Monte Carlo, simulation method
+> to detect effects of ~0.256 SD (analytical Bloom 1995, uniform-effect and iid-error assumptions;
+> 100 treated / 100 control units, 4 pre / 6 post periods) and ~67% power at 0.3 SD under a
+> single-cohort heterogeneous-ATT panel DGP with ρ=0.5 AR(1) errors (500-rep Monte Carlo, simulation method
 > per Burlig et al. 2020; `verify/verify-power.do` 段 2 一致性断言全 PASS)."
 
-> 注：本仓库模板的 ATT 取 **0.3 SD**（而非早期 plan 字面写的 0.2 SD）——理由是「0.2 SD 在异质 ATT DGP 下 power 仅 0.33 远低于期望；
-> 0.3 SD 接近 staggered DID 实际效应幅度」。数值与 `verify/verify-power.do` 段 2 实测一致（power=0.656，assert 钳在
+> 注：本仓库模板的 ATT 取 **0.3 SD**，略高于 iid 均匀效应解析 MDE 0.2557；simulation 另含单位异质 ATT 与 AR(1) 扰动。
+> 数值与 `verify/verify-power.do` 段 2 实测一致（power=0.666，assert 钳在
 > [0.5, 0.95]）。
 
 ### 步骤 6 — 敏感性分析
@@ -183,4 +183,3 @@ estat aggregation, dynamic graph
 | 8 | 多估计量稳健性对照 |
 
 > **关键提醒**：`igerber/diff-diff` 的 `get_llm_guide("practitioner")` 返回该工作流的 Python API 映射——可直接喂给 AI Agent 做 DID 自动化分析；Stata 用户可手按此 8 步操作。
-

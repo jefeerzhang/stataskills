@@ -30,6 +30,9 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
 TEST_PROMPTS_JSON="$REPO_ROOT/test-prompts.json"
 
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/targets.sh"
+
 # ---- 参数解析 ----
 MODE="docs"
 while [ $# -gt 0 ]; do
@@ -305,6 +308,13 @@ run_docs_mode() {
     fail=$((fail+1))
   fi
 
+  if self_test_verify_log_resolution; then
+    echo "PASS  target registry 为普通/多委托 skill 解析正确日志集合"
+    pass=$((pass+1))
+  else
+    fail=$((fail+1))
+  fi
+
   # 2. 从实际 skill 目录动态审计双向 skill 集合与精确 route_branch 合同
   local missing_skills unknown_skills missing_branches unknown_branches duplicate_branches
   local bad_actions branch
@@ -435,6 +445,13 @@ log_has_executed_command() {
   ' "$log_file"
 }
 
+verify_logs_for_skill() {
+  local skill="$1" base
+  for base in $(targets_run_dofile "verify-$skill"); do
+    printf '%s\n' "$VERIFY_DIR/$base.log"
+  done
+}
+
 self_test_log_matcher() {
   local probe
   probe="$(mktemp)"
@@ -453,11 +470,33 @@ self_test_log_matcher() {
   rm -f "$probe"
 }
 
+self_test_verify_log_resolution() {
+  local actual expected
+  actual="$(verify_logs_for_skill did-community)" || return 1
+  expected=$(printf '%s\n' \
+    "$VERIFY_DIR/verify-synth-sdid.log" \
+    "$VERIFY_DIR/verify-power.log" \
+    "$VERIFY_DIR/verify-trop.log")
+  if [ "$actual" != "$expected" ]; then
+    echo "FAIL  did-community 未按 target registry 解析三个委托日志"
+    return 1
+  fi
+
+  actual="$(verify_logs_for_skill regression)" || return 1
+  expected="$VERIFY_DIR/verify-regression.log"
+  if [ "$actual" != "$expected" ]; then
+    echo "FAIL  普通 skill 未解析为自身单日志"
+    return 1
+  fi
+}
+
 run_prompts_mode() {
   local pass=0 fail=0
   self_test_log_matcher || return 1
+  self_test_verify_log_resolution || return 1
 
   local pid skill keywords first_skill verify_log i=0
+  local -a verify_logs
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
     if ! pid="$(json_prompt_field "$i" id)" || \
        ! skill="$(json_prompt_field "$i" skill)" || \
@@ -478,7 +517,7 @@ run_prompts_mode() {
     # 跨 skill 联动 prompt（如 cross-01）只跑第一个 skill。
     first_skill="${skill%% *}"
     first_skill="${first_skill#stata-}"
-    verify_log="$VERIFY_DIR/verify-${first_skill}.log"
+    mapfile -t verify_logs < <(verify_logs_for_skill "$first_skill")
 
     # 跑 verify-<skill>.do（用 run-verify.sh harness）
     if ! bash "$VERIFY_DIR/run-verify.sh" "$first_skill" >/dev/null 2>&1; then
@@ -489,9 +528,16 @@ run_prompts_mode() {
     fi
 
     # 只认真实执行的命令；注释、cap which <package> 和输出文本不能充当覆盖。
-    local kw missing_kw=""
+    local kw missing_kw="" keyword_hit
     for kw in $keywords; do
-      if ! log_has_executed_command "$kw" "$verify_log"; then
+      keyword_hit=0
+      for verify_log in "${verify_logs[@]}"; do
+        if [ -f "$verify_log" ] && log_has_executed_command "$kw" "$verify_log"; then
+          keyword_hit=1
+          break
+        fi
+      done
+      if [ "$keyword_hit" -eq 0 ]; then
         missing_kw="$missing_kw $kw"
       fi
     done
