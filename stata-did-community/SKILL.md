@@ -3,7 +3,7 @@ name: stata-did-community
 description: Stata DID 社区包（10 个方法）：csdid / jwdid / did_imputation / synth / sdid / did_multiplegt(DCDH) / stacked / lpdid / reghdfe 事件研究 / trop。含决策树路由、特征对照矩阵、HAD v2.0.0 两条平行路线、csdid method(twostage) Gardner 2022 + Sun-Abraham IW 等价说明、面板 MDE / 功效分析模板。触发词：DID 社区包 / csdid / jwdid / 合成控制 / 可逆处理 / 局部投影 / 堆叠 DID / Sun-Abraham / Gardner twostage / did_had / TROP / 功效分析 / power analysis / MDE。
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
-  触发即读本文，无需联网加载其他文件。需装 csdid / drdid / jwdid / hdfe / reghdfe / did_imputation / synth / stacked / lpdid（按方法选装）。
+  触发即读本文，无需联网加载其他文件。需装 csdid / drdid / jwdid / hdfe / reghdfe / did_imputation / synth / sdid / stacked / lpdid / trop / nprobust / did_had（按方法选装；did_had 经 GitHub net install）。
 ---
 
 # Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid）
@@ -19,7 +19,7 @@ compatibility: >-
 
 ## 强制路径
 
-匹配到第一条就停。禁止把 9 个社区包都跑一遍当「稳健性」。详细签名见 `references/`；禁令见文末黑名单。
+匹配到第一条就停。禁止把 10 个社区包都跑一遍当「稳健性」。详细签名见 `references/`；禁令见文末黑名单。
 
 **何时用**：内置 `didregress` / `hdidregress` 不够用——处理单位极少、可逆/非二元处理、非线性结果、leaveout、合成对照、堆叠诊断、冲击型处理。
 **合成分支本地 gate 与失败动作**：只有用户点名 `synth` / `sdid`，或从 standard DID 本地 gate 失败进入 4b 合成分支时，才执行这里的合成 gate。先确认面板政策公共 gate 可辩护；`synth` 通常要求少数处理单位、较长 pre-period 和可辩护 donor pool，`sdid` 要求充分 pre / post periods、untreated 或 not-yet-treated comparison units，并支持单个或多个处理单位及当前实现支持的多个处理日期。用户点名单一方法时，该方法 gate 失败可返回 `stata-identification`；从 standard DID 进入 4b 时，一个方法失败必须继续检查另一个——尤其 `sdid` 失败后仍须检查 `synth`，只有 `synth` 与 `sdid` 两个析取入口都失败才返回 router。普通 DID-community 方法选择不执行 4b 合成 gate，直接从 `did_multiplegt`、`jwdid`、`did_imputation`、`csdid`、`stacked` 或 `lpdid` 等既有路径开始；用户点名 `csdid`、`jwdid`、`did_imputation`、`did_multiplegt`、`stacked` 或 `lpdid` 时也直达对应路径，不先执行 4b。不要把 `synth` / `sdid` 当独立顶层识别支柱。完整判断只读 `stata-identification/references/identification-decision-tree.md`。
@@ -354,7 +354,7 @@ compatibility: >-
 - ❌ **不要在 `stacked` 跑前不 `save original.dta`**：`stacked build` 替换内存数据。**替代**：`save original.dta, replace` → `stacked build ...` → `use original.dta, clear` 恢复。
 - ❌ **不要在 `synth` 预测变量混入处理后期信息**：让合成单位偷看未来，估计失效。**替代**：`beer(1984(1)1988)` 的上限 ≤ `trperiod()-1`；预测变量期段写法严格在处理前。
 - ❌ **不要只跑 `synth` 不跑 placebo 推断**：没有 SE / p 值，投稿会被打回。**替代**：`synth_runner ..., gen_vars` 跑 placebo 置换推断（ADH 2015 标准做法）。
-- ❌ **不要把 9 个社区包都跑一遍当稳健性**：强制路径命中第一条就停。**替代**：按下表只跑命中的那条命令链；默认错时回 `stata-did` 的 `hdidregress aipw`。
+- ❌ **不要把 10 个社区包都跑一遍当稳健性**：强制路径命中第一条就停。**替代**：按下表只跑命中的那条命令链；默认错时回 `stata-did` 的 `hdidregress aipw`。
 - ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 `csdid` / `synth`**：不是时间断点，合成对照也救不了。**替代**：转到 `stata-rdd`。
 
 ## 验证
@@ -370,7 +370,7 @@ compatibility: >-
 
 ## ✅ 交付前自检清单（跑完命令后逐条核对）
 
-- [ ] 方法选择命中决策树单条链，未把 9 个社区包全跑一遍当稳健性；错时默认回 `stata-did` 的 `hdidregress aipw`
+- [ ] 方法选择命中决策树单条链，未把 10 个社区包全跑一遍当稳健性；错时默认回 `stata-did` 的 `hdidregress aipw`
 - [ ] 编码契约：`csdid`/`jwdid` 的 never-treated 用 `0`/`.`；`did_imputation` 的 `Ei` 用 `.` 缺失（两套编码未混用）
 - [ ] `synth`：`trunit()` 数值 id；预测变量期段 ≤ `trperiod()-1`；跑了 placebo 置换推断（`synth_runner`），不只报点估计
 - [ ] `sdid`：处理变量是 treat×post 哑变量（未把「属于处理组」当全期处理）；面板 `vce(jackknife)`、重复截面用默认

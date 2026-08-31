@@ -15,10 +15,14 @@ versioned by Stata compatibility).
 - docs(README): 项目展示新增仓库架构图 — Archify 工具生成的浅色截图 `docs/stataskills-architecture.png`（122 KB, 1440×900），README 引用 + provenance 在 commit message 注明 — `d48e8be`。
 
 ### Fixed
+- fix(验证): `verify/verify-power.do` 段 2 补 `capture which reghdfe` 前置探测（OPTIONAL sentinel + 跳段 2/3）——此前裸调用 reghdfe 在缺包机器上 r(199) 硬失败，违反 ADR-0003「默认模式静默 PASS」决策；段 2 标题同步改为「单 cohort 简化 DGP」（不宣称复现原论文数值）；`verify/check-claims.sh` 新增断言 14「社区命令均有前置 capture/cap which 探测」（red-capable：先红在 verify-power，修复后转绿）；本机重跑实测 PASS（MDE=0.0886 / power=0.656，raw log 按 ADR-0005 更新）。
+- fix(did-community): `stata-did-community/SKILL.md` 计数漂移修复——正文三处禁令「9 个社区包」→ 10（与 frontmatter description「10 个方法」对齐），compatibility 包清单补 `sdid` / `trop` / `nprobust` / `did_had`；`verify/check-claims.sh` 新增断言 15「did-community description 与正文计数一致」。
+- fix(did-community): `references/power-analysis-template.do` 末尾答辩模板样板数字修复——原写「~70-90% power at 0.2 SD」，与本仓库实证（0.2 SD 下 power≈0.33）直接矛盾；改为与 `verify/verify-power.do` 实测一致的 0.3 SD / ~66% 版本；模板 / `workflow-8step.md` / `verify-power.do` 三处「staggered」措辞统一为「单 cohort 简化 DGP」的诚实描述。
 - fix(coefplot): 移除 `stata-coefplot/SKILL.md` 指向不存在锚点的鲁班报告引用——`LUBAN-REPORT.md` 只有 P0/P1/P2 三段，不存在被引用的 `P2-C`，日期也对不上（SKILL.md 写 2026-08-17，报告为 2026-08-18）；该断链先于本次仓库清理存在，且 coefplot 独立分发后会让用户看到指向仓库外不存在文档的引用。拆分理由已由上文「主文件保留第 1–7 章（入门）和所有陷阱速查」自包含，直接删除括号指针，不补新断言。
 - fix(verify): 修复 CRLF manifest 下静态验证误报数据集缺失 — `verify/run-verify.sh` 第 125 行 `ds="${ds%$'\r'}"` strip 尾随 `\r`；按 AGENTS.md「manifest 单一来源」+ `.gitattributes` 第 11 行 `eol=lf` 落地 — `2952a0a`。
 
 ### Changed
+- docs(仓库): AGENTS.md 关键惯例补「Commit 规矩」条目（`Made-with: Proma` trailer + 禁 `Co-Authored-By:`）——`.githooks/commit-msg` 注释此前声称的禁令无文档出处，现同步改为指向该条目；`.githooks/commit-msg` 与 `references/power-analysis-template.do` 补 EOF 换行。
 - chore(仓库): 删除 `.scratch/identification/` 已完工的规划产物（12 个文件、1098 行）——ponytail-audit 复盘的第一笔。`spec.md` 是 2026-08-25 锁定的 Proposed 实施契约，10 个 skill 已全部落地，其自述「仓库当前仍有 8 个 skill」已过期；`ADR-0006` 副本与 `build-teaching.do` 分别被 `docs/adr/0006-identification-four-pillars.md` 和 `data/selection/build-teaching.do` 取代；非目标（Heckman / cem / DML / xtpsmatch / psmatch2 / ebalance）在正式 ADR 第 73、211 行均有记录，无孤本内容丢失。`.gitignore` 本就将 `.scratch/` 视为 Agent 草稿区。
 - docs(README): 修订为当前状态（v1.2.0 Release 徽章、skills.sh 上架说明、--llm 三层验证、英文 Release 指引）— `94000d3`。
 - chore(README): 移除 skills.sh 徽章 `[已上架]` 标记（徽章为活链接，check-claims 断言同步）— `7e4a317`。

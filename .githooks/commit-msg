@@ -3,7 +3,7 @@
 #
 # Enforces project conventions documented in AGENTS.md:
 #   1. Every commit must end with `Made-with: Proma` trailer.
-#   2. Commits must NOT contain `Co-Authored-By:` lines (project禁止 by AGENTS.md).
+#   2. Commits must NOT contain `Co-Authored-By:` lines (AGENTS.md 「Commit 规矩」明令禁止).
 #
 # Hook path: .githooks/commit-msg
 # Enable via: git config core.hooksPath .githooks
@@ -42,9 +42,9 @@ if ! printf '%s' "$MSG" | grep -q '^Made-with: Proma$'; then
     exit 1
 fi
 
-# 2. Must NOT contain `Co-Authored-By:` (项目明令禁止 — 详见 AGENTS.md).
+# 2. Must NOT contain `Co-Authored-By:` (AGENTS.md 「Commit 规矩」明令禁止).
 if printf '%s' "$MSG" | grep -q '^Co-Authored-By:'; then
-    err "Commit message must NOT contain 'Co-Authored-By:' trailers (AGENTS.md 禁止).
+    err "Commit message must NOT contain 'Co-Authored-By:' trailers (AGENTS.md 「Commit 规矩」禁止).
 
   发现 Co-Authored-By 行。改用 'Made-with: Proma' trailer，或在 message 正文里说明协作者。
 "

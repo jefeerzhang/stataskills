@@ -26,6 +26,10 @@
 #       必须存在并等于动态 facts
 #   12. README hero 的 skill / target 声明及 skills.sh badge 集合与动态 skill 集合一致
 #   13. 每个 verify-*.do 的 VERIFY CONTRACT、skill 字段和 data 路径有效
+#   14. verify-*.do 调用的社区包契约登记命令前必有 `capture/cap which` 探测
+#       （ADR-0003 默认模式静默 PASS：缺包时打 sentinel 跳段，不得裸调用致 r(199)）
+#   15. did-community 内部计数一致：frontmatter description 的「N 个方法」必须等于
+#       正文每一处「N 个社区包」（扩包时正文禁令漏改的历史漂移，见 CHANGELOG）
 #
 # facts（供人工比对，不自动断言）：各 skill 陷阱条目数、verify↔demo debt、
 # verify-*.do assert 覆盖率。README/CITATION 的自由散文不做泛数字扫描。
@@ -464,7 +468,56 @@ else
   ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY CONTRACT 块，skill ↔ 目录 + data ↔ 文件对齐）"
 fi
 
-# ---- 14. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
+# ---- 14. 社区命令探测断言（ADR-0003）：verify-*.do 调用的每个社区包命令，
+# 同文件更早位置必须已有 `capture which <pkg>` 探测。裸调用社区命令在缺包机器上
+# 直接 r(199) 硬失败，违反「默认模式静默 PASS（cap which 风格）」决策。
+# 清单 = did-community 社区包契约登记的包（verify-synth-sdid.do 头部 + trop /
+# nprobust / did_had）+ reghdfe（verify-regression / verify-power 共用引擎）；
+# 探测行兼容 `capture which` 与缩写 `cap which`（verify-regression.do 先例）。
+COMMUNITY_PKGS=(csdid drdid jwdid hdfe did_imputation reghdfe synth synth_runner sdid trop nprobust did_had)
+probe_drift=""
+for vdo in "$REPO_ROOT"/verify/verify-*.do; do
+  [ -f "$vdo" ] || continue
+  vname=$(basename "$vdo" .do)
+  for pkg in "${COMMUNITY_PKGS[@]}"; do
+    # 调用行：首词为包名的可执行语句行（剔除 capture which 探测行与纯注释行）
+    call_ln=$(grep -nE "^[[:space:]]*(capture[[:space:]]+noisily[[:space:]]+|quietly[[:space:]]+)*${pkg}([[:space:]]|$)" "$vdo" | head -1 | cut -d: -f1)
+    [ -z "$call_ln" ] && continue
+    probe_ln=$(grep -nE "^[[:space:]]*(capture|cap)[[:space:]]+which[[:space:]]+${pkg}([[:space:]]|$)" "$vdo" | head -1 | cut -d: -f1)
+    if [ -z "$probe_ln" ]; then
+      probe_drift="${probe_drift} ${vname} 调用 ${pkg}（行 ${call_ln}）但全文无 capture/cap which 探测;"
+    elif [ "$probe_ln" -gt "$call_ln" ]; then
+      probe_drift="${probe_drift} ${vname} 的 capture/cap which ${pkg}（行 ${probe_ln}）晚于首次调用（行 ${call_ln}）;"
+    fi
+  done
+done
+if [ -n "$probe_drift" ]; then
+  bad "verify-*.do 社区命令无探测（${probe_drift}）"
+else
+  ok "verify-*.do 社区命令均有前置 capture/cap which 探测（ADR-0003 静默 PASS）"
+fi
+
+# ---- 15. did-community 内部计数一致性：description 声明的方法数与正文所有「N 个社区包」一致 ----
+# 背景：PR-A 把 description 从 9 改到 10 个方法，正文三处禁令「9 个社区包」漏改。
+DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
+if [ -f "$DC_SKILL" ]; then
+  desc_n=$(sed -n '1,/^---$/p' "$DC_SKILL" | grep '^description:' | grep -oE '[0-9]+ 个方法' | head -1 | grep -oE '^[0-9]+' || true)
+  if [ -z "${desc_n:-}" ]; then
+    bad "stata-did-community description 缺「N 个方法」计数声明"
+  else
+    body_drift=""
+    while IFS= read -r m; do
+      [ -n "$m" ] && [ "$m" -ne "$desc_n" ] && body_drift="${body_drift} 正文写 ${m} 个社区包;"
+    done < <(grep -oE '[0-9]+ 个社区包' "$DC_SKILL" | grep -oE '^[0-9]+' | sort -u)
+    if [ -n "$body_drift" ]; then
+      bad "stata-did-community 计数漂移：description 为 ${desc_n} 个方法，但${body_drift}"
+    else
+      ok "stata-did-community 计数一致（description 与正文均 ${desc_n}）"
+    fi
+  fi
+fi
+
+# ---- 16. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
 # 借鉴 luban 报告 P3：每个 verify-*.do 应有 assert 断言验证关键不变量；
 # 部分脚本只依赖「跑完不报错」，部分含数值 assert；此处动态 print 事实，不 FAIL——
 # 是否补 assert 由 verify 脚本维护者决定（教学型 verify 偏向 end-of-do exit 0）。

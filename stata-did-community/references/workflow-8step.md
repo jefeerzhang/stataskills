@@ -110,7 +110,7 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
    - 输入：N、T、σ_τ、σ_ε、α、power_target
    - 输出：MDE in SD units（论文"sample size justification"段引用）
 
-2. **Simulation (Burlig-Preonas-Woerman 2020, panel 版)**：DGP 内嵌异质 ATT + 聚类结构
+2. **Simulation（方法依 Burlig-Preonas-Woerman 2020, panel 版）**：DGP 内嵌异质 ATT + 聚类结构；本仓库模板用单 cohort 简化 DGP，验证方法流程而非复现原论文数值
    - 用 `simulate` 命令 + Monte Carlo（500+ reps）
    - 输出：power vs ATT 曲线，匹配你实际估计量（TWFE / csdid / did_imputation）
 
@@ -120,9 +120,9 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
 
 > "With N=200 clusters × T=10 periods and ATT of 0.3 SD, our design achieves 80% power
 > to detect effects of ~0.089 SD (analytical Bloom 1995, uniform-effect assumption; balance-checked
-> against the 0.05–0.15 SD 区间) and ~66% power at 0.3 SD under a staggered heterogeneous-ATT DGP
-> with ρ=0.5 within-cluster correlation (500-rep Monte Carlo, Burlig et al. 2020;
-> `verify/verify-power.do` 段 2 一致性断言全 PASS)."
+> against the 0.05–0.15 SD 区间) and ~66% power at 0.3 SD under a single-cohort heterogeneous-ATT
+> panel DGP with ρ=0.5 within-cluster correlation (500-rep Monte Carlo, simulation method
+> per Burlig et al. 2020; `verify/verify-power.do` 段 2 一致性断言全 PASS)."
 
 > 注：本仓库模板的 ATT 取 **0.3 SD**（而非 spec issue 字面写的 0.2 SD）——plan 笔误修正
 > 已写入 commit `3cae231`，理由是「0.2 SD 在异质 ATT DGP 下 power 仅 0.33 远低于期望；

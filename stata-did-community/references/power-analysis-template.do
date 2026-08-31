@@ -12,9 +12,10 @@ set more off
 * 两套方法（按精度需求选，非优劣）：
 *   (A) Analytical（Bloom 1995 推导）：已知 σ²_τ、σ²_ε、cluster 数 N、treatment 比例
 *       → 给出 z-power 下的 MDE 解析式；快速但要求 effect 均匀
-*   (B) Simulation（Burlig-Preonas-Woerman 2020 panel 版）：DGP 内嵌 ATT 异质性
-*       + 聚类结构 → 用 simulate 命令 + Monte Carlo → 真实 staggered DiD 数据下
-*       power 曲线
+*   (B) Simulation（方法依 Burlig-Preonas-Woerman 2020 panel 版）：DGP 内嵌 ATT 异质性
+*       + 聚类结构 → 用 simulate 命令 + Monte Carlo → power 曲线。
+*       注：本模板 DGP 为单 cohort 简化设计（处理组自 period 5 起处理），
+*       原论文为多 cohort staggered 设计；验证的是方法流程，不宣称复现原论文数值。
 *
 * 使用方式：本文件是模板，逐段复制到自己的 do-file 跑（不要 do 整个文件，会刷数据）。
 * 配套 verify: verify/verify-power.do（手动调用：`cd verify && stata-mp -b do verify-power.do`）
@@ -48,7 +49,7 @@ di as result "  MDE (in SD units) = " %6.4f `mde_sd'
 * 与 Burlig-Preonas-Woerman 2020 Table 1 近似一致（同一参数化下 ~0.07-0.09 SD）
 
 * =============================================================================
-* 方法 (B) — Simulation-based power (Burlig-Preonas-Woerman 2020 panel 版)
+* 方法 (B) — Simulation-based power（方法依 Burlig-Preonas-Woerman 2020；单 cohort 简化 DGP）
 * =============================================================================
 * DGP：TWFE 数据 + 异质 ATT（cohort-specific）+ 等相关 cluster 结构 (ρ=0.5)
 * 估计量：reghdfe y D, absorb(id t) cluster(cluster_id)
@@ -99,7 +100,7 @@ program define power_dgp, rclass
 end
 
 * ---------- Monte Carlo：在 ATT=0.3 SD 下跑 power ----------
-display as result "Burlig-Preonas-Woerman 2020 Simulation:"
+display as result "Panel Simulation（方法依 Burlig-Preonas-Woerman 2020；单 cohort 简化 DGP）:"
 display as result "  DGP: N=200, T=10, ATT=0.3 SD, rho=0.5, 500 reps"
 
 simulate beta = r(beta) se = r(se), ///
@@ -134,10 +135,13 @@ forvalues att = 0.05(0.05)0.50 {
 }
 
 * =============================================================================
-* 典型审查答复模板
+* 典型审查答复模板（数字与本仓库实测一致：verify/verify-power.do
+* 实跑 MDE=0.0886 SD / ATT=0.3 SD 下 power=0.656，勿套用其它来源的数字）
 * =============================================================================
-* "With N=200 clusters × T=10 periods and ATT of 0.2 SD, our design achieves 80%
-*  power to detect effects of 0.09 SD (analytical Bloom 1995, uniform-effect
-*  assumption) and ~70-90% power at 0.2 SD under a staggered heterogeneous-ATT
-*  DGP with rho=0.5 within-cluster correlation (simulation, Burlig et al. 2020)."
+* "With N=200 clusters × T=10 periods and ATT of 0.3 SD, our design achieves 80%
+*  power to detect effects of ~0.089 SD (analytical Bloom 1995, uniform-effect
+*  assumption) and ~66% power at 0.3 SD under a single-cohort heterogeneous-ATT
+*  panel DGP with rho=0.5 within-cluster correlation (500-rep Monte Carlo,
+*  simulation method per Burlig et al. 2020)."
 * =============================================================================
+

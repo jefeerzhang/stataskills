@@ -10,6 +10,8 @@ set more off
 * （Stata for Windows 的 do-file 路径必须从当前目录计算，参考 run-verify.sh）
 * 是 did-community 的额外方法学工具；run-verify.sh 全量跑 did-community 时经
 * targets.sh 委托一并执行（委托清单：verify-synth-sdid verify-power verify-trop）。
+* 段 2 依赖 reghdfe：社区包契约里 reghdfe 是 OPTIONAL 级（verify-synth-sdid 的
+* did_imputation 依赖）——未装时打 OPTIONAL sentinel 并跳过段 2/3，两模式仍 PASS（ADR-0003）。
 * 配套生成 verify-power.log（raw verify log，按 ADR-0005 保留）
 
 * =============================================================================
@@ -36,15 +38,29 @@ assert inrange(`mde_sd', 0.05, 0.15)
 display as result "  ✓ Bloom MDE 在预期范围 [0.05, 0.15] SD"
 
 * =============================================================================
-* 段 2：Burlig-Preonas-Woerman 2020 Simulation
+* 段 2：面板 Simulation（方法依 Burlig-Preonas-Woerman 2020；单 cohort 简化 DGP）
 * =============================================================================
 display as result ""
-display as result "=== 段 2：Burlig-Preonas-Woerman 2020 Simulation ==="
+display as result "=== 段 2：面板 Simulation（单 cohort 简化 DGP）==="
+
+* 包探测（ADR-0003）：reghdfe 未装时打 OPTIONAL sentinel 并跳过段 2/3，
+* 默认模式与 --community 模式均仍 PASS（段 1 的 Bloom 解析式不依赖任何包）。
+capture which reghdfe
+local has_reghdfe = (_rc == 0)
+if !`has_reghdfe' {
+    display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__reghdfe__"
+    display as error "reghdfe 未安装，请运行 ssc install reghdfe, replace"
+    display as result "=== 可选包未装，跳过段 2/3（默认模式 PASS）==="
+    exit
+}
 
 capture program drop power_dgp
 program define power_dgp, rclass
     * 注：用 args 接收位置参数（避免 syntax 解析 ATT/tau 为内置 option）
     * 调用形式：power_dgp N T eff rho
+    * DGP 是单 cohort 简化设计（处理组自 period 5 起处理，非原论文的
+    * 多 cohort staggered 设计）：验证的是「异质 ATT + 聚类 Monte Carlo
+    * 求 power」的方法流程，不宣称复现原论文数值。
     args N T eff rho
 
     drop _all

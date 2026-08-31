@@ -25,6 +25,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 
 - 中文作图需先询问用户；默认英文标签
 - 新增的 `stata-selection` 与 `stata-identification` 在首个 Stata code fence 中以 `version 19.5` 作为第一条可执行语句（不是 Markdown 物理首行）；每个 `verify/verify-*.do` 的物理首行必须是 `version 19.5`
 - Agent 读 skill 时先执行文首「强制路径」（匹配到第一条就停），再查文末可执行禁令；教材章节不是执行入口。分数线 / 年龄门槛 / 地理边界踢走 DID，改走 `stata-rdd`。
+- Commit 规矩：commit message 末尾必须以 `Made-with: Proma` trailer 结尾；不使用 `Co-Authored-By:` 行。由 `.githooks/commit-msg` 强制（启用：`git config core.hooksPath .githooks`）。
 
 <!-- proma:knowledge-maintenance:start -->
 ## 协作知识演进（Proma 维护）
