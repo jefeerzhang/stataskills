@@ -35,6 +35,8 @@ compatibility: >-
 | named `synth`，或 standard DID 失败进入 4b 后满足：少数处理单位 + 较长前期 + donor pool 可辩护 | `synth` → placebo / permutation；不要只报点估计 |
 | named `sdid`，或 standard DID 失败进入 4b 后满足：充分 pre / post + untreated / not-yet-treated comparison units；单个或多个处理单位及当前实现支持的多个处理日期 | `sdid` → 匹配数据结构的 VCE；报告单位 / 时间权重与 pre-fit |
 | 处理可逆 / 非二元 / 无 stayers | `did_multiplegt (dyn)`（位置参数，不是 `, mode(dyn)`） |
+| 0/1 处理 + stayers + switchers（HAD 场景） | `did_multiplegt (had)` → 估计 DID_M（见 [references/dcdh.md](references/dcdh.md) § 两条平行路线） |
+| 连续剂量 + 无 QUG（universal policy，所有单位 D > 0） | `did_had` v2.0.0 → `bandwidth(mse)` + `method(ll) ci(bc)`（见 [references/dcdh.md](references/dcdh.md) § 两条平行路线） |
 | 错时 + 计数/二元结果 | `jwdid y, ivar(id) tvar(t) gvar(g) method(poisson) group` → `estat event` → `estat plot` |
 | 错时 + leaveout / 单位趋势 / 灵活 FE | `replace Ei = . if never_treated` → `did_imputation y id t Ei, horizons(0/5) leaveout autosample` |
 | 错时 + 要 DR/IPW/Reg 三方法对照 | `csdid y, ivar(id) time(t) gvar(g) notyet method(dr)` → `estat simple` → `estat event` |
@@ -283,6 +285,14 @@ compatibility: >-
     - **触发**：simple 2x2 跑完 `estat ptrends` p > 0.05 就当作 PT 成立的证据；或 staggered 设计用 `estat ptrends` 检验加总 pre-trend。
     - **Fix**：简单 2x2 — p > 0.05 仅是"必要不充分条件"（功效不足永远不显著）；staggered — `estat ptrends` 检验的是加总 pre-period 系数，与 staggered 异质处理所需的 pre-trend-by-cohort 检验不同，正确做法是看 CS/SA 事件研究的 pre-period 系数（`estat event` 的 e<0 部分联合检验）。post-selection CI 偏宽，正式 pretest-adjusted CI 需 R `pretrends` 包——**Stata 无等价包**。
     - **验证**：论文 method 节应明说 staggered pre-trend 检查用 `csdid estat event` e<0 联合检验，不单报 `estat ptrends` 的 p 值。见 [references/workflow-8step.md](references/workflow-8step.md) 步骤 3。
+19. **不要把 `did_had` 当作 `did_multiplegt (had)` 的"升级版"**
+    - **触发**：用户研究 universal policy（连续剂量）时默认路由到 `did_had` v2.0.0；或反过来研究 0/1 处理 + stayers 时被引导到 `did_had`。
+    - **Fix**：两者估计**不同参数**——`did_multiplegt (had)` 估计 DID_M（一个 scalar ATT）；`did_had` 估计 WAS_d̲（dose-response 斜率族）。两者依赖**不同识别假设**——`did_multiplegt (had)` 用 PT w/ quasi-stayer；`did_had` 在无 QUG 时用 boundary identification（无需 PT）。按**数据特征**（0/1 vs 连续；QUG 是否存在）和**研究问题**（ATT vs dose-response curve）分叉选择，不存在"哪个更先进"。
+    - **验证**：决策树命中哪个路由，对照 [references/dcdh.md](references/dcdh.md) § 数据特征分叉决策树，不要直接报"`did_had` 更现代所以用它"。
+20. **`did_multiplegt (had)` 要求 quasi-stayer 必须存在**
+    - **触发**：universal policy 设计（全国最低工资、普惠补贴，所有单位都收到处理 D > 0）跑 `did_multiplegt (had)` 报"DID_M 未识别"或结果怪异。
+    - **Fix**：quasi-stayer（剂量约等于 0 的单位）是 `did_multiplegt (had)` 的必要条件；如果所有单位 D > 0 严格正，DID_M 在该框架下未识别。**改用 `did_had` v2.0.0 的 boundary identification**——只需剂量分布在 0 附近连续或最小剂量 d > 0 附近连续，不依赖 PT。安装：`net install did_had, from("https://raw.githubusercontent.com/Credible-Answers/did_had/main") replace`。
+    - **验证**：跑前先 `tab D` 看是否有 D ≈ 0 的单位（QUG），无则改 `did_had`。见 [references/dcdh.md](references/dcdh.md) § 识别假设对比（关键）。
 
 ## 🔍 错误码速查（错误码 → 触发 → 修复）
 

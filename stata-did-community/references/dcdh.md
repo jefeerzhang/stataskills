@@ -119,3 +119,61 @@ did_multiplegt (dyn) lwage nr year union, ///
 
 `did_multiplegt (dyn)` ≈ diff-diff 的 `ChaisemartinDHaultfoeuille`（别名 `DCDH`）。diff-diff 用 `did_multiplegt` 作为 Stata 端的交叉验证锚点。
 
+### Heterogeneous Adoption Design 的两条平行路线
+
+`did_multiplegt (had)` 和 `did_had v2.0.0` **不是替代关系**——它们是同主题
+（"无 stayers / 无对照组的 HAD 设计"）下的**两条互补路径**，目标参数、识别假设和适用场景都不同。
+选择哪条取决于**数据特征**和**研究问题**，不是"哪个更好"。
+
+#### 目标参数对比
+
+| 维度 | `did_multiplegt (had)` | `did_had v2.0.0` |
+|---|---|---|
+| 文献 | de Chaisemartin-D'Haultfœuille (2024b) | de Chaisemartin-Ciccia-d'Haultfœuille-Knau (2026, arXiv:2405.04465v6) |
+| 目标参数 | **DID_M**（一个 scalar） | **WAS_d̲**（一族，d̲ 可选 → dose-response curve） |
+| 目标参数含义 | "最后处理组" vs "stayers" 的 ATT | E[(Y_2(D_2) − Y_2(0)) / D_2 \| D_2 ≥ d̲]——剂量-反应斜率的加权平均 |
+| 设计 | 部分 stayers + 部分 switchers；或 0/1 处理 | 所有单位 D > 0；处理连续 |
+| 估计量 | DID 矩估计（DCDH 2020 框架） | 局部线性 + MSE-optimal bandwidth（`nprobust`） + Bell-McCaffrey HC2 SE |
+
+#### 识别假设对比（关键）
+
+| | `did_multiplegt (had)` | `did_had v2.0.0` |
+|---|---|---|
+| Case 1: 有 QUG | **PT w/ quasi-stayer 组**（quasi-stayer 充当对照组） | **PT w/ QUG** + boundary identification |
+| Case 2: 无 QUG | ❌ **DID_M 未识别**（quasi-stayer 是必要条件） | ✅ **Boundary identification**（无需 PT，靠剂量-结果函数在边界处连续——RDD 风格） |
+
+**为什么不能互相替代**：
+- `did_multiplegt (had)` 的 HAD 估计量在无 QUG 时根本**算不出来**——quasi-stayer 必须存在
+- `did_had v2.0.0` 在 Case 1（QUG 存在）能算但**没有优势**——PT + QUG 已经够好，引入局部线性反而带来带宽选择的额外不确定性
+- 两者**估计不同参数**：DID_M（一个 ATT 数字）vs WAS_d̲（剂量-反应曲线）。把它们当成"同一问题的两种解"是常见误解
+
+#### 数据特征分叉决策树（**不是"哪个更好"**）
+
+```
+研究问题：要 ATT 还是 dose-response curve？
+├─ 要 ATT（一个数字）+ 有 stayers/switcher
+│   ├─ 处理是 0/1               → did_multiplegt (had)        ← 唯一可走
+│   └─ 处理是连续 + 有 QUG       → did_multiplegt (had)        ← 简单；无需 bandwidth
+├─ 要 dose-response curve        → did_had v2.0.0              ← 唯一可走
+└─ 连续剂量 + 无 QUG（universal） → did_had v2.0.0              ← 唯一可走；did_multiplegt (had) 失效
+```
+
+#### `did_had v2.0.0` 完整语法
+
+```stata
+net install did_had, from("https://raw.githubusercontent.com/Credible-Answers/did_had/main") replace
+
+did_had y, id(id) time(t) dose(D_g2) bandwidth(mse)             // MSE-optimal bandwidth
+did_had y, id(id) time(t) dose(D_g2) method(ll) ci(bc)           // 局部线性 + bias-corrected CI
+did_had, pretest(qug)                                             // QUG pretest（Case 1/2 分流诊断）
+did_had, dose_grid(0(0.1)2)                                       // 画 dose-response curve（多个 d̲）
+```
+
+#### 文献
+
+- de Chaisemartin, C. & D'Haultfœuille, X. (2024b). "Two-way Fixed Effects and
+  Differences-in-Differences Estimators in Heterogeneous Adoption Designs."
+- de Chaisemartin, C., Ciccia, D., D'Haultfœuille, X., & Knau, F. (2026).
+  "Difference-in-Differences Estimators When No Unit Remains Untreated."
+  arXiv:2405.04465v6.
+

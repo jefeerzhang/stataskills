@@ -398,6 +398,30 @@ Refer to Arkhangelsky et al., (2021) for theoretical derivations.
 sdid 完成
 . }
 
+. 
+. * ---- did_had v2.0.0：可选（GitHub 包，未装则 sentinel，不影响默认模式 PASS
+> ）----
+. * PR-B 联动：HAD v2.0.0 检测。不实际跑 did_had 估计命令（避免引入新必需包依赖
+> ），
+. * 仅 sentinel 检测包安装状态。
+. capture which did_had
+
+. local has_did_had = (_rc == 0)
+
+. if !`has_did_had' {
+.     display as text "did_had v2.0.0 未安装（GitHub 包，非必需；装上可跑 HAD b
+> oundary identification）"
+did_had v2.0.0 未安装（GitHub 包，非必需；装上可跑 HAD boundary identification
+> ）
+.     display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__did_had__"
+__COMMUNITY_PACKAGE_OPTIONAL_MISSING__did_had__
+. }
+
+. if `has_did_had' {
+.     display as text "did_had v2.0.0 已装"
+. }
+
+. 
 . display as text "=== 全部测试通过 ==="
 === 全部测试通过 ===
 
