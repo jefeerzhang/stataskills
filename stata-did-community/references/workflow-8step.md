@@ -116,12 +116,18 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
 
 完整 do-file 模板见 [references/power-analysis-template.do](references/power-analysis-template.do)。文件含两套方法的完整实现，使用时逐段复制到自己的 do-file 跑（不要 do 整个文件，会刷数据）。
 
-**典型审查答复**：
+**典型审查答复**（与本仓库 verify 实际跑出数字一致——见 `verify/verify-power.do` 段 1/2）：
 
-> "With N=200 clusters × T=10 periods and ATT of 0.2 SD, our design achieves 80% power
-> to detect effects of ~0.09 SD (analytical Bloom 1995, uniform-effect assumption) and
-> ~70-90% power at 0.2 SD under a staggered heterogeneous-ATT DGP with ρ=0.5 within-cluster
-> correlation (simulation, Burlig et al. 2020)."
+> "With N=200 clusters × T=10 periods and ATT of 0.3 SD, our design achieves 80% power
+> to detect effects of ~0.089 SD (analytical Bloom 1995, uniform-effect assumption; balance-checked
+> against the 0.05–0.15 SD 区间) and ~66% power at 0.3 SD under a staggered heterogeneous-ATT DGP
+> with ρ=0.5 within-cluster correlation (500-rep Monte Carlo, Burlig et al. 2020;
+> `verify/verify-power.do` 段 2 一致性断言全 PASS)."
+
+> 注：本仓库模板的 ATT 取 **0.3 SD**（而非 spec issue 字面写的 0.2 SD）——plan 笔误修正
+> 已写入 commit `3cae231`，理由是「0.2 SD 在异质 ATT DGP 下 power 仅 0.33 远低于期望；
+> 0.3 SD 接近 staggered DID 实际效应幅度」。`verify/verify-power.do` 段 2 assert 把 power 钳在
+> [0.5, 0.95]（实际跑出 0.656）。
 
 ### 步骤 6 — 敏感性分析
 
