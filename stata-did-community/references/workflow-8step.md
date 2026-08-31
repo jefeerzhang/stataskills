@@ -43,10 +43,27 @@ estat ptrends                          // 数字检验（注意 staggered 时此
 estat trendplot                        // 图形诊断
 ```
 
-**关键提醒**（来自 Roth 2022）：
-- simple 2x2：`estat ptrends` 的 p > 0.05 是必要不充分条件。
-- staggered：`estat ptrends` 失效，必须看 CS / SA 事件研究的 pre-period 系数。
-- **不显著的 pre-trends 不证明 PT 成立**——只是没证据拒它。
+**关键提醒**（Roth 2022 "Pretest with Caution"）：
+
+`estat ptrends` 的 p > 0.05 **不等于**平行趋势假设成立：
+
+1. **不显著的 pre-trends 不证明 PT** —— 只是没证据拒它；研究功效不足时永远不显著。
+2. **staggered 设计下 `estat ptrends` 失效** —— 检验的是"加总 pre-period 系数=0"，与 staggered
+   异质处理效应所需的 pre-trend-by-cohort 检验不同；正确做法是看 CS / SA 事件研究的
+   pre-period 系数（`estat event` 的 e < 0 部分联合检验）。
+3. **pretest 影响后续推断** —— "先检验、再报告 CI"违反 pretest 独立性；post-selection CI 偏宽。
+
+**何时汇报**：
+- ✅ 论文 method 节明说"我们跑了 Roth 2022 警示的 staggered pre-trend 检查
+  （csdid `estat event` 报告 e<0 系数联合检验）"
+- ❌ 不要单报 `estat ptrends` 的 p 值当作 PT 成立的证据。
+
+**R 包 `pretrends`** 提供正式 pretest-adjusted CI；**Stata 无等价包**——如需 post-selection
+调整，目前只能手算或迁 R。本文档只做警示性提醒，不引入新命令。
+
+**文献**：Roth, J. (2022). "Pretest with Caution: Event-Study Estimates after Testing for
+Parallel Trends." *American Economic Review: Insights*, 4(3), 305-322.
+https://doi.org/10.1257/aeri.20210236
 
 ### 步骤 4 — 选估计量
 

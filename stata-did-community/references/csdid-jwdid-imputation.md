@@ -146,6 +146,56 @@ replace first_treat = 9999 if never_treated   // ← 错！
 
 `csdid` ≈ diff-diff 的 `CallawaySantAnna`（Python 估计量）。diff-diff 用 `csdid` 作为 Stata 端的交叉验证锚点，确认 Python 实现与 Stata 参考一致（精度 ~1e-6）。
 
+#### Sun-Abraham (SA) interaction-weighted 等价说明
+
+在异质性-robust 意义上，`csdid, method(dr)`（双重稳健默认）与 `method(ipw)`
+在报告 cohort × event-time 聚合（`estat event` / `estat group`）时，与 **Sun & Abraham (2021)
+interaction-weighted (SA-IW) 估计量**估计相同的 ATT(g,t)：
+
+- **SA-IW 路径**：以 cohort × event-time 单元交互回归重新加权 TWFE 的负权
+- **csdid DR/IPW 路径**：从 2×2 反事实矩估计出发再聚合
+- 在 staggered 共同支撑下两者对 ATT(g,t) **渐近等价**
+  （Sant'Anna & Zhao 2020 Theorem 2 + Callaway & Sant'Anna 2021 Theorem 2）
+
+**何时显式提到 SA-IW**：用户问"Sun-Abraham 估计量怎么做"或论文引用 SA 2021 时 → 答
+`csdid, method(dr)` + 解释 cohort × period 聚合即 SA 加权，并附 `estat event` 出图。
+**不要写"用 R 的 `did_multiplegt_dyn` SA 选项"**：R 的 `did_multiplegt` **没有** SA 选项——
+SA-IW 是 csdid / `eventstudyinteract` 系的产物。错路由到 R `did_multiplegt_dyn` 的 SA 选项
+是错误（该选项不存在）。
+
+**文献**：Sun, L., & Abraham, S. (2021). "Estimating dynamic treatment effects in event studies
+with heterogeneous treatment effects." *Journal of Econometrics*, 225(2), 175-199.
+https://doi.org/10.1016/j.jeconom.2020.09.006
+
+#### `csdid, method(twostage)` — Gardner (2022) two-stage DiD
+
+Gardner (2022) "Two-stage differences in differences" 把传统 2×2 DD 拆成两步：
+
+1. **第一阶段**：把处理组的 post-period 用对照组的 pre→post 变化率"插补"（imputation），
+   得到反事实 Y~。
+2. **第二阶段**：对 imputed Y~ 与实际 Y 的差做组 × 期回归，权重由 multiplier bootstrap
+   给出。
+
+`csdid, method(twostage)` 实现了 Gardner 2-stage（**与 BJS 的 `did_imputation` 的设计差异**）：
+
+- **BJS (`did_imputation`)**：用**全体未处理单位**拟合单一插补模型，所有 cohort 共享。
+- **Gardner (`csdid twostage`)**：每个 cohort **单独插补**，更灵活但方差大。
+- 两者都属于 imputation-based 估计量；区别在 imputation 模型的 granularity 与方差结构。
+
+**适用**：处理时点较少（≤ 3 个 cohort）+ 想看 cohort-specific 估计 + 接受方差放大。
+**不适用**：cohort 极多（≥ 10）——stage-1 自由度被吃光，估计退化。
+
+```stata
+* Gardner 2-stage：用 csdid 的 twostage
+csdid y, ivar(id) time(t) gvar(g) method(twostage) notyet
+estat simple                            // 总体 ATT（2-stage 矩）
+estat event                             // 事件研究
+estat group                             // 按 cohort 聚合
+```
+
+**文献**：Gardner, J. (2022). "Two-stage differences in differences." arXiv:2207.05943.
+https://arxiv.org/abs/2207.05943
+
 ### jwdid 详解：Wooldridge ETWFE 估计量
 
 `jwdid` 是 Fernando Rios-Avila 基于 Wooldridge (2021, 2023) 实现的 **ETWFE（Extended Two-Way Fixed Effects）** 估计量（SSC）。核心思路：用**饱和交互模型**（cohort × time 全交互 + 固定效应）替代传统 TWFE，避免错时 DID 下的负权重偏误。与 `csdid` 的"逐组×逐期分别估计后聚合"不同，`jwdid` 是**单次回归**出全部 ATT(g,t)。

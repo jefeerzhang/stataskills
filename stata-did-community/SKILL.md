@@ -38,6 +38,7 @@ compatibility: >-
 | 错时 + 计数/二元结果 | `jwdid y, ivar(id) tvar(t) gvar(g) method(poisson) group` → `estat event` → `estat plot` |
 | 错时 + leaveout / 单位趋势 / 灵活 FE | `replace Ei = . if never_treated` → `did_imputation y id t Ei, horizons(0/5) leaveout autosample` |
 | 错时 + 要 DR/IPW/Reg 三方法对照 | `csdid y, ivar(id) time(t) gvar(g) notyet method(dr)` → `estat simple` → `estat event` |
+| 错时 + 处理时点少（≤ 3 cohort）+ 想看 cohort-specific + 接受方差放大 | `csdid y, ivar(id) time(t) gvar(g) method(twostage) notyet` → `estat simple` → `estat event` → `estat group`（Gardner 2022 two-stage；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) § `csdid, method(twostage)`）|
 | 错时 + TWFE 权重诊断 / 100M+ 行 | `save original.dta` → `stacked build` → `stacked kappa` → `stacked reg` |
 | 冲击型（只持续 1 期）或聚类 < 50 | `lpdid y, ... pre(5) post(#)`；少聚类加 `bootstrap(500)` |
 
@@ -148,6 +149,7 @@ compatibility: >-
 13. **少聚类**：聚类数 < 50？ → `lpdid bootstrap(500)`（见 [references/lpdid.md](references/lpdid.md)）
 14. **长差分需求**：想用局部投影估计任意 horizon 的动态效应？ → `lpdid`（见 [references/lpdid.md](references/lpdid.md)）
 15. **出图需求**：要一键出图？ → `jwdid` + `estat plot`（见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md)）
+15a. **Sun-Abraham / SA 2021 引用**：用户问 SA 2021 怎么做 / 论文需 SA 估计量 → `csdid method(dr)` + `estat event`（SA-IW 与 csdid DR/IPW 在 staggered 共同支撑下渐近等价；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) § Sun-Abraham 等价说明）。**不要路由到 R `did_multiplegt_dyn` SA 选项**——R `did_multiplegt` 没有 SA 选项。
 16. **默认**：`hdidregress aipw`（官方内置，最稳妥，见 `stata-did` skill）
 
 ## 事后命令速查
@@ -277,6 +279,10 @@ compatibility: >-
     - **触发**：`estat` 等标准 post-estimation 命令不适用。
     - **Fix**：`matrix list e(results)` 看事件研究系数；`matrix list e(pooled_results)` 看汇总效应；自定义图用 `svmat` 提取。
     - **验证**：`matrix list e(results)` 应输出 horizon × coefficient 矩阵。
+18. **`estat ptrends` 的 p > 0.05 不证明 PT 成立**（Roth 2022 "Pretest with Caution"）
+    - **触发**：simple 2x2 跑完 `estat ptrends` p > 0.05 就当作 PT 成立的证据；或 staggered 设计用 `estat ptrends` 检验加总 pre-trend。
+    - **Fix**：简单 2x2 — p > 0.05 仅是"必要不充分条件"（功效不足永远不显著）；staggered — `estat ptrends` 检验的是加总 pre-period 系数，与 staggered 异质处理所需的 pre-trend-by-cohort 检验不同，正确做法是看 CS/SA 事件研究的 pre-period 系数（`estat event` 的 e<0 部分联合检验）。post-selection CI 偏宽，正式 pretest-adjusted CI 需 R `pretrends` 包——**Stata 无等价包**。
+    - **验证**：论文 method 节应明说 staggered pre-trend 检查用 `csdid estat event` e<0 联合检验，不单报 `estat ptrends` 的 p 值。见 [references/workflow-8step.md](references/workflow-8step.md) 步骤 3。
 
 ## 🔍 错误码速查（错误码 → 触发 → 修复）
 
