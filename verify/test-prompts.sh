@@ -185,69 +185,89 @@ json_branch_action() {
 }
 
 route_branch_semantics_ok() {
-  local branch="$1" expected_count count index action anchors_var anchors anchor
-  local action_0 action_1 action_2 action_3
+  local branch="$1" expected_count count index action anchors anchor
+  local -a actions
   case "$branch" in
     router-entry)
       expected_count=3
-      action_0='首先加载 stata-identification|identification-decision-tree.md'
-      action_1='定义 treatment、outcome、unit、时间结构、处理时点、目标总体与 estimand'
-      action_2='stop rules|制度或设计证据|不能凭列名或关键词跳分支'
+      actions=(
+        '首先加载 stata-identification|identification-decision-tree.md'
+        '定义 treatment、outcome、unit、时间结构、处理时点、目标总体与 estimand'
+        'stop rules|制度或设计证据|不能凭列名或关键词跳分支'
+      )
       ;;
     rct)
       expected_count=3
-      action_0='随机化完整性|停止在 RCT 分支'
-      action_1='assignment|actual uptake|estimand|目标总体'
-      action_2='attrition|consistency|SUTVA / no interference|noncompliance'
+      actions=(
+        '随机化完整性|停止在 RCT 分支'
+        'assignment|actual uptake|estimand|目标总体'
+        'attrition|consistency|SUTVA / no interference|noncompliance'
+      )
       ;;
     rdd)
       expected_count=3
-      action_0='阈值规则|时间先后|running variable'
-      action_1='连续性|无精确操纵|局部 positivity'
-      action_2='转 stata-rdd'
+      actions=(
+        '阈值规则|时间先后|running variable'
+        '连续性|无精确操纵|局部 positivity'
+        '转 stata-rdd'
+      )
       ;;
     iv)
       expected_count=3
-      action_0='制度来源|outcome 通道'
-      action_1='relevance|independence|exclusion|monotonicity|SUTVA'
-      action_2='转 stata-regression|iv.md|iv-testing.md|iv-identification.md'
+      actions=(
+        '制度来源|outcome 通道'
+        'relevance|independence|exclusion|monotonicity|SUTVA'
+        '转 stata-regression|iv.md|iv-testing.md|iv-identification.md'
+      )
       ;;
     standard-did)
       expected_count=3
-      action_0='面板政策公共 gate|no anticipation|SUTVA|稳定构成'
-      action_1='parallel trends|overlap|composition|treatment timing'
-      action_2='转 stata-did|不机械运行 synth / sdid'
+      actions=(
+        '面板政策公共 gate|no anticipation|SUTVA|稳定构成'
+        'parallel trends|overlap|composition|treatment timing'
+        '转 stata-did|不机械运行 synth / sdid'
+      )
       ;;
     synth-sdid)
       expected_count=4
-      action_0='析取入口|不要求先通过 standard DID parallel trends 父 gate'
-      action_1='synth|donor pool|pre-fit|同期冲击|placebo|推断条件'
-      action_2='sdid|pre / post periods|untreated / not-yet-treated comparison units|单个或多个处理单位|多个处理日期|weighting|latent-factor / regularity|方法特定推断'
-      action_3='转 stata-did-community'
+      actions=(
+        '析取入口|不要求先通过 standard DID parallel trends 父 gate'
+        'synth|donor pool|pre-fit|同期冲击|placebo|推断条件'
+        'sdid|pre / post periods|untreated / not-yet-treated comparison units|单个或多个处理单位|多个处理日期|weighting|latent-factor / regularity|方法特定推断'
+        '转 stata-did-community'
+      )
       ;;
     selection)
       expected_count=3
-      action_0='前序 RCT、RDD、IV 与面板政策设计均失败'
-      action_1='pre-treatment|conditional exchangeability|positivity / overlap|SUTVA|ATET estimand'
-      action_2='转 stata-selection'
+      actions=(
+        '前序 RCT、RDD、IV 与面板政策设计均失败'
+        'pre-treatment|conditional exchangeability|positivity / overlap|SUTVA|ATET estimand'
+        '转 stata-selection'
+      )
       ;;
     stop-causal)
       expected_count=3
-      action_0='记录哪个 gate 失败|缺少的数据支持或制度 / 设计证据'
-      action_1='停止因果声明|禁止使用因果措辞|effect / impact / caused|描述 / 关联'
-      action_2='当前数据可回答的问题|补充的设计证据|重新设计方案'
+      actions=(
+        '记录哪个 gate 失败|缺少的数据支持或制度 / 设计证据'
+        '停止因果声明|禁止使用因果措辞|effect / impact / caused|描述 / 关联'
+        '当前数据可回答的问题|补充的设计证据|重新设计方案'
+      )
       ;;
     named-method-direct)
       expected_count=3
-      action_0='直接进入 stata-selection|不先加载 stata-identification router'
-      action_1='stata-selection 设计 gate|pre-treatment confounders|无未观测混杂|overlap'
-      action_2='psmatch2.md|社区敏感性 / 兼容性对照'
+      actions=(
+        '直接进入 stata-selection|不先加载 stata-identification router'
+        'stata-selection 设计 gate|pre-treatment confounders|无未观测混杂|overlap'
+        'psmatch2.md|社区敏感性 / 兼容性对照'
+      )
       ;;
     gate-failure-return)
       expected_count=3
-      action_0='standard DID parallel trends 失败后先检查同支柱 synth / sdid|不得直接转 selection'
-      action_1='synth 与 sdid 两个析取入口均失败后才返回 stata-identification router'
-      action_2='离开面板政策支柱后才检查横截面 selection|selection gate 也失败则 stop causal'
+      actions=(
+        'standard DID parallel trends 失败后先检查同支柱 synth / sdid|不得直接转 selection'
+        'synth 与 sdid 两个析取入口均失败后才返回 stata-identification router'
+        '离开面板政策支柱后才检查横截面 selection|selection gate 也失败则 stop causal'
+      )
       ;;
     *) return 1 ;;
   esac
@@ -259,8 +279,7 @@ route_branch_semantics_ok() {
     if ! action="$(json_branch_action "$branch" "$index")"; then
       return 2
     fi
-    anchors_var="action_$index"
-    anchors="${!anchors_var}"
+    anchors="${actions[$index]}"
     while IFS= read -r anchor; do
       grep -Fq "$anchor" <<< "$action" || return 1
     done < <(tr '|' '\n' <<< "$anchors")
@@ -613,8 +632,8 @@ run_llm_mode() {
       # 逐词检查（join(" ") 后按空白拆分）：先用去标点字面串做固定串匹配；
       # 若去点号改变了词形（如 SKILL.md → SKILLmd），再用原词做正则，
       # 点号留作通配（'.' 未转义）兜底——修复 "*.md" 引用永远匹配不上的缺陷。
-      local cleaned
-      cleaned="$(echo "$kw" | sed 's/[`(){},.]//g')"
+      local cleaned punct='`(){},.'
+      cleaned="${kw//[$punct]/}"
       [ "${#cleaned}" -lt 3 ] && continue
       if echo "$response" | grep -qF "$cleaned"; then
         hit=1

@@ -425,6 +425,10 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   v_chapter=$(echo "$contract_block" | sed -n 's/^\* chapter:[[:space:]]*//p' | head -1 | tr -d ' ')
   v_data=$(echo "$contract_block" | sed -n 's/^\* data:[[:space:]]*//p' | head -1 | tr -d ' ')
   v_checks=$(echo "$contract_block" | sed -n 's/^\* checks:[[:space:]]*//p' | head -1 | tr -d ' ')
+  # 校验解析值非空：字段名在块里出现但值为空仍算坏契约（与下方 field_count 互补）
+  if [ -z "$v_skill" ] || [ -z "$v_chapter" ] || [ -z "$v_data" ] || [ -z "$v_checks" ]; then
+    verify_bad_format="${verify_bad_format} ${vname}(空字段);"
+  fi
   # 校验 skill 字段 → 必须有对应 stata-xxx 目录
   if [ ! -d "$REPO_ROOT/$v_skill" ]; then
     verify_bad_skill="${verify_bad_skill} ${vname}→${v_skill};"
@@ -538,6 +542,7 @@ fi
 # `gen rejected_`att'` 在 att=0.05 时展开为 rejected_0.05，点号非法，扫描段无法跑通。
 POWER_TMPL="$REPO_ROOT/stata-did-community/references/power-analysis-template.do"
 if [ -f "$POWER_TMPL" ]; then
+  # shellcheck disable=SC2016  # 反引号是 Stata 宏字面量，不是命令替换
   if grep -nE 'rejected_`att'\''' "$POWER_TMPL" >/dev/null 2>&1 || grep -nE 'rejected_`att`' "$POWER_TMPL" >/dev/null 2>&1; then
     bad "power-analysis-template.do 用 rejected_\`att' 作变量名（浮点插值含点号，Stata 非法）"
   else
@@ -603,6 +608,7 @@ fi
 if [ -f "$DC_SKILL" ]; then
   # 主文件关键陷阱速查须含至少一条可识别的 TROP 陷阱（四件套格式由既有陷阱标题断言覆盖）
   trap_block=$(awk '/^## 关键陷阱速查/{p=1} p && /^## / && !/^## 关键陷阱速查/{exit} p' "$DC_SKILL")
+  # shellcheck disable=SC2016  # 反引号是 Markdown 字面分隔符，不是命令替换
   echo "$trap_block" | grep -qiE 'TROP|`trop`' || trop_layer="${trop_layer} SKILL.md 关键陷阱速查无 TROP 条目;"
 fi
 if [ -n "$trop_layer" ]; then
