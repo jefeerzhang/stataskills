@@ -100,6 +100,29 @@ display "N clusters = `:list sizeof ids'"     // 至少 ≥ 50 才用 cluster-ro
 
 规则（Bertrand et al. 2004）：聚类数 < 50 → wild bootstrap 或 `aggregate(dlang)`；≥ 50 → 默认 cluster-robust SE。
 
+### 步骤 5b — 面板 MDE / 功效分析（投稿前必做）
+
+**Why**：审稿人最常问"你的样本能检测多小的效应"；**事前**做 MDE 比**事后**解释功效不足更稳。
+
+**两套方法**（按精度需求选）：
+
+1. **Analytical (Bloom 1995)**：闭式公式，快速但假设均匀效应
+   - 输入：N、T、σ_τ、σ_ε、α、power_target
+   - 输出：MDE in SD units（论文"sample size justification"段引用）
+
+2. **Simulation (Burlig-Preonas-Woerman 2020, panel 版)**：DGP 内嵌异质 ATT + 聚类结构
+   - 用 `simulate` 命令 + Monte Carlo（500+ reps）
+   - 输出：power vs ATT 曲线，匹配你实际估计量（TWFE / csdid / did_imputation）
+
+完整 do-file 模板见 [references/power-analysis-template.do](references/power-analysis-template.do)。文件含两套方法的完整实现，使用时逐段复制到自己的 do-file 跑（不要 do 整个文件，会刷数据）。
+
+**典型审查答复**：
+
+> "With N=200 clusters × T=10 periods and ATT of 0.2 SD, our design achieves 80% power
+> to detect effects of ~0.09 SD (analytical Bloom 1995, uniform-effect assumption) and
+> ~70-90% power at 0.2 SD under a staggered heterogeneous-ATT DGP with ρ=0.5 within-cluster
+> correlation (simulation, Burlig et al. 2020)."
+
 ### 步骤 6 — 敏感性分析
 
 不能只报主估计。必报：
