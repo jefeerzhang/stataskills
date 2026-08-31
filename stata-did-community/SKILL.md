@@ -98,6 +98,7 @@ compatibility: >-
 | 错时 DID + 想要一键出图 | `jwdid` + `estat plot` | `estat plot` 一键事件研究图；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) |
 | 错时 DID + 想要内置平行趋势检验 | `jwdid` 或 `did_imputation` | `estat event, pretrend` 或 `pretrends(k)`；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) |
 | 错时 DID + 想要异质性约束 | `jwdid hettype(event/cohort/time)` | `hettype()` 选项；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) |
+| 错时 DID + 高维共同因子（单元 FE 不能吸收）+ 处理与潜在因子相关 | `trop, factors(k=auto)` | 多因子矩阵 + 核范数 + triply robust（任一组件 unbiased）；见 [references/trop.md](references/trop.md) |
 | 错时 DID + 默认（无特殊需求） | `hdidregress aipw`（见 `stata-did` skill） | 官方内置，estat 诊断丰富，默认推荐 |
 
 ### 特征对照矩阵
@@ -131,6 +132,24 @@ compatibility: >-
 | hettype 约束 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | 控制组选择 | — | notyet | notyet/never | notyet/never | — | not-yet-switchers | both/never/notyet | all clean/never |
 | 滞后效应 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ dyn 模式 | ❌ | ❌ |
+
+#### TROP 能力补充（按数据特征 / 估计目标选；plan 笔误修正：不加 TROP 列以避免现有 9 列结构 diff 过大）
+
+| 特征 | `csdid` DR/IPW | `jwdid` ETWFE | TROP |
+|---|---|---|---|
+| 共同因子模型 | 不建模 | 单元固定效应 | 多因子矩阵 + 核范数 |
+| 内生选择处理 | 不处理 | 不处理 | 处理 |
+| Semiparametric efficient | 不追求 | 不追求 | 异质下也成立 |
+| Stata 包名 | `csdid` | `jwdid` | `trop` |
+| 安装方式 | `ssc install` | `ssc install` | `ssc install trop` |
+| 必需基础包 | `drdid` | `reghdfe` | `nprobust` |
+
+**如何选**：看你的**数据特征**和**估计目标**，不是"哪个更好"。
+- 处理准随机 + 单元 FE 足够 → `csdid` / `jwdid` / `did_imputation` 都行
+- 处理与潜在因子相关 / 高维共同因子不能被 FE 吸收 → TROP
+- 单时点简单 DID → `didregress` / `xtdidregress`（见 `stata-did` skill）
+
+详见 [references/trop.md](references/trop.md)。
 
 ### AI Agent 选择逻辑
 

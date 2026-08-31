@@ -30,5 +30,5 @@ targets_run_dofile() {
 # 单行输出而非 newline 分隔，是为了与 check-claims.sh 的 case pattern
 # （`"${delegates}"` 内联 + glob 匹配）兼容；后续可加新委托继续以空格分隔。
 targets_delegates() {
-  printf '%s\n' "verify-synth-sdid verify-power"
+  printf '%s\n' "verify-synth-sdid verify-power verify-trop"
 }
