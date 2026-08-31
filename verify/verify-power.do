@@ -8,7 +8,8 @@ set more off
 * ============================
 * 手动调用：`cd data/agis6 && stata-mp /e do ../../verify/verify-power.do`
 * （Stata for Windows 的 do-file 路径必须从当前目录计算，参考 run-verify.sh）
-* 是 did-community 的额外方法学工具；targets.sh 委托给 verify-synth-sdid（见 check-claims）
+* 是 did-community 的额外方法学工具；run-verify.sh 全量跑 did-community 时经
+* targets.sh 委托一并执行（委托清单：verify-synth-sdid verify-power verify-trop）。
 * 配套生成 verify-power.log（raw verify log，按 ADR-0005 保留）
 
 * =============================================================================

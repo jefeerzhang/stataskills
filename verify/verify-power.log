@@ -1,0 +1,235 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-power.do 
+
+. version 19.5
+
+. set more off
+
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-did-community
+. * chapter:  power-analysis
+. * data:     sim:200x10
+. * checks:   bloom-analytical+burlig-simulation+consistency
+. * ============================
+. * 手动调用：`cd data/agis6 && stata-mp /e do ../../verify/verify-power.do`
+. * （Stata for Windows 的 do-file 路径必须从当前目录计算，参考 run-verify.sh）
+. * 是 did-community 的额外方法学工具；run-verify.sh 全量跑 did-community 时经
+. * targets.sh 委托一并执行（委托清单：verify-synth-sdid verify-power verify-tr
+> op）。
+. * 配套生成 verify-power.log（raw verify log，按 ADR-0005 保留）
+. 
+. * ===========================================================================
+> ==
+. * 段 1：Bloom 1995 Analytical MDE
+. * ===========================================================================
+> ==
+. display as result "=== 段 1：Bloom 1995 Analytical MDE ==="
+=== 段 1：Bloom 1995 Analytical MDE ===
+
+. 
+. local N = 200
+
+. local T = 10
+
+. local sigma_tau = 0.2
+
+. local sigma_eps = 1.0
+
+. local alpha = 0.05
+
+. local power_target = 0.80
+
+. 
+. local z_alpha = invnormal(1 - `alpha'/2)
+
+. local z_beta  = invnormal(`power_target')
+
+. local mde_sd = (`z_alpha' + `z_beta') * sqrt(2 * (`sigma_eps'^2) / (`N' * `T'
+> ))
+
+. 
+. display as result "  N = `N', T = `T', alpha = `alpha', power = `power_target
+> '"
+  N = 200, T = 10, alpha = .05, power = .8
+
+. display as result "  Bloom MDE (in SD units) = " %6.4f `mde_sd'
+  Bloom MDE (in SD units) = 0.0886
+
+. 
+. * 断言：MDE 应在 [0.05, 0.15] SD 范围（与 Burlig-Preonas-Woerman 2020 Table 1
+>  一致）
+. assert inrange(`mde_sd', 0.05, 0.15)
+
+. display as result "  ✓ Bloom MDE 在预期范围 [0.05, 0.15] SD"
+  ✓ Bloom MDE 在预期范围 [0.05, 0.15] SD
+
+. 
+. * ===========================================================================
+> ==
+. * 段 2：Burlig-Preonas-Woerman 2020 Simulation
+. * ===========================================================================
+> ==
+. display as result ""
+
+
+. display as result "=== 段 2：Burlig-Preonas-Woerman 2020 Simulation ==="
+=== 段 2：Burlig-Preonas-Woerman 2020 Simulation ===
+
+. 
+. capture program drop power_dgp
+
+. program define power_dgp, rclass
+  1.     * 注：用 args 接收位置参数（避免 syntax 解析 ATT/tau 为内置 option）
+.     * 调用形式：power_dgp N T eff rho
+.     args N T eff rho
+  2. 
+.     drop _all
+  3.     set obs `N'
+  4.     gen id = _n
+  5.     gen treat = (_n > `N'/2)
+  6.     expand `T'
+  7.     sort id
+  8.     by id: gen t = _n
+  9. 
+.     gen cohort = cond(treat==1, 5, 0)
+ 10.     gen post   = (t >= cohort)
+ 11.     gen D      = treat * post
+ 12. 
+.     * 单元固定效应 alpha_i ~ N(0,1)（跨时不变）
+.     gen alpha_i = rnormal(0, 1)
+ 13. 
+.     * 年固定效应 year_eff ~ N(0, 0.3)（与 alpha_i 正交）
+.     gen year_eff = 0
+ 14.     bys t: replace year_eff = rnormal(0, 0.3)
+ 15. 
+.     * 等相关 cluster 扰动
+.     egen cluster_id = group(id)
+ 16.     gen z = rnormal(0, 1)
+ 17.     gen eps = `rho' * alpha_i + sqrt(1 - `rho'^2) * z
+ 18. 
+.     * 异质 ATT（cohort-specific）：ATT_g 在 [eff, 1.5*eff] 均匀分布
+.     gen ATT_g = `eff' * (1 + 0.5 * runiform())
+ 19. 
+.     * 结局 = 单元 FE + 年 FE + 异质 ATT * D + 扰动
+.     gen y = alpha_i + year_eff + ATT_g * D + eps
+ 20. 
+.     * TWFE 估计
+.     reghdfe y D, absorb(id t) cluster(cluster_id)
+ 21.     return scalar beta = _b[D]
+ 22.     return scalar se   = _se[D]
+ 23. end
+
+. 
+. * 在 ATT=0.3 SD 下跑 power（500 reps）
+. * （注：0.3 SD 是为了确保在 200 cluster × 10 period × 异质 ATT DGP 下 power >
+>  0.5；
+. * 0.2 SD 太接近 MDE 0.0886 + ATT_g 异质性下 beta std 增大 → power 仅 ~0.33）
+. simulate beta = r(beta) se = r(se), ///
+>     reps(500) seed(20260831): power_dgp 200 10 0.3 0.5
+
+      Command: power_dgp 200 10 0.3 0.5
+         beta: r(beta)
+           se: r(se)
+
+Simulations (500): .........10.........20.........30.........40.........50.....
+> ....60.........70.........80.........90.........100.........110.........120..
+> .......130.........140.........150.........160.........170.........180.......
+> ..190.........200.........210.........220.........230.........240.........250
+> .........260.........270.........280.........290.........300.........310.....
+> ....320.........330.........340.........350.........360.........370.........3
+> 80.........390.........400.........410.........420.........430.........440...
+> ......450.........460.........470.........480.........490.........500 done
+
+. 
+. summarize beta
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+        beta |        500    .3711514    .1484872  -.1163699   .8477857
+
+. summarize se
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          se |        500    .1604077    .0081687   .1355103    .184449
+
+. gen t_stat = beta / se
+
+. gen rejected = (abs(t_stat) > invnormal(0.975))
+
+. summarize rejected
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    rejected |        500        .656    .4755168          0          1
+
+. local power_at_03 = r(mean)
+
+. display as result "  Power at ATT=0.3 SD (N=200, T=10, rho=0.5) = " %5.3f `po
+> wer_at_03'
+  Power at ATT=0.3 SD (N=200, T=10, rho=0.5) = 0.656
+
+. 
+. * 断言：ATT=0.3 SD 下 power 应在 [0.5, 0.95] 范围
+. * （异质 ATT + 500 reps 下应检测出 0.3 SD 效应；过 0.95 说明 power 过高，过 0
+> .5 说明 simulation 异常）
+. assert inrange(`power_at_03', 0.5, 0.95)
+
+. display as result "  ✓ Power at ATT=0.3 SD 在预期范围 [0.5, 0.95]"
+  ✓ Power at ATT=0.3 SD 在预期范围 [0.5, 0.95]
+
+. 
+. * ===========================================================================
+> ==
+. * 段 3：一致性断言 — Bloom MDE 与 simulation ATT 阈值
+. * ===========================================================================
+> ==
+. display as result ""
+
+
+. display as result "=== 段 3：一致性断言 ==="
+=== 段 3：一致性断言 ===
+
+. 
+. * Bloom MDE 是在均匀效应假设下达到 80% power 的最小效应；
+. * simulation 用异质 ATT + 等相关结构 ATT=0.3 应能检测（power > 0.5）
+. * 一致性断言：Bloom 给的 MDE（均匀效应）应 < simulation 用的 ATT（异质 ATT）
+. * Bloom MDE ≈ 0.09 SD < 0.3 SD，断言成立
+. assert (`mde_sd' < 0.30)
+
+. display as result "  ✓ Bloom MDE (" %6.4f `mde_sd' ") < ATT=0.3 SD（Burlig si
+> mulation ATT 阈值）"
+  ✓ Bloom MDE (0.0886) < ATT=0.3 SD（Burlig simulation ATT 阈值）
+
+. 
+. display as result ""
+
+
+. display as result "=== 全部测试通过 ==="
+=== 全部测试通过 ===
+
+. 
+end of do-file

@@ -7,21 +7,23 @@
 # 委托另一个 do-file（社区包验证脚本），在此登记。
 #
 # 约定：
-#   - targets_run_dofile <entry>  → 入口实际运行的 do-file 基名（不含 .do）。
-#     Stata 批处理 `-b do X.do` 产出的 raw log 是 `X.log`，故 raw log 名
-#     == run do-file 基名；提交进 repo 的 log 仍用入口名（run-verify.sh 的
-#     evaluate 负责 cp 成 `verify/<entry>.log`）。
+#   - targets_run_dofile <entry>  → 入口实际运行的 do-file 基名列表（不含 .do），
+#     可以是多个（空格分隔）。Stata 批处理 `-b do X.do` 产出的 raw log 是
+#     `X.log`，故 raw log 名 == run do-file 基名；每个委托 do-file 的 raw log
+#     分别提交为 `verify/<base>.log`（run-verify.sh 的 evaluate 负责处理）。
 #   - targets_delegates          → 纯委托 do-file 基名清单（不是任何 skill
 #     的入口，仅被其它入口引用），供 check-claims 的孤儿检测放行。
 #
-# 改委托只改这里。若未来出现多个委托，考虑按 ADR-0003「未来再评估」沉淀为
-# TSV 数据文件；当前只有一个，保持两个小函数即可。
+# 改委托只改这里。多委托以空格分隔输出（与 check-claims.sh 的 case pattern
+# `"${delegates}"` 内联 + glob 匹配兼容），不做 TSV——当前只有 did-community
+# 一个多委托入口，两个小函数即可。
 # ============================================================
 
-# targets_run_dofile <entry>：把验证入口解析为实际运行的 do-file 基名。
+# targets_run_dofile <entry>：把验证入口解析为实际运行的 do-file 基名列表。
+# 单入口返回自身；did-community 委托三个 do-file（synth-sdid + power + trop）。
 targets_run_dofile() {
   case "$1" in
-    verify-did-community) printf '%s\n' "verify-synth-sdid" ;;
+    verify-did-community) printf '%s\n' "verify-synth-sdid verify-power verify-trop" ;;
     *) printf '%s\n' "$1" ;;
   esac
 }

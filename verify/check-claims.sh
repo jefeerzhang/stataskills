@@ -77,9 +77,11 @@ entry_dofs=""
 for skill_file in "${SKILL_FILES[@]}"; do
   name="$(basename "$(dirname "$skill_file")")"   # stata-<name>
   entry="verify-${name#stata-}"
-  dof="$(targets_run_dofile "$entry")"
-  entry_dofs="${entry_dofs} ${dof}"
-  [ -f "$VERIFY_DIR/$dof.do" ] || bad "缺验证脚本：verify/$dof.do（对应 ${name}）"
+  # 一个入口可委托多个 do-file（空格分隔）；逐一登记并检查存在。
+  for dof in $(targets_run_dofile "$entry"); do
+    entry_dofs="${entry_dofs} ${dof}"
+    [ -f "$VERIFY_DIR/$dof.do" ] || bad "缺验证脚本：verify/$dof.do（对应 ${name}）"
+  done
 done
 delegates="$(targets_delegates)"
 for d in "$REPO_ROOT"/verify/verify-*.do; do

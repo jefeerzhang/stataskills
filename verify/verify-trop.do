@@ -8,6 +8,8 @@ set more off
 * ============================
 * 手动调用：`cd data/agis6 && stata-mp /e do ../../verify/verify-trop.do`
 * （Stata for Windows 的 do-file 路径必须从当前目录计算，参考 run-verify.sh）
+* 是 did-community 的额外方法学工具；run-verify.sh 全量跑 did-community 时经
+* targets.sh 委托一并执行（委托清单：verify-synth-sdid verify-power verify-trop）。
 * trop + nprobust 是 REQUIRED 包（与 csdid / synth / sdid 同级）；本机未装只打 sentinel
 * 配套生成 verify-trop.log（raw verify log，按 ADR-0005 保留）
 

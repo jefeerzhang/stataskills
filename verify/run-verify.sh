@@ -219,7 +219,7 @@ run_stata() {
   local name="$1" dofile="$2"
   echo "==> 运行 ${name}（${STATA_BIN}）..."
   # cwd 切到 data/agis6/ 后，绝对路径调 do-file。dofile 已由主循环经
-  # targets_run_dofile 解析（did-community → synth-sdid 的委托在此发生）。
+  # targets_run_dofile 解析展开（一个入口可委托多个 do-file，逐个调用本函数）。
   local run_dofile="$dofile"
   if [ "$STATA_PLATFORM" = "windows" ]; then
     # Stata for Windows 用 /e 运行并在完成后退出。仅排除 /e 的 MSYS 路径
@@ -233,10 +233,8 @@ run_stata() {
 # 阶段 4：解析日志（错误码、静默错误、社区包 sentinel）
 parse_log() {
   local name="$1"
-  # raw log 名 = run do-file 基名（Stata 批处理按 do-file 命名 log）；
-  # 委托关系由 targets_run_dofile 解析。
-  local log_name
-  log_name="$(targets_run_dofile "$name")"
+  # raw log 名 = run do-file 基名（多委托时主循环对每个 base 分别调用本函数）。
+  local log_name="$name"
   local log="$DATA_DIR/$log_name.log"
 
   if [ ! -f "$log" ]; then
@@ -262,9 +260,9 @@ parse_log() {
 # 阶段 5：判定 PASS/BAD
 evaluate() {
   local name="$1"
-  # raw log 名 = run do-file 基名（委托关系由 targets_run_dofile 解析）。
-  local log_name
-  log_name="$(targets_run_dofile "$name")"
+  # raw log 名 = run do-file 基名。多委托时主循环对每个 base 分别调用本函数，
+  # 入参 name 即为该 base；每个委托 do-file 的 raw log 各提交为 verify/<base>.log。
+  local log_name="$name"
   local log="$DATA_DIR/$log_name.log"
   local local_bad=0
 
@@ -293,25 +291,30 @@ evaluate() {
 
 # ---- 主循环 ----
 for name in "${TARGETS[@]}"; do
-  dofile="$VERIFY_DIR/$(targets_run_dofile "$name").do"
+  # 一个入口可委托多个 do-file（空格分隔）；逐一展开运行与判定，
+  # 任一失败则该入口整体 BAD（evaluate 返回非零 → overall_bad=1）。
+  for base in $(targets_run_dofile "$name"); do
+    dofile="$VERIFY_DIR/$base.do"
 
-  if [ ! -f "$dofile" ]; then
-    bad "${name}（找不到 ${dofile}）"
-    continue
-  fi
+    if [ ! -f "$dofile" ]; then
+      bad "${name}（找不到 ${dofile}）"
+      overall_bad=1
+      continue
+    fi
 
-  check_version "$name" "$dofile" || continue
-  check_data_ready "$name" "$dofile" || continue
+    check_version "$base" "$dofile" || { overall_bad=1; continue; }
+    check_data_ready "$base" "$dofile" || { overall_bad=1; continue; }
 
-  # 静态模式到 data readiness 为止
-  if [ "$STATIC_ONLY" -eq 1 ]; then
-    ok "${name}（static：version 政策 + data readiness）"
-    continue
-  fi
+    # 静态模式到 data readiness 为止
+    if [ "$STATIC_ONLY" -eq 1 ]; then
+      ok "${name}（static：${base} version 政策 + data readiness）"
+      continue
+    fi
 
-  run_stata "$name" "$dofile"
-  parse_log "$name" || { bad "${name}（无 log 生成，批处理未执行）"; continue; }
-  evaluate "$name" || overall_bad=1
+    run_stata "$base" "$dofile"
+    parse_log "$base" || { bad "${name}（${base} 无 log 生成，批处理未执行）"; overall_bad=1; continue; }
+    evaluate "$base" || overall_bad=1
+  done
 done
 
 # --community 模式下任何验证失败都让 harness 以非零退出码结束

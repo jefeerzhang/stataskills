@@ -1,0 +1,84 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-trop.do 
+
+. version 19.5
+
+. set more off
+
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-did-community
+. * chapter:  trop
+. * data:     sim:200x10
+. * checks:   trop-installed+nprobust-installed+factor-estimate
+. * ============================
+. * 手动调用：`cd data/agis6 && stata-mp /e do ../../verify/verify-trop.do`
+. * （Stata for Windows 的 do-file 路径必须从当前目录计算，参考 run-verify.sh）
+. * 是 did-community 的额外方法学工具；run-verify.sh 全量跑 did-community 时经
+. * targets.sh 委托一并执行（委托清单：verify-synth-sdid verify-power verify-tr
+> op）。
+. * trop + nprobust 是 REQUIRED 包（与 csdid / synth / sdid 同级）；本机未装只
+> 打 sentinel
+. * 配套生成 verify-trop.log（raw verify log，按 ADR-0005 保留）
+. 
+. * ===========================================================================
+> ==
+. * 段 0：包检测（REQUIRED sentinel）
+. * ===========================================================================
+> ==
+. display as result "=== 段 0：TROP + nprobust 包检测 ==="
+=== 段 0：TROP + nprobust 包检测 ===
+
+. 
+. capture which trop
+
+. local has_trop = (_rc == 0)
+
+. if !`has_trop' {
+.     display as error "__COMMUNITY_PACKAGE_MISSING__trop__"
+__COMMUNITY_PACKAGE_MISSING__trop__
+.     display as error "trop 未安装，请运行 ssc install trop, replace"
+trop 未安装，请运行 ssc install trop, replace
+. }
+
+. 
+. capture which nprobust
+
+. local has_nprobust = (_rc == 0)
+
+. if !`has_nprobust' {
+.     display as error "__COMMUNITY_PACKAGE_MISSING__nprobust__"
+__COMMUNITY_PACKAGE_MISSING__nprobust__
+.     display as error "nprobust 未安装，请运行 ssc install nprobust, replace"
+nprobust 未安装，请运行 ssc install nprobust, replace
+. }
+
+. 
+. if !`has_trop' | !`has_nprobust' {
+.     display as result "=== 必需包未装，跳过实际跑段（默认模式 PASS）==="
+=== 必需包未装，跳过实际跑段（默认模式 PASS）===
+.     exit
+
+end of do-file
