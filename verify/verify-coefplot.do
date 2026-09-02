@@ -15,6 +15,14 @@ version 19.5
 * ============================================================
 set more off
 
+* ---- 社区包探测（ADR-0003 静默 PASS）：coefplot 为 ssc 社区包，缺包不裸调用 r(199) ----
+capture which coefplot
+if _rc != 0 {
+    display "__COMMUNITY_PACKAGE_MISSING__coefplot__"
+    display as error "coefplot 未安装，请运行 ssc install coefplot, replace"
+    exit 0
+}
+
 * ---- 1. 基本用法 ----
 sysuse auto, clear
 regress price mpg trunk length turn

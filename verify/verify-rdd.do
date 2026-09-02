@@ -106,6 +106,12 @@ if `has_rdrobust' {
         exit 1
     }
 
+    * 数值断言（问题3）：主估计须产出非缺失的稳健效应/SE 与两侧足够有效样本
+    assert !missing(e(tau_cl))
+    assert !missing(e(se_tau_cl))
+    assert e(N_h_l) > 0
+    assert e(N_h_r) > 0
+
     display "RD Estimate (robust): " %9.3f e(tau_cl)
     display "Robust SE:            " %9.3f e(se_tau_cl)
     display "Robust p-value:       " %6.4f e(pv_cl)

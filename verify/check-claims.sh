@@ -475,10 +475,11 @@ fi
 # ---- 14. 社区命令探测断言（ADR-0003）：verify-*.do 调用的每个社区包命令，
 # 同文件更早位置必须已有 `capture which <pkg>` 探测。裸调用社区命令在缺包机器上
 # 直接 r(199) 硬失败，违反「默认模式静默 PASS（cap which 风格）」决策。
-# 清单 = did-community 社区包契约登记的包（verify-synth-sdid.do 头部 + trop /
-# nprobust / did_had）+ reghdfe（verify-regression / verify-power 共用引擎）；
+# 清单 = 所有 verify-*.do 实际调用的社区包：did-community 契约包（verify-synth-sdid.do
+# 头部 + trop / nprobust / did_had）+ reghdfe（verify-regression / verify-power 共用引擎）
+# + ivreghdfe / rdrobust / rddensity / psmatch2 / ebalance / coefplot（各自 verify-*.do）。
 # 探测行兼容 `capture which` 与缩写 `cap which`（verify-regression.do 先例）。
-COMMUNITY_PKGS=(csdid drdid jwdid hdfe did_imputation reghdfe synth synth_runner sdid trop nprobust did_had)
+COMMUNITY_PKGS=(csdid drdid jwdid hdfe did_imputation reghdfe synth synth_runner sdid trop nprobust did_had coefplot ivreghdfe rdrobust rddensity psmatch2 ebalance)
 probe_drift=""
 for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue

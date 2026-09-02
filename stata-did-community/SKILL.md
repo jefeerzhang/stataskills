@@ -385,6 +385,7 @@ compatibility: >-
     - `synth_runner` / `drdid` / `hdfe` 标记为可选——缺包仅打 sentinel，不影响 PASS。
   - 网络受限时本节方法与 `synthdid` R 包 / diff-diff 的 `SyntheticDiD` 同源，可跨语言替代。
 - 运行：`bash verify/run-verify.sh did-community`（默认）/ `bash verify/run-verify.sh did-community --community`（强制）；全量 10 个 skill：`bash verify/run-verify.sh`。
+- **验证状态透明性（"没验证过的都不写"）**：决策树/命令选择表引用的 `did_multiplegt`（DCDH）/ `stacked` / `lpdid` / `did_had` 为**文档路由方法**——对应 references（dcdh.md / stacked.md / lpdid）给出命令签名与陷阱，但**未纳入 estimate 回归 verify-*.do**（`did_had` 仅 `cap which` 探测，不跑估计命令）。需实测请在装 Stata 的机器按 references 工作流自证后归档日志。
 
 ## ✅ 交付前自检清单（跑完命令后逐条核对）
 

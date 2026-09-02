@@ -3,7 +3,7 @@ name: stata-identification
 description: Use when choosing among randomized assignment, RDD, IV, panel-policy designs, DID, synth/sdid, and cross-sectional selection-on-observables, or deciding whether causal language is defensible; triggers include identification strategy, causal design, can I claim causality, and which method should I use.
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；面向 StataNow 19.5 MP（macOS / Windows / Linux）。
-  本 skill 是跨设计 router，不执行方法估计；正式行为 prompts 与 verify 属 Ticket 06/07 的发布 gate。
+  本 skill 是跨设计 router，不执行方法估计；共同假设模拟与断言由 `verify/verify-identification.do` 验证。
 ---
 
 # Stata 识别策略 router
@@ -18,7 +18,7 @@ version 19.5
 
 - router 判断本身不需要运行 Stata；先记录 treatment、outcome、unit、时间结构、处理时点、目标总体与 estimand，再读 decision tree。
 - 若后续方法 skill 需要批处理，使用 `stata-mp -b do "脚本.do"`；Windows 等价路径见 `docs/run-stata.md`。
-- 本 ticket 不运行 RCT、RDD、IV、DID 或 selection 估计。共同假设的简单模拟与断言由后续 `verify/verify-identification.do`（Ticket 06）验证；自然语言路由由 Ticket 07 的 prompts 验证。
+- 本 skill 不运行 RCT、RDD、IV、DID 或 selection 估计。共同假设的简单模拟与断言由 `verify/verify-identification.do` 验证；自然语言路由由 `verify/test-prompts.json` 验证。
 
 ## 2. 强制路径
 
@@ -83,7 +83,7 @@ references 数量固定为 3；完整树不得复制到本文件或其他运行�
 
 ## 8. 发布 gate
 
-本 Ticket 04 只交付 router 文档和 3 个 references。正式行为 prompts、`verify/verify-identification.do`、Stata 实测日志以及全量发布声明分别由 Ticket 06/07 及后续发布 gate 承担；在这些证据完成前，不宣称完整行为回归或 Stata verify 已通过。
+本 skill 交付 router 文档和 3 个 references；共同假设 DGP 模拟与断言已由 `verify/verify-identification.do` 落地。Stata 实测日志仍需在装 Stata 的机器跑该 do 生成后归档；在此之前不宣称完整 Stata 行为回归已通过。
 
 ## ✅ 交付前自检清单（跑完命令后逐条核对）
 
@@ -92,4 +92,4 @@ references 数量固定为 3；完整树不得复制到本文件或其他运行�
 - [ ] 每个放弃/选中的支柱都同时列出「数据中观察到什么」与「哪项外部制度/设计证据」；gate 失败去向符合同支柱顺序（标准 DID → synth/sdid → router）
 - [ ] 论文表述：只有 gate 可辩护才用因果措辞（effect/impact/caused）；否则用 association/difference 并停止因果声明
 - [ ] 诊断未被写成识别证明（balance/pretrend/density/first-stage/overidentification 均为支持性证据）；power/precision 单列
-- [ ] 未在本文件或其他 skill 复制完整 stop rules（decision tree 保持唯一）；发布 gate 证据（prompts/verify）未被提前宣称
+- [ ] 未在本文件或其他 skill 复制完整 stop rules（decision tree 保持唯一）；verify-identification.do 已落地，未重复其完整代码
