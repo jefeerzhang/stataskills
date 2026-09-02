@@ -31,7 +31,7 @@
 #   CI 不被网络/装包绑定，--community 模式让本地"我想真正验证社区包章节"
 #   的需求显式可执行。详见 docs/adr/0003-community-packages-as-first-class-verifiable-subjects.md。
 #
-# 平台二进制路径唯一来源：verify/stata.conf（macOS / Windows 双平台）。
+# 平台二进制路径唯一来源：verify/stata.conf（macOS / Windows / Linux）。
 # ============================================================
 set -u
 
@@ -63,6 +63,8 @@ done
 . "$VERIFY_DIR/lib/report.sh"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/targets.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/judge.sh"
 
 # ---- 解析 Stata 可执行文件（macOS：PATH 优先；Windows：config 直取）----
 # 静态模式不执行 do-file，无需 Stata（CI runner 上也没有）
@@ -85,6 +87,19 @@ if [ "$STATIC_ONLY" -eq 0 ]; then
         STATA_BIN="$STATA_WIN"
       else
         echo "ERROR: verify/stata.conf 缺少 STATA_WIN。" >&2
+        exit 1
+      fi
+      ;;
+    Linux)
+      STATA_PLATFORM="linux"
+      if command -v stata-mp >/dev/null 2>&1; then
+        STATA_BIN="$(command -v stata-mp)"
+      elif command -v stata >/dev/null 2>&1; then
+        STATA_BIN="$(command -v stata)"
+      elif [ -n "${STATA_LINUX:-}" ] && [ -x "$STATA_LINUX" ]; then
+        STATA_BIN="$STATA_LINUX"
+      else
+        echo "ERROR: 找不到 Linux 的 stata-mp / stata。Linux 路径见 verify/stata.conf 的 STATA_LINUX。" >&2
         exit 1
       fi
       ;;
@@ -230,69 +245,14 @@ run_stata() {
   fi
 }
 
-# 阶段 4：解析日志（错误码、静默错误、社区包 sentinel）
-parse_log() {
-  local name="$1"
-  # raw log 名 = run do-file 基名（多委托时主循环对每个 base 分别调用本函数）。
-  local log_name="$name"
-  local log="$DATA_DIR/$log_name.log"
-
-  if [ ! -f "$log" ]; then
-    echo "NO_LOG"
-    return 1
-  fi
-
-  PARSE_ENDS=$(grep -c "end of do-file" "$log")
-  PARSE_ERRS=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
-  PARSE_SILENT=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
-  # sentinel 匹配：Stata batch mode 会把 do 文件里的 `display "SENTINEL"` 命令
-  # 文本回显成 `.     display "SENTINEL"`（行首带点号 + display 前缀），导致
-  # "包从未缺失但命令被回显"时误匹配。用 grep -v 剔除回显行（行首 `. display`），
-  # 再在剩余行里匹配 sentinel。缺包分支只输出 sentinel 并跳过对应命令，
-  # 不产生错误码；任何 r(N) 都必须保留为真实失败，不能因 sentinel 被豁免。
-  local sentinel_lines
-  sentinel_lines="$(grep -vE '^[.][[:space:]]*display' "$log" 2>/dev/null)"
-  PARSE_COMMUNITY_REQ="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-  PARSE_COMMUNITY_OPT="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-  return 0
-}
-
-# 阶段 5：判定 PASS/BAD
-evaluate() {
-  local name="$1"
-  # raw log 名 = run do-file 基名。多委托时主循环对每个 base 分别调用本函数，
-  # 入参 name 即为该 base；每个委托 do-file 的 raw log 各提交为 verify/<base>.log。
-  local log_name="$name"
-  local log="$DATA_DIR/$log_name.log"
-  local local_bad=0
-
-  if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ]; then
-    if [ -n "$PARSE_COMMUNITY_REQ" ] && [ "$COMMUNITY_MODE" -eq 1 ]; then
-      bad "${name}（--community 模式下缺必需包：${PARSE_COMMUNITY_REQ}，请 ssc install 后重跑）"
-      local_bad=1
-    elif [ -n "$PARSE_COMMUNITY_REQ" ]; then
-      ok "${name}（end of do-file x1；必需社区包未装已 cap 跳过：${PARSE_COMMUNITY_REQ}；用 --community 强制验证）"
-    elif [ -n "$PARSE_COMMUNITY_OPT" ]; then
-      ok "${name}（end of do-file x1；可选社区包未装已跳过：${PARSE_COMMUNITY_OPT}）"
-    else
-      ok "${name}（end of do-file x1，无错误码，无静默错误）"
-    fi
-  else
-    bad "${name}（end of do-file x${PARSE_ENDS}，r(错误 x${PARSE_ERRS}，静默错误 x${PARSE_SILENT}）→ 见 ${log}"
-    local_bad=1
-  fi
-
-  # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
-  cp "$log" "$VERIFY_DIR/$name.log"
-  rm -f "$log"
-
-  return $local_bad
-}
+# 阶段 4-5：解析日志 + 判定 PASS/BAD —— 已抽取为纯函数 judge_raw_log，
+# 见 verify/lib/judge.sh（无 Stata 依赖，可被 test-harness.sh 直接单元测试，
+# 避免 CI 上因平台/缺 Stata 非零退出导致的假 PASS）。
 
 # ---- 主循环 ----
 for name in "${TARGETS[@]}"; do
   # 一个入口可委托多个 do-file（空格分隔）；逐一展开运行与判定，
-  # 任一失败则该入口整体 BAD（evaluate 返回非零 → overall_bad=1）。
+  # 任一失败则该入口整体 BAD（judge_raw_log 返回非零 → overall_bad=1）。
   for base in $(targets_run_dofile "$name"); do
     dofile="$VERIFY_DIR/$base.do"
 
@@ -312,8 +272,13 @@ for name in "${TARGETS[@]}"; do
     fi
 
     run_stata "$base" "$dofile"
-    parse_log "$base" || { bad "${name}（${base} 无 log 生成，批处理未执行）"; overall_bad=1; continue; }
-    evaluate "$base" || overall_bad=1
+    raw_log="$DATA_DIR/$base.log"
+    judge_raw_log "$base" "$raw_log" "$COMMUNITY_MODE" || overall_bad=1
+    # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
+    if [ -f "$raw_log" ]; then
+      cp "$raw_log" "$VERIFY_DIR/$base.log"
+      rm -f "$raw_log"
+    fi
   done
 done
 
