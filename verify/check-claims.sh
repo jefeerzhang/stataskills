@@ -386,18 +386,9 @@ fi
 
 # ---- 13. verify-*.do I/O 契约：每个脚本必须有机器可读声明 ----
 # 借鉴 luban 报告 P1 短板：原 do-file 自包含但无机器可读「这个脚本验证什么」声明。
-# 契约格式：前 10 行内含 6 行键值块：
-#   * ==== VERIFY CONTRACT ====
-#   * skill:    stata-xxx
-#   * chapter:  chN
-#   * data:     ...
-#   * checks:   ...
-#   * ============================
-# 字段：
-#   skill  - 对应 stata-xxx skill 目录名（必须存在）
-#   chapter - 教材章节或方法名（自由文本）
-#   data   - 该脚本用的 .dta 文件名（必须存在于 data/）
-#   checks - 该脚本验证的能力清单（+ 分隔的关键词）
+# 契约格式：前 10 行内含 6 行键值块（由 verify CONTRACT + data locator module 解析，#21）。
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/contract.sh"
 verify_drift=""
 verify_total=0
 verify_missing_contract=""
@@ -408,23 +399,18 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue
   verify_total=$((verify_total + 1))
   vname=$(basename "$vdo" .do)
-  # 取前 10 行找 VERIFY 契约块：
-  #   * ==== VERIFY CONTRACT ====
-  #   * skill:    stata-xxx
-  #   * chapter:  chN
-  #   * data:     ...
-  #   * checks:   ...
-  #   * ============================
   contract_block=$(head -10 "$vdo" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p')
   if [ -z "$contract_block" ]; then
     verify_missing_contract="${verify_missing_contract} ${vname};"
     continue
   fi
-  # 解析 4 字段（管道分隔→改为键值对行）
-  v_skill=$(echo "$contract_block" | sed -n 's/^\* skill:[[:space:]]*//p' | head -1 | tr -d ' ')
-  v_chapter=$(echo "$contract_block" | sed -n 's/^\* chapter:[[:space:]]*//p' | head -1 | tr -d ' ')
-  v_data=$(echo "$contract_block" | sed -n 's/^\* data:[[:space:]]*//p' | head -1 | tr -d ' ')
-  v_checks=$(echo "$contract_block" | sed -n 's/^\* checks:[[:space:]]*//p' | head -1 | tr -d ' ')
+  # 解析 4 字段（contract.sh 单一实现；旧手写 sed 路径收缩为调用）
+  # shellcheck disable=SC2034
+  eval "$(contract_parse "$vdo")"
+  v_skill="${CONTRACT_SKILL:-}"
+  v_chapter="${CONTRACT_CHAPTER:-}"
+  v_data="${CONTRACT_DATA:-}"
+  v_checks="${CONTRACT_CHECKS:-}"
   # 校验解析值非空：字段名在块里出现但值为空仍算坏契约（与下方 field_count 互补）
   if [ -z "$v_skill" ] || [ -z "$v_chapter" ] || [ -z "$v_data" ] || [ -z "$v_checks" ]; then
     verify_bad_format="${verify_bad_format} ${vname}(空字段);"
@@ -433,9 +419,9 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   if [ ! -d "$REPO_ROOT/$v_skill" ]; then
     verify_bad_skill="${verify_bad_skill} ${vname}→${v_skill};"
   fi
-  # 校验 data 字段：; 分隔多个仓库数据集；每项根据前缀分三类
-  #   sysuse:X+Y / sim:NxM - Stata 内置/模拟数据，路径检查跳过
-  #   其它               - 相对路径，必须存在（先试 data/ 再试 data/agis6/ 再试原路径）
+  # 校验 data 字段：; 分隔多个仓库数据集；每项经 data_locate 分类
+  #   sysuse / sim - 非仓库，跳过路径存在性
+  #   其它         - 必须能 locate 到现存文件（missing/unlisted 仍报文件侧问题）
   IFS=';' read -r -a data_items <<< "$v_data"
   for data_item in "${data_items[@]}"; do
     case "$data_item" in
@@ -443,11 +429,9 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
         :  # 内置/模拟/未声明，跳过路径检查
         ;;
       *)
-        found=0
-        for prefix in "data/" "data/agis6/" ""; do
-          if [ -f "$REPO_ROOT/${prefix}${data_item}" ]; then found=1; break; fi
-        done
-        if [ "$found" -eq 0 ]; then
+        # shellcheck disable=SC2034
+        eval "$(data_locate "$data_item")"
+        if [ ! -f "${DATA_PATH:-}" ]; then
           verify_bad_data="${verify_bad_data} ${vname}→${data_item};"
         fi
         ;;
