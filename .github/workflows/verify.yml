@@ -18,7 +18,7 @@ jobs:
 
       # harness 自身质量门：判定脚本必须过 shellcheck
       - name: Shellcheck harness
-        run: shellcheck verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/run-verify.sh verify/test-harness.sh verify/check-claims.sh verify/test-prompts.sh
+        run: shellcheck verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/run-verify.sh verify/test-harness.sh verify/test-targets.sh verify/check-claims.sh verify/test-prompts.sh
 
       # 判定逻辑回归测试（Stata-free）：直接喂构造日志给 verify/lib/judge.sh 断言，
       # 覆盖 r(9) 漏判 / sentinel 语义 / sentinel 掩盖真实错误；不依赖真实 Stata 或平台，
@@ -26,6 +26,11 @@ jobs:
       # 误当"捕获 r(9)"，导致 Linux 上假 PASS 在 GitHub 上不可见——此步骤让假阳性可被拦截。
       - name: Test harness (judge regression)
         run: bash verify/test-harness.sh
+
+      # Target plan 回归（#20）：普通入口 / multi-delegate / 唯一性 / 孤儿 delegate；
+      # 旧 targets_run_dofile 与 plan 派生一致性。
+      - name: Test target plan
+        run: bash verify/test-targets.sh
 
       # 静态层：version 政策 + 数据集存在 + manifest 登记 + manifest 双向一致性
       - name: Run static verify
