@@ -629,7 +629,38 @@ if [ -f "$WF8" ]; then
   fi
 fi
 
-# ---- 22. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
+# ---- 22. DID method ownership（#19 / #18）：索引声明的方法详情必须在目标 reference ----
+# 复现当前缺陷：主索引把 did_imputation 指向 csdid-jwdid-imputation.md，
+# 但「### did_imputation 详解」实际落在 sdid.md——删除 sdid 会误删插补法能力。
+CSJ_REF="$REPO_ROOT/stata-did-community/references/csdid-jwdid-imputation.md"
+SDID_REF="$REPO_ROOT/stata-did-community/references/sdid.md"
+own_drift=""
+if [ -f "$CSJ_REF" ]; then
+  if ! grep -qE '^###[[:space:]]+did_imputation' "$CSJ_REF"; then
+    own_drift="${own_drift} csdid-jwdid-imputation.md 缺「### did_imputation」详解节;"
+  fi
+else
+  own_drift="${own_drift} csdid-jwdid-imputation.md 缺失;"
+fi
+if [ -f "$SDID_REF" ] && grep -qE '^###[[:space:]]+did_imputation' "$SDID_REF"; then
+  own_drift="${own_drift} sdid.md 仍承载 did_imputation 详解（索引所有权应仅保留 sdid）;"
+fi
+# 索引内容列声明 did_imputation 时，链接目标必须是错时 DID reference
+DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
+if [ -f "$DC_SKILL" ]; then
+  idx_block=$(awk '/^## 详细方法参考/{p=1} p && /^## / && !/^## 详细方法参考/{exit} p' "$DC_SKILL")
+  idx_row=$(echo "$idx_block" | grep '`did_imputation`' | head -1 || true)
+  if [ -n "$idx_row" ] && ! echo "$idx_row" | grep -q 'csdid-jwdid-imputation\.md'; then
+    own_drift="${own_drift} 详细方法参考表中 did_imputation 未链到 csdid-jwdid-imputation.md;"
+  fi
+fi
+if [ -n "$own_drift" ]; then
+  bad "DID method ownership 漂移：${own_drift}"
+else
+  ok "DID method ownership：did_imputation 详解仅在索引目标 csdid-jwdid-imputation.md"
+fi
+
+# ---- 23. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
 # 借鉴 luban 报告 P3：每个 verify-*.do 应有 assert 断言验证关键不变量；
 # 部分脚本只依赖「跑完不报错」，部分含数值 assert；此处动态 print 事实，不 FAIL——
 # 是否补 assert 由 verify 脚本维护者决定（教学型 verify 偏向 end-of-do exit 0）。
