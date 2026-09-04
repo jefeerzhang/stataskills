@@ -2,31 +2,41 @@
 
 ## 背景
 
-`verify/run-verify.sh` 与 `verify/check-claims.sh` 中，`did-community → synth-sdid` 的委托关系散落在多处：枚举排除、`run_stata` 的 do-file 换名、`parse_log` 与 `evaluate` 各一次的 log 名换名、`check-claims` 第 1 条的数量排除，外加一份只作「存在性凭证」的占位 `verify-did-community.do`。同一份别名知识在 6 处代码里重复，且 `parse_log` 与 `evaluate` 内部又各重复一次。
+`verify/run-verify.sh` 与 `verify/check-claims.sh` 中，`did-community` 的委托关系曾散落在多处：枚举排除、do-file / log 换名、`check-claims` 孤儿放行，外加占位 `verify-did-community.do`。同一份别名知识在多处重复。
 
 ## 决策
 
-新增 `verify/lib/targets.sh` 作为验证目标解析的单一来源，暴露两个函数：
+`verify/lib/targets.sh` 是验证目标解析的单一来源，暴露 **declarative target plan**：
 
-- `targets_run_dofile <entry>`：把验证入口解析为实际运行的 do-file 基名（默认恒等；`verify-did-community` → `verify-synth-sdid`）。
-- `targets_delegates`：纯委托 do-file 基名清单，供 `check-claims` 孤儿检测放行。
+- `targets_plan_owner <entry>` → owner skill（无 `stata-` 前缀）
+- `targets_plan_dofiles` / `targets_plan_logs` → 有序基名
+- `targets_plan_delegate_bases` → 由 override 派生的纯委托基名（不手写第二份名单）
+- 按行迭代：`targets_plan_each_dofile` / `each_log` / `each_pair` / `each_delegate` / `is_delegate`
 
-`run-verify.sh` 与 `check-claims.sh` 均 source 该 lib；全量枚举改为按 `stata-*/SKILL.md` 驱动入口，不再 glob `verify-*.do` 再排除。删除占位 `verify-did-community.do`。
+Caller（`run-verify.sh` / `check-claims.sh` / `test-prompts.sh`）只经 `each_*` 消费；空格拆分仅发生在 `targets.sh` 内部。旧空格分隔 compatibility 薄封装已于 #27 删除。
+
+当前非恒等 plan：
+
+| 入口 | owner | do-files（有序） |
+|------|--------|------------------|
+| `verify-did-community` | `did-community` | `verify-synth-sdid` · `verify-power` · `verify-trop` |
+
+全量枚举按 `stata-*/SKILL.md` 驱动入口；占位 `verify-did-community.do` 已删除。
 
 ## 理由（load-bearing）
 
-1. 委托关系是「一条 seam、多个 adapter」：枚举、执行、日志解析、文档断言四处都要知道 did-community 跑的是 synth-sdid，跨了 seam 泄漏。集中到一处换取 locality。
-2. 删除测试：删除 `targets.sh` 会让别名知识重新散回多处 caller，说明该 module 在承载行为，而非 pass-through。
-3. 顺带修复一个隐藏缺口：原 `check_version` / `check_data_ready` 跑在占位 `verify-did-community.do`（无 `use` 语句）上，真正的 `verify-synth-sdid.do` 反而未被检查。解析提前后，这些检查落在真文件上。
-4. 与 ADR-0003「未来再评估」对齐：社区包验证脚本可能增多，委托 seam 是已记录轨迹上的正确落点，而非 speculative 未来投机。
+1. 委托关系是「一条 seam、多个 adapter」：执行、日志、文档断言都要知道 did-community 跑哪些 do-file，跨 seam 泄漏。集中到 plan 换取 locality。
+2. 删除测试：删除 `targets.sh` 会让别名知识重新散回多处 caller。
+3. 解析提前后，`check_version` / data contract 落在真实委托 do-file 上，而非占位文件。
+4. 与 ADR-0003 对齐：社区包验证脚本增多时，只改 override 表。
 
 ## 后果
 
-- 新增 skill 的入口由 `stata-*/SKILL.md` 决定，`verify/verify-<name>.do` 必须存在（或经注册表解析为存在的 do-file）。
-- 纯委托脚本（如 `verify-synth-sdid.do`）不再需要「存在性凭证」占位文件；`check-claims` 通过 `targets_delegates` 放行孤儿。
-- `run-verify.sh synth-sdid`（显式单目标）仍可用——单目标路径不经过全量枚举，`targets_run_dofile` 对 `verify-synth-sdid` 恒等返回。
-- 若未来出现多个委托，按 ADR-0003 预告把 `targets.sh` 的两个函数沉淀为 TSV 数据文件。
+- 新增 skill 入口由 `stata-*/SKILL.md` 决定；`verify/verify-<name>.do` 必须存在或经 plan 解析为存在的 do-file。
+- 纯委托脚本经 `targets_plan_is_delegate` / `each_delegate` 放行孤儿检测。
+- 显式单目标（如 `run-verify.sh synth-sdid`）对恒等入口仍可用。
+- ADR / AGENTS 中的三委托事实由 `check-claims` 与 `test-targets` 交叉验证；delegate 漂移会失败。
 
 ## 未来再评估
 
-- 若 `stata-did-community` 的验证逻辑扩展为覆盖全部六个社区包方法，`verify-synth-sdid.do` 的命名可能不再准确（它目前验证 synth + sdid 两个），届时重新评估委托命名或拆分脚本。
+- 若委托关系再扩展，保持单一 override 表；必要时沉淀为 TSV，但仍只经 plan API 暴露。

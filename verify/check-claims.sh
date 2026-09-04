@@ -26,10 +26,10 @@
 #       必须存在并等于动态 facts
 #   12. README hero 的 skill / target 声明及 skills.sh badge 集合与动态 skill 集合一致
 #   13. 每个 verify-*.do 的 VERIFY CONTRACT、skill 字段和 data 路径有效
-#   14. verify-*.do 调用的社区包契约登记命令前必有 `capture/cap which` 探测
-#       （ADR-0003 默认模式静默 PASS：缺包时打 sentinel 跳段，不得裸调用致 r(199)）
+#   14. verify-*.do 社区包 contract（#26）：登记表 × 前置 probe × sentinel 分类 × ownership
 #   15. did-community 内部计数一致：frontmatter description 的「N 个方法」必须等于
 #       正文每一处「N 个社区包」（扩包时正文禁令漏改的历史漂移，见 CHANGELOG）
+#   24. ADR-0004 与 target plan 三委托 / ownership 交叉验证（#27）
 #
 # facts（供人工比对，不自动断言）：各 skill 陷阱条目数、verify↔demo debt、
 # verify-*.do assert 覆盖率。README/CITATION 的自由散文不做泛数字扫描。
@@ -462,34 +462,22 @@ else
   ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY CONTRACT 块，skill ↔ 目录 + 穷尽 data contract 对齐）"
 fi
 
-# ---- 14. 社区命令探测断言（ADR-0003）：verify-*.do 调用的每个社区包命令，
-# 同文件更早位置必须已有 `capture which <pkg>` 探测。裸调用社区命令在缺包机器上
-# 直接 r(199) 硬失败，违反「默认模式静默 PASS（cap which 风格）」决策。
-# 清单 = 所有 verify-*.do 实际调用的社区包：did-community 契约包（verify-synth-sdid.do
-# 头部 + trop / nprobust / did_had）+ reghdfe（verify-regression / verify-power 共用引擎）
-# + ivreghdfe / rdrobust / rddensity / psmatch2 / ebalance / coefplot（各自 verify-*.do）。
-# 探测行兼容 `capture which` 与缩写 `cap which`（verify-regression.do 先例）。
-COMMUNITY_PKGS=(csdid drdid jwdid hdfe did_imputation reghdfe synth synth_runner sdid trop nprobust did_had coefplot ivreghdfe rdrobust rddensity psmatch2 ebalance)
-probe_drift=""
+# ---- 14. 社区包 contract（#26 / ADR-0003）：登记表 × probe × sentinel × ownership ----
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/community.sh"
+community_drift=""
 for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue
   vname=$(basename "$vdo" .do)
-  for pkg in "${COMMUNITY_PKGS[@]}"; do
-    # 调用行：首词为包名的可执行语句行（剔除 capture which 探测行与纯注释行）
-    call_ln=$(grep -nE "^[[:space:]]*(capture[[:space:]]+noisily[[:space:]]+|quietly[[:space:]]+)*${pkg}([[:space:]]|$)" "$vdo" | head -1 | cut -d: -f1)
-    [ -z "$call_ln" ] && continue
-    probe_ln=$(grep -nE "^[[:space:]]*(capture|cap)[[:space:]]+which[[:space:]]+${pkg}([[:space:]]|$)" "$vdo" | head -1 | cut -d: -f1)
-    if [ -z "$probe_ln" ]; then
-      probe_drift="${probe_drift} ${vname} 调用 ${pkg}（行 ${call_ln}）但全文无 capture/cap which 探测;"
-    elif [ "$probe_ln" -gt "$call_ln" ]; then
-      probe_drift="${probe_drift} ${vname} 的 capture/cap which ${pkg}（行 ${probe_ln}）晚于首次调用（行 ${call_ln}）;"
-    fi
-  done
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    community_drift="${community_drift} ${vname}:${line};"
+  done < <(community_check_dofile "$vdo")
 done
-if [ -n "$probe_drift" ]; then
-  bad "verify-*.do 社区命令无探测（${probe_drift}）"
+if [ -n "$community_drift" ]; then
+  bad "verify-*.do 社区包 contract 失败（${community_drift}）"
 else
-  ok "verify-*.do 社区命令均有前置 capture/cap which 探测（ADR-0003 静默 PASS）"
+  ok "verify-*.do 社区包 contract 完整（probe + sentinel 分类 + ownership，#26）"
 fi
 
 # ---- 15. did-community 内部计数一致性：description 声明的方法数与正文所有「N 个社区包」一致 ----
@@ -664,5 +652,30 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   if [ "$n" -gt 0 ]; then assert_with=$((assert_with + 1)); fi
 done
 ok "verify-*.do assert 覆盖率 fact：${assert_with}/${assert_total} 脚本含 assert（教学型 verify 依赖 end-of-do exit 0；扩展为 P3 候选）"
+
+# ---- 24. ADR-0004 与 target plan 三委托交叉验证（#27）----
+ADR4="$REPO_ROOT/docs/adr/0004-verification-target-registry.md"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/targets.sh"
+adr4_drift=""
+if [ ! -f "$ADR4" ]; then
+  adr4_drift="缺 ADR-0004 文件;"
+else
+  for d in verify-synth-sdid verify-power verify-trop; do
+    grep -q "$d" "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 ${d};"
+  done
+  grep -q 'targets_plan_owner' "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 targets_plan_owner;"
+  grep -qE 'targets_run_dofile|targets_delegates' "$ADR4" && adr4_drift="${adr4_drift} ADR 仍描述已删旧 API;"
+fi
+plan_d=$(targets_plan_delegate_bases)
+expect_d="verify-synth-sdid verify-power verify-trop"
+[ "$plan_d" = "$expect_d" ] || adr4_drift="${adr4_drift} plan delegates=[$plan_d];"
+owner=$(targets_plan_owner verify-did-community)
+[ "$owner" = "did-community" ] || adr4_drift="${adr4_drift} owner=$owner;"
+if [ -n "$adr4_drift" ]; then
+  bad "ADR-0004 / target plan 交叉验证失败：${adr4_drift}"
+else
+  ok "ADR-0004 与 target plan 三委托 + ownership 一致（#27）"
+fi
 
 summary

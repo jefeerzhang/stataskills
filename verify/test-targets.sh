@@ -2,10 +2,8 @@
 # ============================================================
 # 回归测试：verification target plan（verify/lib/targets.sh）
 #
-# Issue #20 / #23 / parent #18：table-driven 覆盖普通入口、DID-community
-# 三委托、唯一性、孤儿 delegate；#23 再覆盖 each_* 按行迭代与 pair
-# 序（caller 不拆空格、不推日志名）。旧 targets_run_dofile /
-# targets_delegates 必须与 plan 派生一致（#27 再收缩）。
+# Issue #20 / #23 / #27 / parent #18：table-driven 覆盖普通入口、DID-community
+# 三委托、唯一性、孤儿 delegate；each_* 按行迭代；#27 确认旧空格 API 已删除。
 #
 # 用法：bash verify/test-targets.sh
 # ============================================================
@@ -19,10 +17,10 @@ fail=0
 pass() { echo "PASS  $1"; }
 bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
 
-# ---- helpers：要求 plan API 存在（#20 / #23 seam）----
+# ---- helpers：要求 plan API 存在 ----
 require_fn() {
   if ! declare -F "$1" >/dev/null 2>&1; then
-    bad "缺少 plan 函数 $1（#20/#23 declarative target plan）"
+    bad "缺少 plan 函数 $1（declarative target plan）"
     return 1
   fi
   return 0
@@ -37,6 +35,13 @@ require_fn targets_plan_each_log || true
 require_fn targets_plan_each_pair || true
 require_fn targets_plan_each_delegate || true
 require_fn targets_plan_is_delegate || true
+
+# #27：旧空格分隔 API 必须已删除
+if declare -F targets_run_dofile >/dev/null 2>&1 || declare -F targets_delegates >/dev/null 2>&1; then
+  bad "旧 targets_run_dofile / targets_delegates 仍存在（#27 应删除）"
+else
+  pass "旧空格 API 已删除（targets_run_dofile / targets_delegates）"
+fi
 
 # 若核心函数缺失，后续用例无意义——仍继续以便一次列出全部缺口
 has_plan=1
@@ -134,14 +139,6 @@ if [ "$has_plan" -eq 1 ]; then
     else
       bad "each_pair：$entry 序或内容漂移（got $pair_i / ${#expect_arr[@]}）"
     fi
-
-    # 旧 interface 与 plan 派生一致（#20：旧接口暂时保留）
-    old_dofiles=$(targets_run_dofile "$entry")
-    if [ "$old_dofiles" = "$got_dofiles" ]; then
-      pass "旧 targets_run_dofile 与 plan 一致：$entry"
-    else
-      bad "旧 targets_run_dofile 漂移：$entry plan=[$got_dofiles] old=[$old_dofiles]"
-    fi
   done <<EOF
 $FIXTURES
 EOF
@@ -175,13 +172,6 @@ EOF
     bad "is_delegate 契约失败"
   fi
 
-  old_delegates=$(targets_delegates)
-  if [ "$old_delegates" = "$got_delegates" ]; then
-    pass "旧 targets_delegates 与 plan 一致"
-  else
-    bad "旧 targets_delegates 漂移：plan=[$got_delegates] old=[$old_delegates]"
-  fi
-
   # 每个 orphan delegate：出现在某 entry plan 中，且自身不是恒等入口
   for d in $got_delegates; do
     found=0
@@ -201,12 +191,13 @@ EOF
     fi
   done
 
-  # #23：caller 脚本不得再拆旧空格 API（回归锁迁移）
+  # #23/#27：caller 不得调用已删旧空格 API（允许在断言中点名禁词）
   for f in run-verify.sh check-claims.sh test-prompts.sh; do
-    if grep -nE '\$\(targets_run_dofile|\$\(targets_delegates' "$VERIFY_DIR/$f" >/dev/null 2>&1; then
-      bad "caller 仍拆旧空格 API：$f"
+    if grep -nE '\$\(targets_run_dofile|\$\(targets_delegates|[^[:alnum:]_]targets_run_dofile\s*\(|[^[:alnum:]_]targets_delegates\s*\(' \
+         "$VERIFY_DIR/$f" >/dev/null 2>&1; then
+      bad "caller 仍调用旧空格 API：$f"
     else
-      pass "caller 已迁 plan each_*：$f"
+      pass "caller 无旧 API 调用：$f"
     fi
   done
 

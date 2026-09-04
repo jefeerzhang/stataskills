@@ -6,22 +6,20 @@
 # 入口的 do-file 与 Stata 产出的 raw log 都叫 `verify-<name>`。少数入口
 # 委托另一个 do-file（社区包验证脚本），在此登记。
 #
-# Declarative target plan（#20 / ADR-0004 深化）：
+# Declarative target plan（#20 / #23 / #27 / ADR-0004）：
 #   - targets_plan_owner <entry>           → owner skill 名（无 stata- 前缀）
 #   - targets_plan_dofiles <entry>         → 有序 do-file 基名（空格分隔一行）
 #   - targets_plan_logs <entry>            → 有序 raw log 基名（== dofiles）
 #   - targets_plan_delegate_bases          → 纯委托 do-file 基名（由 override 派生）
 #
-# Caller-facing iterators（#23）：按行输出，caller 不得自行拆空格或推日志名：
+# Caller-facing iterators（按行输出；空格拆分只发生在本文件内）：
 #   - targets_plan_each_dofile <entry>     → 每行一个 do-file 基名
 #   - targets_plan_each_log <entry>        → 每行一个 raw log 基名
 #   - targets_plan_each_pair <entry>       → 每行 "dofile<TAB>log"
 #   - targets_plan_each_delegate           → 每行一个纯委托基名
 #   - targets_plan_is_delegate <base>      → 0 若 base 为纯委托
 #
-# 旧 interface（#27 再收缩；勿在新 caller 使用）：
-#   - targets_run_dofile / targets_delegates → 空格分隔薄封装
-#
+# 旧空格分隔 interface（targets_run_dofile / targets_delegates）已于 #27 删除。
 # 改委托只改下方 _TARGETS_OVERRIDES + _targets_plan_override。
 # ============================================================
 
@@ -86,7 +84,7 @@ targets_plan_delegate_bases() {
   printf '%s\n' "$out"
 }
 
-# ---- #23：按行迭代（空格拆分只发生在本文件内）----
+# ---- 按行迭代（空格拆分只发生在本文件内）----
 
 # targets_plan_each_dofile <entry>
 targets_plan_each_dofile() {
@@ -141,16 +139,4 @@ targets_plan_is_delegate() {
     [ "$d" = "$want" ] && return 0
   done < <(targets_plan_each_delegate)
   return 1
-}
-
-# ---- 旧 interface：薄封装（#27 收缩；新 caller 请用 each_*）----
-
-# targets_run_dofile <entry>：兼容既有 caller（空格分隔展开）。
-targets_run_dofile() {
-  targets_plan_dofiles "$1"
-}
-
-# targets_delegates：兼容 check-claims 孤儿检测（空格分隔一行）。
-targets_delegates() {
-  targets_plan_delegate_bases
 }

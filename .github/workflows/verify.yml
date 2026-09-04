@@ -18,7 +18,7 @@ jobs:
 
       # harness 自身质量门：判定脚本必须过 shellcheck
       - name: Shellcheck harness
-        run: shellcheck verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/lib/contract.sh verify/lib/prompt_corpus.sh verify/run-verify.sh verify/test-harness.sh verify/test-targets.sh verify/test-contract.sh verify/test-prompt-corpus.sh verify/check-claims.sh verify/test-prompts.sh
+        run: shellcheck verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/lib/contract.sh verify/lib/community.sh verify/lib/prompt_corpus.sh verify/run-verify.sh verify/test-harness.sh verify/test-targets.sh verify/test-contract.sh verify/test-community.sh verify/test-prompt-corpus.sh verify/check-claims.sh verify/test-prompts.sh
 
       # 判定逻辑回归测试（Stata-free）：直接喂构造日志给 verify/lib/judge.sh 断言，
       # 覆盖 r(9) 漏判 / sentinel 语义 / sentinel 掩盖真实错误；不依赖真实 Stata 或平台，
@@ -27,17 +27,21 @@ jobs:
       - name: Test harness (judge regression)
         run: bash verify/test-harness.sh
 
-      # Target plan 回归（#20）：普通入口 / multi-delegate / 唯一性 / 孤儿 delegate；
-      # 旧 targets_run_dofile 与 plan 派生一致性。
+      # Target plan 回归（#20/#27）：普通入口 / multi-delegate；旧空格 API 已删除。
       - name: Test target plan
         run: bash verify/test-targets.sh
 
-      # VERIFY CONTRACT + data locator 回归（#21）：metadata、穷尽声明缺口、
+      # Community-package contract（#26）：center/ivreg2/weakivtest 漏检锁、
+      # probe/sentinel/ownership 交叉校验。
+      - name: Test community-package contract
+        run: bash verify/test-community.sh
+
+      # VERIFY CONTRACT + data locator 回归（#21/#25）：metadata、穷尽声明、
       # missing/unlisted/duplicate/CRLF、三类仓库路径。
       - name: Test contract and data locator
         run: bash verify/test-contract.sh
 
-      # Prompt corpus adapters（#22）：双 adapter 对拍 + malformed fixtures。
+      # Prompt corpus adapters（#22）：双 adapter 对拍 + Dockerfile fixtures。
       - name: Test prompt corpus adapters
         run: bash verify/test-prompt-corpus.sh
 

@@ -19,6 +19,8 @@ versioned by Stata compatibility).
 - feat(验证): 迁移 runner/claims 到 target plan（#23）——`targets_plan_each_dofile` / `each_log` / `each_pair` / `each_delegate` / `is_delegate`；`run-verify.sh` / `check-claims.sh` / `test-prompts.sh` 不再拆空格 registry 或自行推日志名；claims 补 plan owner 校验；`test-targets.sh` 覆盖普通与 multi-delegate pair 序 + caller 迁移锁。
 - feat(验证): 迁移 prompt harness 到 target plan（#24）——`verify_dofiles_for_skill` / `verify_logs_for_skill` 同源 plan；table-driven 自测覆盖普通与三委托（按 count，不硬编码委托日志名）；`--prompts` 同步消费有序 do-files。
 - feat(验证): 迁移穷尽 data contract 并收缩旧解析（#25）——`contract_data_report` / `contract_stale_declarations`；各 verify-*.do 穷尽声明 literal repo reads；`run-verify`/`check-claims` 只经 contract seam；sysuse:/sim: 非仓库类别；fixture 覆盖五类 KIND + 生产全绿。
+- feat(验证): 深化 community-package contract（#26）——新增 `verify/lib/community.sh`（pkg×owner×required/optional）；捕获 `center`/`ivreg2`/`weakivtest` 漏检；claims 交叉验证 probe/sentinel/ownership；`test-community.sh` + CI。
+- feat(验证): 收缩旧 target registry 并同步 ADR-0004（#27）——删除 `targets_run_dofile`/`targets_delegates`；ADR-0004 记录三委托 + plan ownership；claims 交叉验证；deletion test。
 
 ### Fixed
 - fix(did-community): 恢复 `did_imputation` method ownership（#19）——详解节从 `references/sdid.md` 迁回索引目标 `references/csdid-jwdid-imputation.md`；`sdid.md` 仅保留 `sdid`；`check-claims.sh` 新增断言 22（索引指向 A、详情在 B 先红后绿）。
