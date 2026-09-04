@@ -15,6 +15,7 @@ versioned by Stata compatibility).
 - docs(README): 项目展示新增仓库架构图 — Archify 工具生成的浅色截图 `docs/stataskills-architecture.png`（122 KB, 1440×900），README 引用 + provenance 在 commit message 注明 — `d48e8be`。
 
 ### Fixed
+- fix(did-community): 恢复 `did_imputation` method ownership（#19）——详解节从 `references/sdid.md` 迁回索引目标 `references/csdid-jwdid-imputation.md`；`sdid.md` 仅保留 `sdid`；`check-claims.sh` 新增断言 22（索引指向 A、详情在 B 先红后绿）。
 - fix(验证): CI `Shellcheck harness` 因 SC2034 红——`check-claims.sh` 把已解析的 `v_chapter`/`v_checks` 纳入契约非空校验（注释本就写「4 字段全有（非空）」）；`test-prompts.sh` 的 `action_*` 间接展开改为数组下标，shellcheck 能看见引用。顺带清 SC2016/SC2001。
 - fix(power): 修复功效分析两个 P1——解析式改为两组 pre/post 均值差方差，N=200、100/100 分组、4 pre / 6 post 的已知 MDE 从错误的 0.0886 修正为 0.2557；simulation 将单位 FE / 单位异质 ATT 移到 `expand` 前生成，时间 FE 每期只抽一次，扰动改为单位内 AR(1)，并以 Stata 不变量断言锁定 DGP，修正后 ATT=0.3 的 500-rep power=0.666。
 - fix(验证): 修复两个 harness P1——CHANGELOG 禁词断言只审 `[Unreleased] / Added`，允许 `Fixed` 记录旧错误；`test-prompts.sh --prompts` 经 target registry 解析普通/多委托日志集合，不再读取已删除的 `verify-did-community.log`。
