@@ -74,27 +74,41 @@ N_DEMO_PNG=$(count "$REPO_ROOT"/demo/output/*.png)
 
 echo "facts: skills=${N_SKILLS} targets=${N_TARGETS} verify_files=${N_VERIFY} adr=${N_ADR} dta=${N_DTA} manifest=${N_MANIFEST} demo_do=${N_DEMO_DO} demo_log=${N_DEMO_LOG} demo_png=${N_DEMO_PNG}"
 
-# ---- 1. skill ↔ 验证入口一一对应：每个 skill 经注册表解析出 run do-file
-#      且该 do-file 存在；反向，每个 verify-*.do 要么是某 skill 入口的
-#      do-file、要么是注册表登记的委托（delegate），否则为孤儿。----
+# ---- 1. skill ↔ 验证入口一一对应：每个 skill 经 target plan 解析 owner /
+#      do-file，且该 do-file 存在；反向，每个 verify-*.do 要么是某 skill
+#      入口的 do-file、要么是 plan 登记的委托（delegate），否则为孤儿。
+#      （#23：不拆空格分隔 registry 字符串；delegate/owner 全走 plan API。）----
 entry_dofs=""
+delegates=""
+while IFS= read -r d; do
+  [ -n "$d" ] || continue
+  delegates="${delegates:+$delegates }$d"
+done < <(targets_plan_each_delegate)
 for skill_file in "${SKILL_FILES[@]}"; do
   name="$(basename "$(dirname "$skill_file")")"   # stata-<name>
   entry="verify-${name#stata-}"
-  # 一个入口可委托多个 do-file（空格分隔）；逐一登记并检查存在。
-  for dof in $(targets_run_dofile "$entry"); do
+  expected_owner="${name#stata-}"
+  got_owner="$(targets_plan_owner "$entry")"
+  if [ "$got_owner" != "$expected_owner" ]; then
+    bad "target plan owner 漂移：${entry} 期望 ${expected_owner}，得 ${got_owner}"
+  fi
+  # 一个入口可委托多个 do-file；经 plan each_dofile 按行登记并检查存在。
+  while IFS= read -r dof; do
+    [ -n "$dof" ] || continue
     entry_dofs="${entry_dofs} ${dof}"
     [ -f "$VERIFY_DIR/$dof.do" ] || bad "缺验证脚本：verify/$dof.do（对应 ${name}）"
-  done
+  done < <(targets_plan_each_dofile "$entry")
 done
-delegates="$(targets_delegates)"
 for d in "$REPO_ROOT"/verify/verify-*.do; do
   [ -e "$d" ] || continue
   b="$(basename "$d" .do)"
-  case " ${entry_dofs} ${delegates} " in
-    *" ${b} "*) ;;
-    *) bad "孤儿 verify 脚本：verify/${b}.do（非任何 skill 入口，也非注册表委托）" ;;
+  case " ${entry_dofs} " in
+    *" ${b} "*) continue ;;
   esac
+  if targets_plan_is_delegate "$b"; then
+    continue
+  fi
+  bad "孤儿 verify 脚本：verify/${b}.do（非任何 skill 入口，也非注册表委托）"
 done
 ok "skill ↔ verify 入口映射完整（委托：${delegates:-无}）"
 

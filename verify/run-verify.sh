@@ -234,7 +234,7 @@ run_stata() {
   local name="$1" dofile="$2"
   echo "==> 运行 ${name}（${STATA_BIN}）..."
   # cwd 切到 data/agis6/ 后，绝对路径调 do-file。dofile 已由主循环经
-  # targets_run_dofile 解析展开（一个入口可委托多个 do-file，逐个调用本函数）。
+  # targets_plan_each_pair 展开（一个入口可委托多个 do-file，逐个调用本函数）。
   local run_dofile="$dofile"
   if [ "$STATA_PLATFORM" = "windows" ]; then
     # Stata for Windows 用 /e 运行并在完成后退出。仅排除 /e 的 MSYS 路径
@@ -251,9 +251,10 @@ run_stata() {
 
 # ---- 主循环 ----
 for name in "${TARGETS[@]}"; do
-  # 一个入口可委托多个 do-file（空格分隔）；逐一展开运行与判定，
-  # 任一失败则该入口整体 BAD（judge_raw_log 返回非零 → overall_bad=1）。
-  for base in $(targets_run_dofile "$name"); do
+  # 一个入口可委托多个 do-file；经 plan each_pair 按行展开（caller 不拆空格、
+  # 不自行推日志名）。任一失败则该入口整体 BAD（judge_raw_log 非零 → overall_bad=1）。
+  while IFS=$'\t' read -r base logbase; do
+    [ -n "${base:-}" ] || continue
     dofile="$VERIFY_DIR/$base.do"
 
     if [ ! -f "$dofile" ]; then
@@ -272,14 +273,14 @@ for name in "${TARGETS[@]}"; do
     fi
 
     run_stata "$base" "$dofile"
-    raw_log="$DATA_DIR/$base.log"
+    raw_log="$DATA_DIR/${logbase}.log"
     judge_raw_log "$base" "$raw_log" "$COMMUNITY_MODE" || overall_bad=1
     # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
     if [ -f "$raw_log" ]; then
-      cp "$raw_log" "$VERIFY_DIR/$base.log"
+      cp "$raw_log" "$VERIFY_DIR/${logbase}.log"
       rm -f "$raw_log"
     fi
-  done
+  done < <(targets_plan_each_pair "$name")
 done
 
 # --community 模式下任何验证失败都让 harness 以非零退出码结束

@@ -2,9 +2,10 @@
 # ============================================================
 # 回归测试：verification target plan（verify/lib/targets.sh）
 #
-# Issue #20 / parent #18：table-driven 覆盖普通入口、DID-community
-# 三委托、唯一性、孤儿 delegate。断言走 plan 公共接口；旧
-# targets_run_dofile / targets_delegates 必须与 plan 派生一致。
+# Issue #20 / #23 / parent #18：table-driven 覆盖普通入口、DID-community
+# 三委托、唯一性、孤儿 delegate；#23 再覆盖 each_* 按行迭代与 pair
+# 序（caller 不拆空格、不推日志名）。旧 targets_run_dofile /
+# targets_delegates 必须与 plan 派生一致（#27 再收缩）。
 #
 # 用法：bash verify/test-targets.sh
 # ============================================================
@@ -18,10 +19,10 @@ fail=0
 pass() { echo "PASS  $1"; }
 bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
 
-# ---- helpers：要求 plan API 存在（#20 新 seam）----
+# ---- helpers：要求 plan API 存在（#20 / #23 seam）----
 require_fn() {
   if ! declare -F "$1" >/dev/null 2>&1; then
-    bad "缺少 plan 函数 $1（#20 declarative target plan）"
+    bad "缺少 plan 函数 $1（#20/#23 declarative target plan）"
     return 1
   fi
   return 0
@@ -31,6 +32,11 @@ require_fn targets_plan_owner || true
 require_fn targets_plan_dofiles || true
 require_fn targets_plan_logs || true
 require_fn targets_plan_delegate_bases || true
+require_fn targets_plan_each_dofile || true
+require_fn targets_plan_each_log || true
+require_fn targets_plan_each_pair || true
+require_fn targets_plan_each_delegate || true
+require_fn targets_plan_is_delegate || true
 
 # 若核心函数缺失，后续用例无意义——仍继续以便一次列出全部缺口
 has_plan=1
@@ -38,6 +44,9 @@ declare -F targets_plan_owner >/dev/null 2>&1 || has_plan=0
 declare -F targets_plan_dofiles >/dev/null 2>&1 || has_plan=0
 declare -F targets_plan_logs >/dev/null 2>&1 || has_plan=0
 declare -F targets_plan_delegate_bases >/dev/null 2>&1 || has_plan=0
+declare -F targets_plan_each_pair >/dev/null 2>&1 || has_plan=0
+declare -F targets_plan_each_delegate >/dev/null 2>&1 || has_plan=0
+declare -F targets_plan_is_delegate >/dev/null 2>&1 || has_plan=0
 
 # ---- 表驱动 fixture：entry | expected_owner | expected_dofiles ----
 # 普通 1:1 与 multi-delegate 各至少一行。
@@ -81,6 +90,51 @@ if [ "$has_plan" -eq 1 ]; then
       bad "plan 唯一性：$entry 重复 dofile：$uniq_check"
     fi
 
+    # #23：each_dofile / each_log / each_pair 按行、同序；日志名来自 plan
+    each_dofs=""
+    while IFS= read -r d; do
+      [ -n "$d" ] || continue
+      each_dofs="${each_dofs:+$each_dofs }$d"
+    done < <(targets_plan_each_dofile "$entry")
+    if [ "$each_dofs" = "$dofiles" ]; then
+      pass "each_dofile：$entry 按行同序"
+    else
+      bad "each_dofile：$entry 期望 [$dofiles]，得 [$each_dofs]"
+    fi
+
+    each_logs=""
+    while IFS= read -r l; do
+      [ -n "$l" ] || continue
+      each_logs="${each_logs:+$each_logs }$l"
+    done < <(targets_plan_each_log "$entry")
+    if [ "$each_logs" = "$dofiles" ]; then
+      pass "each_log：$entry 按行同序同名"
+    else
+      bad "each_log：$entry 期望 [$dofiles]，得 [$each_logs]"
+    fi
+
+    pair_ok=1
+    pair_i=0
+    # shellcheck disable=SC2206
+    expect_arr=($dofiles)
+    while IFS=$'\t' read -r pd pl; do
+      [ -n "${pd:-}" ] || continue
+      if [ "$pair_i" -ge "${#expect_arr[@]}" ]; then
+        pair_ok=0
+        break
+      fi
+      if [ "$pd" != "${expect_arr[$pair_i]}" ] || [ "$pl" != "${expect_arr[$pair_i]}" ]; then
+        pair_ok=0
+        break
+      fi
+      pair_i=$((pair_i + 1))
+    done < <(targets_plan_each_pair "$entry")
+    if [ "$pair_ok" -eq 1 ] && [ "$pair_i" -eq "${#expect_arr[@]}" ]; then
+      pass "each_pair：$entry dofile\\tlog 同序（不推日志名）"
+    else
+      bad "each_pair：$entry 序或内容漂移（got $pair_i / ${#expect_arr[@]}）"
+    fi
+
     # 旧 interface 与 plan 派生一致（#20：旧接口暂时保留）
     old_dofiles=$(targets_run_dofile "$entry")
     if [ "$old_dofiles" = "$got_dofiles" ]; then
@@ -99,6 +153,26 @@ EOF
     pass "plan delegates：$expect_delegates"
   else
     bad "plan delegates 期望 [$expect_delegates]，得 [$got_delegates]"
+  fi
+
+  each_delegates=""
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    each_delegates="${each_delegates:+$each_delegates }$d"
+  done < <(targets_plan_each_delegate)
+  if [ "$each_delegates" = "$expect_delegates" ]; then
+    pass "each_delegate 按行同序"
+  else
+    bad "each_delegate 期望 [$expect_delegates]，得 [$each_delegates]"
+  fi
+
+  if targets_plan_is_delegate verify-synth-sdid \
+    && targets_plan_is_delegate verify-power \
+    && targets_plan_is_delegate verify-trop \
+    && ! targets_plan_is_delegate verify-basics; then
+    pass "is_delegate：三委托命中、普通入口否"
+  else
+    bad "is_delegate 契约失败"
   fi
 
   old_delegates=$(targets_delegates)
@@ -124,6 +198,15 @@ EOF
       pass "orphan delegate：$d 被某 plan 引用且非 override 入口"
     else
       bad "orphan delegate 契约失败：$d（found=$found self-plan=$(targets_plan_dofiles "$d")）"
+    fi
+  done
+
+  # #23：caller 脚本不得再拆旧空格 API（回归锁迁移）
+  for f in run-verify.sh check-claims.sh test-prompts.sh; do
+    if grep -nE '\$\(targets_run_dofile|\$\(targets_delegates' "$VERIFY_DIR/$f" >/dev/null 2>&1; then
+      bad "caller 仍拆旧空格 API：$f"
+    else
+      pass "caller 已迁 plan each_*：$f"
     fi
   done
 else

@@ -392,10 +392,12 @@ log_has_executed_command() {
 }
 
 verify_logs_for_skill() {
-  local skill="$1" base
-  for base in $(targets_run_dofile "verify-$skill"); do
-    printf '%s\n' "$VERIFY_DIR/$base.log"
-  done
+  local skill="$1" logbase
+  # #23：日志基名来自 plan each_log，caller 不拆空格、不自行推 $base.log
+  while IFS= read -r logbase; do
+    [ -n "$logbase" ] || continue
+    printf '%s\n' "$VERIFY_DIR/${logbase}.log"
+  done < <(targets_plan_each_log "verify-$skill")
 }
 
 self_test_log_matcher() {

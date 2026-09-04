@@ -12,9 +12,15 @@
 #   - targets_plan_logs <entry>            → 有序 raw log 基名（== dofiles）
 #   - targets_plan_delegate_bases          → 纯委托 do-file 基名（由 override 派生）
 #
-# 旧 interface（#20 暂时保留，caller 行为不变）：
-#   - targets_run_dofile <entry>  → 同 targets_plan_dofiles
-#   - targets_delegates           → 同 targets_plan_delegate_bases
+# Caller-facing iterators（#23）：按行输出，caller 不得自行拆空格或推日志名：
+#   - targets_plan_each_dofile <entry>     → 每行一个 do-file 基名
+#   - targets_plan_each_log <entry>        → 每行一个 raw log 基名
+#   - targets_plan_each_pair <entry>       → 每行 "dofile<TAB>log"
+#   - targets_plan_each_delegate           → 每行一个纯委托基名
+#   - targets_plan_is_delegate <base>      → 0 若 base 为纯委托
+#
+# 旧 interface（#27 再收缩；勿在新 caller 使用）：
+#   - targets_run_dofile / targets_delegates → 空格分隔薄封装
 #
 # 改委托只改下方 _TARGETS_OVERRIDES + _targets_plan_override。
 # ============================================================
@@ -80,7 +86,64 @@ targets_plan_delegate_bases() {
   printf '%s\n' "$out"
 }
 
-# ---- 旧 interface：薄封装，事实来自 plan ----
+# ---- #23：按行迭代（空格拆分只发生在本文件内）----
+
+# targets_plan_each_dofile <entry>
+targets_plan_each_dofile() {
+  local d
+  # shellcheck disable=SC2086
+  for d in $(targets_plan_dofiles "$1"); do
+    printf '%s\n' "$d"
+  done
+}
+
+# targets_plan_each_log <entry>
+targets_plan_each_log() {
+  local l
+  # shellcheck disable=SC2086
+  for l in $(targets_plan_logs "$1"); do
+    printf '%s\n' "$l"
+  done
+}
+
+# targets_plan_each_pair <entry>：每行 dofile<TAB>log（同序，caller 不推日志名）
+targets_plan_each_pair() {
+  local entry="$1"
+  local -a ds ls
+  local i
+  # shellcheck disable=SC2206
+  ds=($(targets_plan_dofiles "$entry"))
+  # shellcheck disable=SC2206
+  ls=($(targets_plan_logs "$entry"))
+  if [ "${#ds[@]}" -ne "${#ls[@]}" ]; then
+    printf 'targets_plan_each_pair: dofiles/logs 长度不一致 (%s)\n' "$entry" >&2
+    return 1
+  fi
+  for i in "${!ds[@]}"; do
+    printf '%s\t%s\n' "${ds[$i]}" "${ls[$i]}"
+  done
+}
+
+# targets_plan_each_delegate
+targets_plan_each_delegate() {
+  local d
+  # shellcheck disable=SC2086
+  for d in $(targets_plan_delegate_bases); do
+    [ -n "$d" ] || continue
+    printf '%s\n' "$d"
+  done
+}
+
+# targets_plan_is_delegate <base>：0=是纯委托 do-file
+targets_plan_is_delegate() {
+  local want="$1" d
+  while IFS= read -r d; do
+    [ "$d" = "$want" ] && return 0
+  done < <(targets_plan_each_delegate)
+  return 1
+}
+
+# ---- 旧 interface：薄封装（#27 收缩；新 caller 请用 each_*）----
 
 # targets_run_dofile <entry>：兼容既有 caller（空格分隔展开）。
 targets_run_dofile() {
