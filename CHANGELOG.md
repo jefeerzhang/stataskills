@@ -15,6 +15,7 @@ versioned by Stata compatibility).
 - docs(README): 项目展示新增仓库架构图 — Archify 工具生成的浅色截图 `docs/stataskills-architecture.png`（122 KB, 1440×900），README 引用 + provenance 在 commit message 注明 — `d48e8be`。
 - feat(验证): declarative verification target plan（#20）——`verify/lib/targets.sh` 新增 `targets_plan_owner` / `dofiles` / `logs` / `delegate_bases`；旧 `targets_run_dofile` / `targets_delegates` 薄封装保留；`verify/test-targets.sh` 表驱动覆盖普通入口、DID-community 三委托、唯一性与孤儿 delegate；CI 接入。
 - feat(验证): VERIFY CONTRACT + data locator module（#21）——新增 `verify/lib/contract.sh`（`contract_parse` / `contract_exhaustive_gaps` / `data_locate`；agis6/external/generated/sysuse/sim）；`test-contract.sh` 表驱动（partial 声明先红后绿、missing/unlisted/duplicate/CRLF）；`check-claims` 断言 13 改走 contract 解析；旧 `check_data_ready` 保留；CI 接入。
+- feat(验证): 封装 prompt corpus adapters（#22）——新增 `verify/lib/prompt_corpus.sh`（一次选定 jq/python）；`test-prompts.sh` mode 不再分支 adapter；`test-prompt-corpus.sh` 双 adapter 对拍 + malformed（空 skill / 缺 actions / 重复 route_branch）；CI 接入。
 
 ### Fixed
 - fix(did-community): 恢复 `did_imputation` method ownership（#19）——详解节从 `references/sdid.md` 迁回索引目标 `references/csdid-jwdid-imputation.md`；`sdid.md` 仅保留 `sdid`；`check-claims.sh` 新增断言 22（索引指向 A、详情在 B 先红后绿）。

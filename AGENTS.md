@@ -18,6 +18,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 
 - 验证目标解析单一来源：`verify/lib/targets.sh`。Declarative target plan（`targets_plan_owner` / `targets_plan_dofiles` / `targets_plan_logs` / `targets_plan_delegate_bases`）与旧 interface（`targets_run_dofile` / `targets_delegates`）由同一 override 表派生；每个 skill `stata-<name>` 对应验证入口 `verify-<name>`（默认 1:1）；`did-community` 委托三个 do-file（`verify-synth-sdid.do` + `verify-power.do` + `verify-trop.do`）。改委托只改 `targets.sh` 的 override；回归见 `bash verify/test-targets.sh`。
 - VERIFY CONTRACT / data locator：`verify/lib/contract.sh` 解析契约 metadata 与 data 声明，并按 ADR-0003/0006 区分 agis6 / 外部扩展 / 项目内生成；穷尽声明缺口由 `contract_exhaustive_gaps` 暴露（生产断言迁移见后续 ticket）；回归 `bash verify/test-contract.sh`。
 - Agent 行为回归：`test-prompts.json` 27 条 prompt 三层模式——docs（CI 静态断言）/ `--prompts`（Stata 子集，需本机 Stata）/ `--llm`（真实 Agent，需 claude CLI 且 API key 或 OAuth 登录态任一）。`--llm` 已于 2026-08-27 全量实测（MiniMax M3 后端）：25/27 直接 PASS；2 条 FAIL 归因为 fixture 数据漂移（basics-01）与判定器点号剥离缺陷（cross-02 部分），修复后重放转绿；台账 `verify/llm-results.md`、`verify/llm-smoke-results.md`。
+- prompt corpus 解析经 `verify/lib/prompt_corpus.sh`，jq/Python 为 seam 后 adapters；回归 `bash verify/test-prompt-corpus.sh`。
 - 验证脚本数据的两种来源：
   - AGIS6 教材配套：`data/agis6/`，由 `data/manifest.txt` 单一来源管理。
   - 项目级扩展（非 AGIS6 来源）：`data/<子目录>/`，由 `data/manifest-extra.txt` 单一来源管理。两份清单由 harness 同时校验。

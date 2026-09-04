@@ -50,44 +50,19 @@ done
 
 # ---- 前置检查 ----
 [ -f "$TEST_PROMPTS_JSON" ] || { echo "ERROR: 找不到 $TEST_PROMPTS_JSON" >&2; exit 1; }
-PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
-if command -v jq >/dev/null 2>&1; then
-  JSON_BACKEND="jq"
-elif [ -n "$PYTHON_BIN" ]; then
-  JSON_BACKEND="python"
-else
-  echo "ERROR: 解析 test-prompts.json 需要 jq、python3 或 python" >&2
-  exit 1
-fi
 
-json_prompt_count() {
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    jq '.prompts | if type == "array" then length else error("prompts must be an array") end' "$TEST_PROMPTS_JSON"
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); p=d.get("prompts"); assert isinstance(p,list), "prompts must be an array"; print(len(p))' "$TEST_PROMPTS_JSON"
-  fi
-}
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/prompt_corpus.sh"
+prompt_corpus_init "$TEST_PROMPTS_JSON" || exit 1
 
-expected_skills() {
-  local skill_file
-  for skill_file in "$REPO_ROOT"/stata-*/SKILL.md; do
-    [ -f "$skill_file" ] || continue
-    basename "$(dirname "$skill_file")"
-  done | sort -u
-}
-
-json_skill_values() {
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    jq -r '.prompts[] | .skill | if type != "string" then error("skill must be a string") else split("+")[] | sub("^\\s+"; "") | sub("\\s+$"; "") | if length > 0 then . else error("skill entry must not be empty") end end' "$TEST_PROMPTS_JSON"
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); values=[]
-for p in d["prompts"]:
- s=p.get("skill"); assert isinstance(s,str), "skill must be a string"
- for raw in s.split("+"):
-  part=raw.strip(); assert part, "skill entry must not be empty"; values.append(part)
-print("\n".join(values))' "$TEST_PROMPTS_JSON"
-  fi
-}
+# 薄封装：mode 实现只调 corpus API，不再分支 jq/Python（#22）
+json_prompt_count() { prompt_corpus_count; }
+json_skill_values() { prompt_corpus_skill_values; }
+json_route_branch_values() { prompt_corpus_route_branch_values; }
+json_route_action_errors() { prompt_corpus_route_action_errors; }
+json_branch_action_count() { prompt_corpus_branch_action_count "$1"; }
+json_branch_action() { prompt_corpus_branch_action "$1" "$2"; }
+json_prompt_field() { prompt_corpus_field "$1" "$2" "${3:-}"; }
 
 json_covered_skills() {
   json_skill_values | tr -d '\r' | sort -u
@@ -111,22 +86,18 @@ json_unknown_skills() {
   comm -13 <(printf '%s\n' "$expected") <(printf '%s\n' "$covered")
 }
 
+expected_skills() {
+  local skill_file
+  for skill_file in "$REPO_ROOT"/stata-*/SKILL.md; do
+    [ -f "$skill_file" ] || continue
+    basename "$(dirname "$skill_file")"
+  done | sort -u
+}
+
 required_route_branches() {
   printf '%s\n' \
     gate-failure-return iv named-method-direct rct rdd router-entry \
     selection standard-did stop-causal synth-sdid | sort -u
-}
-
-json_route_branch_values() {
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    jq -r '.prompts[] | select(has("route_branch")) | .route_branch | if type == "string" and length > 0 then . else error("route_branch must be a non-empty string") end' "$TEST_PROMPTS_JSON"
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); values=[]
-for p in d["prompts"]:
- if "route_branch" in p:
-  b=p["route_branch"]; assert isinstance(b,str) and b, "route_branch must be a non-empty string"; values.append(b)
-print("\n".join(values))' "$TEST_PROMPTS_JSON"
-  fi
 }
 
 json_route_branches() {
@@ -151,37 +122,6 @@ json_duplicate_route_branches() {
   local values
   values="$(json_route_branch_values | tr -d '\r')" || return 1
   printf '%s\n' "$values" | sort | uniq -d
-}
-
-json_route_action_errors() {
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    jq -r '.prompts[] | select(has("route_branch")) | select(if (has("expected_actions") | not) then true elif (.expected_actions | type) != "array" then true elif (.expected_actions | length) == 0 then true else any(.expected_actions[]; if type == "string" then (test("\\S") | not) else true end) end) | (.id // "<missing-id>")' "$TEST_PROMPTS_JSON"
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); bad=[]
-for p in d["prompts"]:
- if "route_branch" not in p: continue
- a=p.get("expected_actions")
- if not isinstance(a,list) or not a or any(not isinstance(x,str) or not x.strip() for x in a): bad.append(p.get("id","<missing-id>"))
-print("\n".join(bad))' "$TEST_PROMPTS_JSON"
-  fi
-}
-
-json_branch_action_count() {
-  local branch="$1"
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    jq -r --arg branch "$branch" '[.prompts[] | select(.route_branch? == $branch)] | if length != 1 then error("locked route_branch must occur exactly once") elif (.[0].expected_actions | type) != "array" then error("expected_actions must be an array") else (.[0].expected_actions | length) end' "$TEST_PROMPTS_JSON"
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); matches=[p for p in d["prompts"] if p.get("route_branch")==sys.argv[2]]; assert len(matches)==1, "locked route_branch must occur exactly once"; a=matches[0].get("expected_actions"); assert isinstance(a,list), "expected_actions must be an array"; print(len(a))' "$TEST_PROMPTS_JSON" "$branch"
-  fi
-}
-
-json_branch_action() {
-  local branch="$1" index="$2"
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    jq -r --arg branch "$branch" --argjson index "$index" '[.prompts[] | select(.route_branch? == $branch)] | if length != 1 then error("locked route_branch must occur exactly once") elif (.[0].expected_actions | type) != "array" then error("expected_actions must be an array") elif $index < 0 or $index >= (.[0].expected_actions | length) then error("expected_actions index out of range") elif (.[0].expected_actions[$index] | type) != "string" then error("expected action must be a string") else .[0].expected_actions[$index] end' "$TEST_PROMPTS_JSON"
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); matches=[p for p in d["prompts"] if p.get("route_branch")==sys.argv[2]]; assert len(matches)==1, "locked route_branch must occur exactly once"; a=matches[0].get("expected_actions"); assert isinstance(a,list), "expected_actions must be an array"; i=int(sys.argv[3]); assert 0<=i<len(a), "expected_actions index out of range"; assert isinstance(a[i],str), "expected action must be a string"; print(a[i])' "$TEST_PROMPTS_JSON" "$branch" "$index"
-  fi
 }
 
 route_branch_semantics_ok() {
@@ -284,19 +224,6 @@ route_branch_semantics_ok() {
       grep -Fq "$anchor" <<< "$action" || return 1
     done < <(tr '|' '\n' <<< "$anchors")
   done
-}
-
-json_prompt_field() {
-  local index="$1" field="$2" separator="${3:-}"
-  if [ "$JSON_BACKEND" = "jq" ]; then
-    if [ -n "$separator" ]; then
-      jq -r ".prompts[$index].$field | join(\"$separator\")" "$TEST_PROMPTS_JSON"
-    else
-      jq -r ".prompts[$index].$field" "$TEST_PROMPTS_JSON"
-    fi
-  else
-    "$PYTHON_BIN" -X utf8 -c 'import json,sys; v=json.load(open(sys.argv[1], encoding="utf-8"))["prompts"][int(sys.argv[2])][sys.argv[3]]; print(sys.argv[4].join(v) if isinstance(v,list) else v)' "$TEST_PROMPTS_JSON" "$index" "$field" "$separator"
-  fi
 }
 
 if ! PROMPT_COUNT="$(json_prompt_count)"; then
