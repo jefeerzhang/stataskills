@@ -65,6 +65,8 @@ done
 . "$VERIFY_DIR/lib/targets.sh"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/judge.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/contract.sh"
 
 # ---- 解析 Stata 可执行文件（macOS：PATH 优先；Windows：config 直取）----
 # 静态模式不执行 do-file，无需 Stata（CI runner 上也没有）
@@ -191,39 +193,16 @@ check_version() {
   return 0
 }
 
-# 阶段 2：数据就绪检查（use 语句引用的数据集必须存在且在 manifest 内）
+# 阶段 2：data readiness —— 只经 contract_data_report（#25）；
+# 不再平行解析 use 路径或自建查找顺序。
 check_data_ready() {
   local name="$1" dofile="$2"
-  local missing_data="" unlisted_data=""
-  while IFS= read -r path; do
-    [ -z "$path" ] && continue
-    path="${path%\"}"; path="${path#\"}"
-    case "$path" in
-      ../*)
-        rest="${path#../}"
-        subdir="${rest%%/*}"
-        base="${rest##*/}"; base="${base%.dta}"
-        if [ ! -f "$DATA_EXTRA_DIR/$subdir/$base.dta" ]; then
-          missing_data="${missing_data} ${base}.dta（应位于 data/${subdir}/）"
-        elif ! grep -qE "^${base}[[:space:]]*$" "$MANIFEST_EXTRA" 2>/dev/null; then
-          unlisted_data="${unlisted_data} ${base}.dta（应在 data/manifest-extra.txt 登记）"
-        fi
-        ;;
-      *)
-        if [ ! -f "$DATA_DIR/$path.dta" ]; then
-          missing_data="${missing_data} ${path}.dta（应位于 data/agis6/）"
-        elif ! grep -qE "^${path}[[:space:]]*$" "$MANIFEST"; then
-          unlisted_data="${unlisted_data} ${path}.dta（应在 data/manifest.txt 登记）"
-        fi
-        ;;
-    esac
-  done < <(grep -oE '^use[[:space:]]+[^,[:space:]]+' "$dofile" | awk '{gsub(/"/,""); print $2}')
-  if [ -n "$missing_data" ]; then
-    bad "${name}（缺数据集：${missing_data}）"
-    return 1
-  fi
-  if [ -n "$unlisted_data" ]; then
-    bad "${name}（数据集未登记入 manifest：${unlisted_data}）"
+  local report
+  report="$(contract_data_report "$dofile")"
+  if [ -n "$report" ]; then
+    # 压成单行便于 harness 摘要
+    report=$(printf '%s' "$report" | tr '\n' ' ')
+    bad "${name}（data contract：${report}）"
     return 1
   fi
   return 0

@@ -2,7 +2,7 @@ version 19.5
 * ==== VERIFY CONTRACT ====
 * skill:    stata-coefplot
 * chapter:  coefplot
-* data:     sysuse:auto+nlsw88
+* data:     sysuse:auto;sysuse:nlsw88;webuse/laborsub.dta
 * checks:   basic+multimodel+subplot+eform
 * ============================
 

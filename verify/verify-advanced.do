@@ -2,7 +2,7 @@ version 19.5
 * ==== VERIFY CONTRACT ====
 * skill:    stata-advanced
 * chapter:  ch12
-* data:     gss2006_chapter12.dta
+* data:     gss2006_chapter12.dta;kappa1.dta;gss2006_chapter12_selected.dta;flourishing_bmi.dta;chapter13_missing.dta;longitudinal_mixed.dta;attitude.dta
 * checks:   alpha+factor
 * ============================
 * ---- ch12 信度与因子分析 ----

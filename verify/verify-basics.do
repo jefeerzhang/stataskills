@@ -2,7 +2,7 @@ version 19.5
 * ==== VERIFY CONTRACT ====
 * skill:    stata-basics
 * chapter:  ch3
-* data:     relate.dta
+* data:     relate.dta;firstsurvey_chapter4.dta
 * checks:   missing+reverse+scale
 * ============================
 * ---- ch3 缺失值处理 + 反向编码 + 量表构建 ----

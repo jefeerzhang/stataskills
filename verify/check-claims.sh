@@ -400,7 +400,8 @@ fi
 
 # ---- 13. verify-*.do I/O 契约：每个脚本必须有机器可读声明 ----
 # 借鉴 luban 报告 P1 短板：原 do-file 自包含但无机器可读「这个脚本验证什么」声明。
-# 契约格式：前 10 行内含 6 行键值块（由 verify CONTRACT + data locator module 解析，#21）。
+# 契约格式：VERIFY CONTRACT 块由 contract.sh 解析；#25 穷尽 data contract
+# （missing/stale declaration + missing/unlisted/ambiguous file）只经 contract_data_report。
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/contract.sh"
 verify_drift=""
@@ -409,49 +410,39 @@ verify_missing_contract=""
 verify_bad_skill=""
 verify_bad_data=""
 verify_bad_format=""
+verify_bad_exhaustive=""
 for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue
   verify_total=$((verify_total + 1))
   vname=$(basename "$vdo" .do)
-  contract_block=$(head -10 "$vdo" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p')
+  contract_block=$(head -20 "$vdo" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p')
   if [ -z "$contract_block" ]; then
     verify_missing_contract="${verify_missing_contract} ${vname};"
     continue
   fi
-  # 解析 4 字段（contract.sh 单一实现；旧手写 sed 路径收缩为调用）
+  # 解析 4 字段（contract.sh 单一实现）
   # shellcheck disable=SC2034
   eval "$(contract_parse "$vdo")"
   v_skill="${CONTRACT_SKILL:-}"
   v_chapter="${CONTRACT_CHAPTER:-}"
   v_data="${CONTRACT_DATA:-}"
   v_checks="${CONTRACT_CHECKS:-}"
-  # 校验解析值非空：字段名在块里出现但值为空仍算坏契约（与下方 field_count 互补）
   if [ -z "$v_skill" ] || [ -z "$v_chapter" ] || [ -z "$v_data" ] || [ -z "$v_checks" ]; then
     verify_bad_format="${verify_bad_format} ${vname}(空字段);"
   fi
-  # 校验 skill 字段 → 必须有对应 stata-xxx 目录
   if [ ! -d "$REPO_ROOT/$v_skill" ]; then
     verify_bad_skill="${verify_bad_skill} ${vname}→${v_skill};"
   fi
-  # 校验 data 字段：; 分隔多个仓库数据集；每项经 data_locate 分类
-  #   sysuse / sim - 非仓库，跳过路径存在性
-  #   其它         - 必须能 locate 到现存文件（missing/unlisted 仍报文件侧问题）
-  IFS=';' read -r -a data_items <<< "$v_data"
-  for data_item in "${data_items[@]}"; do
-    case "$data_item" in
-      sysuse:*|sim:*|"")
-        :  # 内置/模拟/未声明，跳过路径检查
-        ;;
-      *)
-        # shellcheck disable=SC2034
-        eval "$(data_locate "$data_item")"
-        if [ ! -f "${DATA_PATH:-}" ]; then
-          verify_bad_data="${verify_bad_data} ${vname}→${data_item};"
-        fi
-        ;;
-    esac
-  done
-  # 校验 4 字段全有（非空）：用 grep 数 contract 块里出现几次字段名关键字
+  # 穷尽 data contract：声明/字面/文件侧问题统一由 report 给出
+  report="$(contract_data_report "$vdo")"
+  if [ -n "$report" ]; then
+    report_flat=$(printf '%s' "$report" | tr '\n' ' ')
+    verify_bad_exhaustive="${verify_bad_exhaustive} ${vname}[${report_flat}];"
+    # 兼容旧摘要字段：文件缺失类单独计入 bad_data
+    if printf '%s\n' "$report" | grep -qE '^(missing_file|unlisted_file|ambiguous_basename):'; then
+      verify_bad_data="${verify_bad_data} ${vname};"
+    fi
+  fi
   field_count=0
   for fk in skill chapter data checks; do
     if echo "$contract_block" | grep -q "^\* $fk:"; then field_count=$((field_count+1)); fi
@@ -462,12 +453,13 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
 done
 [ -n "$verify_missing_contract" ] && verify_drift="${verify_drift} 无 VERIFY 契约:${verify_missing_contract}"
 [ -n "$verify_bad_skill" ] && verify_drift="${verify_drift} skill 字段无对应目录:${verify_bad_skill}"
-[ -n "$verify_bad_data" ] && verify_drift="${verify_drift} data 字段文件缺失:${verify_bad_data}"
+[ -n "$verify_bad_data" ] && verify_drift="${verify_drift} data 字段文件侧问题:${verify_bad_data}"
+[ -n "$verify_bad_exhaustive" ] && verify_drift="${verify_drift} 穷尽 data contract:${verify_bad_exhaustive}"
 [ -n "$verify_bad_format" ] && verify_drift="${verify_drift} 字段数 != 4:${verify_bad_format}"
 if [ -n "$verify_drift" ]; then
   bad "verify-*.do 契约缺失或错误（共 ${verify_total} 个脚本）${verify_drift}"
 else
-  ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY CONTRACT 块，skill ↔ 目录 + data ↔ 文件对齐）"
+  ok "verify-*.do 契约完整（${verify_total} 个脚本均有 4 字段 VERIFY CONTRACT 块，skill ↔ 目录 + 穷尽 data contract 对齐）"
 fi
 
 # ---- 14. 社区命令探测断言（ADR-0003）：verify-*.do 调用的每个社区包命令，

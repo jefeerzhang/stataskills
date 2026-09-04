@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# VERIFY CONTRACT + data locator（#21 / parent #18）
+# VERIFY CONTRACT + data locator（#21 / #25 / parent #18）
 #
 # 统一解析 verify-*.do 头部契约，并把 data 声明/字面 use 读入规范化为
 # facts。data_locate 保留三类仓库数据治理差异（ADR-0003 / ADR-0006）：
@@ -9,9 +9,11 @@
 #   generated —— manifest-extra + data/<subdir>/ 且含 build*.do
 # 非仓库：sysuse: / sim:
 #
+# #25：穷尽 data contract —— contract_data_report 报告
+#   missing_declaration / stale_declaration / missing_file /
+#   unlisted_file / ambiguous_basename；runner 与 claims 只经此 seam。
+#
 # CONTRACT_REPO_ROOT 可覆盖仓库根（供 test-contract 造假布局）。
-# 旧 check_data_ready / check-claims 字段校验可继续独立工作；本 module
-# 为 deep contract seam，#25 再迁移穷尽检查进生产断言。
 # ============================================================
 
 _contract_root() {
@@ -80,21 +82,27 @@ _contract_basename() {
 # 提取字面仓库数据读取（use …），每行一个可比对基名或 relative path token。
 # 跳过 sysuse / webuse / 注释行；`../subdir/file` 保留 subdir/file.dta 形式。
 contract_literal_repo_reads() {
-  local dofile="$1" line path rest subdir base
+  local dofile="$1" line trimmed path rest base
   while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in
-      '#'*|'*'*) continue ;;
+    # 内联 ltrim：避免 Windows 上每行一次函数调用开销
+    trimmed="${line#"${line%%[![:space:]]*}"}"
+    case "$trimmed" in
+      ''|'#'*|'*'*|'//'*) continue ;;
     esac
-    # 仅匹配行首 use（可有前导空白）
-    if ! echo "$line" | grep -qE '^[[:space:]]*use[[:space:]]+'; then
+    # bash case 的 * 不跨非空白；用 [[ =~ ]] 锚定 use 命令
+    if [[ ! "$trimmed" =~ ^use[[:space:]]+ ]]; then
       continue
     fi
-    path=$(echo "$line" | sed -E 's/^[[:space:]]*use[[:space:]]+//; s/["'\'']//g; s/,.*//; s/[[:space:]].*//;')
+    path="${trimmed#use}"
+    path="${path#"${path%%[![:space:]]*}"}"
+    path="${path%%,*}"
+    path="${path%%[[:space:]]*}"
+    path="${path//\"/}"
+    path="${path//\'/}"
     [ -z "$path" ] && continue
     case "$path" in
       ../*)
         rest="${path#../}"
-        # rest = subdir/file[.dta]
         printf '%s\n' "${rest%.dta}.dta"
         ;;
       /*|./*) ;; # 忽略绝对/奇怪路径
@@ -107,8 +115,9 @@ contract_literal_repo_reads() {
 }
 
 # 声明集合是否覆盖某 literal token（基名或路径）
+# 用法：_contract_declared_covers <needle> <decl_file>
 _contract_declared_covers() {
-  local needle="$1" decl nbase dbase
+  local needle="$1" decl_file="$2" decl nbase dbase
   nbase="$(_contract_basename "$needle")"
   while IFS= read -r decl || [ -n "$decl" ]; do
     [ -z "$decl" ] && continue
@@ -119,11 +128,31 @@ _contract_declared_covers() {
     if [ "$dbase" = "$nbase" ]; then
       return 0
     fi
-    # 路径形式 data/subdir/file.dta
     if [ "$decl" = "$needle" ] || [ "${decl#data/}" = "$needle" ] || [ "data/$needle" = "$decl" ]; then
       return 0
     fi
-  done
+  done <"$decl_file"
+  return 1
+}
+
+# 字面 read 集合是否覆盖某声明 token
+# 用法：_contract_literal_covers <decl> <lit_file>
+_contract_literal_covers() {
+  local decl="$1" lit_file="$2" lit dbase lbase
+  case "$decl" in
+    sysuse:*|sim:*) return 0 ;; # 非仓库：不参与 stale
+  esac
+  dbase="$(_contract_basename "$decl")"
+  while IFS= read -r lit || [ -n "$lit" ]; do
+    [ -z "$lit" ] && continue
+    lbase="$(_contract_basename "$lit")"
+    if [ "$lbase" = "$dbase" ]; then
+      return 0
+    fi
+    if [ "$decl" = "$lit" ] || [ "${decl#data/}" = "$lit" ] || [ "data/$lit" = "$decl" ]; then
+      return 0
+    fi
+  done <"$lit_file"
   return 1
 }
 
@@ -136,12 +165,32 @@ contract_exhaustive_gaps() {
   contract_data_declared "$dofile" >"$decl_file"
   while IFS= read -r lit || [ -n "$lit" ]; do
     [ -z "$lit" ] && continue
-    if ! _contract_declared_covers "$lit" <"$decl_file"; then
+    if ! _contract_declared_covers "$lit" "$decl_file"; then
       gaps="${gaps:+$gaps }$lit"
     fi
   done < <(contract_literal_repo_reads "$dofile")
   rm -f "$decl_file"
   printf '%s\n' "$gaps"
+}
+
+# contract_stale_declarations <dofile>
+# 列出「仓库声明未出现在任何字面 use」的项（空格分隔一行）；无 stale 则空。
+contract_stale_declarations() {
+  local dofile="$1" stale="" decl
+  local lit_file
+  lit_file="$(mktemp)"
+  contract_literal_repo_reads "$dofile" >"$lit_file"
+  while IFS= read -r decl || [ -n "$decl" ]; do
+    [ -z "$decl" ] && continue
+    case "$decl" in
+      sysuse:*|sim:*) continue ;;
+    esac
+    if ! _contract_literal_covers "$decl" "$lit_file"; then
+      stale="${stale:+$stale }$decl"
+    fi
+  done < <(contract_data_declared "$dofile")
+  rm -f "$lit_file"
+  printf '%s\n' "$stale"
 }
 
 # manifest 行：去空白、去 CR
@@ -154,9 +203,16 @@ _contract_manifest_lines() {
 
 _contract_manifest_count() {
   local file="$1" base="$2" n=0 line
+  [ -f "$file" ] || { printf '0\n'; return 0; }
+  # 单次 sed，避免双重管道
   while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    line="${line%"${line##*[![:space:]]}"}"
+    case "$line" in
+      ''|'#'*) continue ;;
+    esac
     [ "$line" = "$base" ] && n=$((n + 1))
-  done < <(_contract_manifest_lines "$file")
+  done <"$file"
   printf '%s\n' "$n"
 }
 
@@ -276,4 +332,67 @@ data_locate() {
   printf "DATA_BASENAME=%q\n" "$base"
   printf "DATA_LISTED=%q\n" "$listed"
   printf "DATA_DUPLICATE=%q\n" "$dup"
+}
+
+# contract_data_report <dofile>
+# 每行 KIND:TOKEN —— KIND ∈ missing_declaration|stale_declaration|
+# missing_file|unlisted_file|ambiguous_basename。干净则无输出。
+# 单次扫描声明/字面集合，避免重复 mktemp + 进程替换（Windows 易卡住）。
+contract_data_report() {
+  local dofile="$1"
+  local decl_file lit_file seen_file
+  local item b
+  decl_file="$(mktemp "${TMPDIR:-/tmp}/contract-decl.XXXXXX")"
+  lit_file="$(mktemp "${TMPDIR:-/tmp}/contract-lit.XXXXXX")"
+  seen_file="$(mktemp "${TMPDIR:-/tmp}/contract-seen.XXXXXX")"
+  contract_data_declared "$dofile" >"$decl_file"
+  contract_literal_repo_reads "$dofile" >"$lit_file"
+
+  while IFS= read -r item || [ -n "$item" ]; do
+    [ -z "$item" ] && continue
+    if ! _contract_declared_covers "$item" "$decl_file"; then
+      printf 'missing_declaration:%s\n' "$item"
+    fi
+  done <"$lit_file"
+
+  while IFS= read -r item || [ -n "$item" ]; do
+    [ -z "$item" ] && continue
+    case "$item" in
+      sysuse:*|sim:*) continue ;;
+    esac
+    if ! _contract_literal_covers "$item" "$lit_file"; then
+      printf 'stale_declaration:%s\n' "$item"
+    fi
+  done <"$decl_file"
+
+  # 对声明 ∪ 字面仓库 token 做 locate（同一基名只报一次）
+  local union_file
+  union_file="$(mktemp "${TMPDIR:-/tmp}/contract-union.XXXXXX")"
+  cat "$decl_file" "$lit_file" >"$union_file"
+  while IFS= read -r item || [ -n "$item" ]; do
+    [ -z "$item" ] && continue
+    case "$item" in
+      sysuse:*|sim:*) continue ;;
+    esac
+    b="$(_contract_basename "$item")"
+    if grep -qxF "$b" "$seen_file" 2>/dev/null; then
+      continue
+    fi
+    printf '%s\n' "$b" >>"$seen_file"
+    # shellcheck disable=SC2034
+    eval "$(data_locate "$item")"
+    case "${DATA_KIND:-}" in
+      missing)
+        printf 'missing_file:%s\n' "$item"
+        ;;
+      unlisted)
+        printf 'unlisted_file:%s\n' "$item"
+        ;;
+      duplicate)
+        printf 'ambiguous_basename:%s\n' "$item"
+        ;;
+    esac
+  done <"$union_file"
+
+  rm -f "$decl_file" "$lit_file" "$seen_file" "$union_file"
 }

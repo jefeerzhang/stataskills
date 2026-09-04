@@ -2,7 +2,7 @@ version 19.5
 * ==== VERIFY CONTRACT ====
 * skill:    stata-descriptives
 * chapter:  ch5
-* data:     descriptive_gss.dta
+* data:     descriptive_gss.dta;gss2006_chapter6.dta;chapter6_aspirin.dta;gss2002_chapter7.dta;wide.dta;gss2006_chapter8_selected.dta;spearman.dta
 * checks:   tabulate+summarize+corr
 * ============================
 * ---- ch5 描述统计 ----
