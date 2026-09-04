@@ -209,6 +209,20 @@ EOF
       pass "caller 已迁 plan each_*：$f"
     fi
   done
+
+  # #24：prompt harness 不得硬编码 DID-community 委托日志集合
+  if grep -nE 'verify-synth-sdid\.log|verify-power\.log|verify-trop\.log' \
+       "$VERIFY_DIR/test-prompts.sh" >/dev/null 2>&1; then
+    bad "test-prompts.sh 仍硬编码 DID-community expected log 集合（#24）"
+  else
+    pass "test-prompts.sh 无硬编码 DID-community log 集合"
+  fi
+  if grep -nE 'verify_dofiles_for_skill|targets_plan_each_dofile' \
+       "$VERIFY_DIR/test-prompts.sh" >/dev/null 2>&1; then
+    pass "test-prompts.sh 从 plan 解析 ordered do-files"
+  else
+    bad "test-prompts.sh 未从 plan 获取 ordered do-files（#24）"
+  fi
 else
   bad "declarative target plan API 未就绪，跳过表驱动用例"
 fi

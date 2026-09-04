@@ -17,6 +17,7 @@ versioned by Stata compatibility).
 - feat(验证): VERIFY CONTRACT + data locator module（#21）——新增 `verify/lib/contract.sh`（`contract_parse` / `contract_exhaustive_gaps` / `data_locate`；agis6/external/generated/sysuse/sim）；`test-contract.sh` 表驱动（partial 声明先红后绿、missing/unlisted/duplicate/CRLF）；`check-claims` 断言 13 改走 contract 解析；旧 `check_data_ready` 保留；CI 接入。
 - feat(验证): 封装 prompt corpus adapters（#22）——新增 `verify/lib/prompt_corpus.sh`（一次选定 jq/python）；`test-prompts.sh` mode 不再分支 adapter；`test-prompt-corpus.sh` 双 adapter 对拍 + malformed（空 skill / 缺 actions / 重复 route_branch）；CI 接入。
 - feat(验证): 迁移 runner/claims 到 target plan（#23）——`targets_plan_each_dofile` / `each_log` / `each_pair` / `each_delegate` / `is_delegate`；`run-verify.sh` / `check-claims.sh` / `test-prompts.sh` 不再拆空格 registry 或自行推日志名；claims 补 plan owner 校验；`test-targets.sh` 覆盖普通与 multi-delegate pair 序 + caller 迁移锁。
+- feat(验证): 迁移 prompt harness 到 target plan（#24）——`verify_dofiles_for_skill` / `verify_logs_for_skill` 同源 plan；table-driven 自测覆盖普通与三委托（按 count，不硬编码委托日志名）；`--prompts` 同步消费有序 do-files。
 
 ### Fixed
 - fix(did-community): 恢复 `did_imputation` method ownership（#19）——详解节从 `references/sdid.md` 迁回索引目标 `references/csdid-jwdid-imputation.md`；`sdid.md` 仅保留 `sdid`；`check-claims.sh` 新增断言 22（索引指向 A、详情在 B 先红后绿）。

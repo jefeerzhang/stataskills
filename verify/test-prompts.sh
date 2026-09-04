@@ -255,7 +255,7 @@ run_docs_mode() {
   fi
 
   if self_test_verify_log_resolution; then
-    echo "PASS  target registry 为普通/多委托 skill 解析正确日志集合"
+    echo "PASS  target plan 为普通/多委托 skill 解析有序 do-files 与 logs"
     pass=$((pass+1))
   else
     fail=$((fail+1))
@@ -391,9 +391,18 @@ log_has_executed_command() {
   ' "$log_file"
 }
 
+# #24：prompt harness 的 do-file / log 解析一律走 target plan（无内置
+# 普通入口或 DID-community delegate 特殊知识）。
+verify_dofiles_for_skill() {
+  local skill="$1" base
+  while IFS= read -r base; do
+    [ -n "$base" ] || continue
+    printf '%s\n' "$VERIFY_DIR/${base}.do"
+  done < <(targets_plan_each_dofile "verify-$skill")
+}
+
 verify_logs_for_skill() {
   local skill="$1" logbase
-  # #23：日志基名来自 plan each_log，caller 不拆空格、不自行推 $base.log
   while IFS= read -r logbase; do
     [ -n "$logbase" ] || continue
     printf '%s\n' "$VERIFY_DIR/${logbase}.log"
@@ -418,24 +427,67 @@ self_test_log_matcher() {
   rm -f "$probe"
 }
 
+# Table-driven：skill|expected_count —— expected paths 由 plan 派生，
+# 不硬编码 DID-community 三委托日志名（#24）。
 self_test_verify_log_resolution() {
-  local actual expected
-  actual="$(verify_logs_for_skill did-community)" || return 1
-  expected=$(printf '%s\n' \
-    "$VERIFY_DIR/verify-synth-sdid.log" \
-    "$VERIFY_DIR/verify-power.log" \
-    "$VERIFY_DIR/verify-trop.log")
-  if [ "$actual" != "$expected" ]; then
-    echo "FAIL  did-community 未按 target registry 解析三个委托日志"
-    return 1
-  fi
+  local fixtures skill n entry expected_logs actual_logs expected_dofs actual_dofs
+  local got_n pd pl
+  fixtures=$(cat <<'EOF'
+regression|1
+did-community|3
+EOF
+)
+  while IFS='|' read -r skill n; do
+    [ -n "${skill:-}" ] || continue
+    entry="verify-$skill"
 
-  actual="$(verify_logs_for_skill regression)" || return 1
-  expected="$VERIFY_DIR/verify-regression.log"
-  if [ "$actual" != "$expected" ]; then
-    echo "FAIL  普通 skill 未解析为自身单日志"
-    return 1
-  fi
+    expected_dofs=""
+    while IFS= read -r base; do
+      [ -n "$base" ] || continue
+      expected_dofs="${expected_dofs:+$expected_dofs$'\n'}$VERIFY_DIR/${base}.do"
+    done < <(targets_plan_each_dofile "$entry")
+    actual_dofs="$(verify_dofiles_for_skill "$skill")" || return 1
+    if [ "$actual_dofs" != "$expected_dofs" ]; then
+      echo "FAIL  $skill do-files 未按 target plan 有序解析"
+      return 1
+    fi
+
+    expected_logs=""
+    while IFS= read -r logbase; do
+      [ -n "$logbase" ] || continue
+      expected_logs="${expected_logs:+$expected_logs$'\n'}$VERIFY_DIR/${logbase}.log"
+    done < <(targets_plan_each_log "$entry")
+    actual_logs="$(verify_logs_for_skill "$skill")" || return 1
+    if [ "$actual_logs" != "$expected_logs" ]; then
+      echo "FAIL  $skill logs 未按 target plan 有序解析"
+      return 1
+    fi
+
+    got_n=$(printf '%s\n' "$actual_logs" | grep -c . || true)
+    if [ "$got_n" -ne "$n" ]; then
+      echo "FAIL  $skill 期望 $n 条 log，得 $got_n"
+      return 1
+    fi
+
+    # pair 同序：每条 dofile 基名与 log 基名对齐（caller 不推日志名）
+    while IFS=$'\t' read -r pd pl; do
+      [ -n "${pd:-}" ] || continue
+      case "$actual_dofs"$'\n' in
+        *"$VERIFY_DIR/${pd}.do"*) ;;
+        *) echo "FAIL  $skill pair dofile 缺失：$pd"; return 1 ;;
+      esac
+      case "$actual_logs"$'\n' in
+        *"$VERIFY_DIR/${pl}.log"*) ;;
+        *) echo "FAIL  $skill pair log 缺失：$pl"; return 1 ;;
+      esac
+      if [ "$pd" != "$pl" ]; then
+        echo "FAIL  $skill plan pair 基名不一致：$pd vs $pl"
+        return 1
+      fi
+    done < <(targets_plan_each_pair "$entry")
+  done <<EOF
+$fixtures
+EOF
 }
 
 run_prompts_mode() {
@@ -444,7 +496,7 @@ run_prompts_mode() {
   self_test_verify_log_resolution || return 1
 
   local pid skill keywords first_skill verify_log i=0
-  local -a verify_logs
+  local -a verify_logs _verify_dofs
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
     if ! pid="$(json_prompt_field "$i" id)" || \
        ! skill="$(json_prompt_field "$i" skill)" || \
@@ -461,13 +513,21 @@ run_prompts_mode() {
       continue
     fi
 
-    # 目标名 = 首个 skill 去 "stata-" 前缀（registry 按此解析 do-file）；
+    # 目标名 = 首个 skill 去 "stata-" 前缀；do-file/log 集合由 target plan 解析。
     # 跨 skill 联动 prompt（如 cross-01）只跑第一个 skill。
     first_skill="${skill%% *}"
     first_skill="${first_skill#stata-}"
     mapfile -t verify_logs < <(verify_logs_for_skill "$first_skill")
+    # 有序 do-files 同样来自 plan（与 run-verify 主循环同源；本模式仍经 harness 执行）
+    mapfile -t _verify_dofs < <(verify_dofiles_for_skill "$first_skill")
+    if [ "${#verify_logs[@]}" -eq 0 ] || [ "${#_verify_dofs[@]}" -eq 0 ]; then
+      echo "FAIL  $pid · target plan 未解析出 do-file/log（skill=$first_skill）"
+      fail=$((fail+1))
+      i=$((i+1))
+      continue
+    fi
 
-    # 跑 verify-<skill>.do（用 run-verify.sh harness）
+    # 跑入口（用 run-verify.sh；内部同样走 plan each_pair）
     if ! bash "$VERIFY_DIR/run-verify.sh" "$first_skill" >/dev/null 2>&1; then
       echo "FAIL  $pid · run-verify.sh $first_skill 返回非零"
       fail=$((fail+1))
