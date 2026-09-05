@@ -21,6 +21,7 @@ versioned by Stata compatibility).
 - feat(验证): 迁移穷尽 data contract 并收缩旧解析（#25）——`contract_data_report` / `contract_stale_declarations`；各 verify-*.do 穷尽声明 literal repo reads；`run-verify`/`check-claims` 只经 contract seam；sysuse:/sim: 非仓库类别；fixture 覆盖五类 KIND + 生产全绿。
 - feat(验证): 深化 community-package contract（#26）——新增 `verify/lib/community.sh`（pkg×owner×required/optional）；捕获 `center`/`ivreg2`/`weakivtest` 漏检；claims 交叉验证 probe/sentinel/ownership；`test-community.sh` + CI。
 - feat(验证): 收缩旧 target registry 并同步 ADR-0004（#27）——删除 `targets_run_dofile`/`targets_delegates`；ADR-0004 记录三委托 + plan ownership；claims 交叉验证；deletion test。
+- feat(验证): 执行完整跨 skill prompt plan（#28）——`verify/lib/prompt_plan.sh`；全 skill 经 target plan 去重保序；缺关键词指出 skill/log；fixtures 覆盖跨 skill/共享 target/multi-delegate；`test-prompt-plan.sh` + CI。
 
 ### Fixed
 - fix(did-community): 恢复 `did_imputation` method ownership（#19）——详解节从 `references/sdid.md` 迁回索引目标 `references/csdid-jwdid-imputation.md`；`sdid.md` 仅保留 `sdid`；`check-claims.sh` 新增断言 22（索引指向 A、详情在 B 先红后绿）。

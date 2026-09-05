@@ -20,6 +20,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 
 - 社区包 contract：`verify/lib/community.sh` 登记 (pkg, owner, required|optional)；claims 交叉验证 probe / sentinel 分类 / ownership；`center` / `ivreg2` / `weakivtest` 纳入漏检锁。judge 只解释日志 sentinel。回归 `bash verify/test-community.sh`。
 - Agent 行为回归：`test-prompts.json` 27 条 prompt 三层模式——docs（CI 静态断言）/ `--prompts`（Stata 子集，需本机 Stata）/ `--llm`（真实 Agent，需 claude CLI 且 API key 或 OAuth 登录态任一）。`--llm` 已于 2026-08-27 全量实测（MiniMax M3 后端）：25/27 直接 PASS；2 条 FAIL 归因为 fixture 数据漂移（basics-01）与判定器点号剥离缺陷（cross-02 部分），修复后重放转绿；台账 `verify/llm-results.md`、`verify/llm-smoke-results.md`。
 - prompt corpus 解析经 `verify/lib/prompt_corpus.sh`，jq/Python 为 seam 后 adapters；回归 `bash verify/test-prompt-corpus.sh`。
+- 跨 skill prompt execution plan：`verify/lib/prompt_plan.sh` 将 fixture 全部 normalized skills 经 target plan 展开为去重保序的 do-file/log；`--prompts` 与 docs 自测共用；缺关键词报告 skill+log。回归 `bash verify/test-prompt-plan.sh`。
 - 验证脚本数据的两种来源：
   - AGIS6 教材配套：`data/agis6/`，由 `data/manifest.txt` 单一来源管理。
   - 项目级扩展（非 AGIS6 来源）：`data/<子目录>/`，由 `data/manifest-extra.txt` 单一来源管理。两份清单由 harness 同时校验。

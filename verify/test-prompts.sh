@@ -32,6 +32,8 @@ TEST_PROMPTS_JSON="$REPO_ROOT/test-prompts.json"
 
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/targets.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/prompt_plan.sh"
 
 # ---- 参数解析 ----
 MODE="docs"
@@ -256,6 +258,13 @@ run_docs_mode() {
 
   if self_test_verify_log_resolution; then
     echo "PASS  target plan 为普通/多委托 skill 解析有序 do-files 与 logs"
+    pass=$((pass+1))
+  else
+    fail=$((fail+1))
+  fi
+
+  if self_test_prompt_plan; then
+    echo "PASS  跨 skill prompt plan：去重保序 + multi-delegate + missing keyword 报告"
     pass=$((pass+1))
   else
     fail=$((fail+1))
@@ -490,13 +499,122 @@ $fixtures
 EOF
 }
 
+# #28：跨 skill execution plan — 全 skill 经 target plan；去重保序；
+# 缺关键词时指出 skill 与 log。
+self_test_prompt_plan() {
+  local plan got expect skill_line
+
+  # 单 skill：与旧行为一致（1 行 target）
+  plan=$(prompt_plan_each_target "stata-regression" | tr '\n' '|')
+  expect="regression	verify-regression	verify-regression|"
+  if [ "$plan" = "$expect" ]; then
+    : # ok — continue aggregating via return at end
+  else
+    echo "FAIL  单 skill plan 漂移：[$plan]"
+    return 1
+  fi
+
+  # 跨 skill
+  plan=$(prompt_plan_each_target "stata-basics + stata-descriptives")
+  expect=$(printf '%s\n' \
+    "basics	verify-basics	verify-basics" \
+    "descriptives	verify-descriptives	verify-descriptives")
+  if [ "$plan" != "$expect" ]; then
+    echo "FAIL  跨 skill plan 漂移："
+    printf '%s\n' "$plan"
+    return 1
+  fi
+
+  # 共享 / 重复 target：后出现的同名 skill 与同 dofile 去掉
+  plan=$(prompt_plan_each_target "stata-regression + stata-basics + stata-regression")
+  expect=$(printf '%s\n' \
+    "regression	verify-regression	verify-regression" \
+    "basics	verify-basics	verify-basics")
+  if [ "$plan" != "$expect" ]; then
+    echo "FAIL  共享 target 去重漂移："
+    printf '%s\n' "$plan"
+    return 1
+  fi
+
+  # multi-delegate
+  plan=$(prompt_plan_each_target "stata-identification + stata-did-community")
+  expect=$(printf '%s\n' \
+    "identification	verify-identification	verify-identification" \
+    "did-community	verify-synth-sdid	verify-synth-sdid" \
+    "did-community	verify-power	verify-power" \
+    "did-community	verify-trop	verify-trop")
+  if [ "$plan" != "$expect" ]; then
+    echo "FAIL  multi-delegate plan 漂移："
+    printf '%s\n' "$plan"
+    return 1
+  fi
+
+  # missing keyword：构造假 log，断言失败信息含 skill 与 log 路径
+  local tmp skill_log
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/prompt-plan.XXXXXX")"
+  printf '%s\n' '. summarize y' >"$tmp/verify-basics.log"
+  skill_log="basics	$tmp/verify-basics.log"
+  if prompt_plan_keywords_covered "nosuchcmd" "$skill_log"; then
+    rm -rf "$tmp"
+    echo "FAIL  missing keyword 场景未失败"
+    return 1
+  fi
+  # 直接测报告格式
+  local miss
+  miss=$(prompt_plan_missing_keyword_report "nosuchcmd" "$skill_log")
+  case "$miss" in
+    *skill=basics*verify-basics.log*) ;;
+    *)
+      rm -rf "$tmp"
+      echo "FAIL  missing keyword 报告未指出 skill/log：[$miss]"
+      return 1
+      ;;
+  esac
+  rm -rf "$tmp"
+  return 0
+}
+
+# prompt_plan_keywords_covered <keywords_space_sep> <lines skill\\tlogpath>
+# 每个关键词至少在某一 plan log 中作为真实执行命令出现 → 0
+prompt_plan_keywords_covered() {
+  local keywords="$1" plan_lines="$2" kw hit s logpath
+  for kw in $keywords; do
+    hit=0
+    while IFS=$'\t' read -r s logpath; do
+      [ -n "${logpath:-}" ] || continue
+      if [ -f "$logpath" ] && log_has_executed_command "$kw" "$logpath"; then
+        hit=1
+        break
+      fi
+    done <<< "$plan_lines"
+    [ "$hit" -eq 1 ] || return 1
+  done
+  return 0
+}
+
+# prompt_plan_missing_keyword_report <kw> <lines skill\\tlogpath>
+# 打印：skill=<s> log=<path>（对每个未命中的 log；若全部未命中则全部列出）
+prompt_plan_missing_keyword_report() {
+  local kw="$1" plan_lines="$2" s logpath any=0
+  while IFS=$'\t' read -r s logpath; do
+    [ -n "${logpath:-}" ] || continue
+    if [ ! -f "$logpath" ] || ! log_has_executed_command "$kw" "$logpath"; then
+      printf 'skill=%s log=%s\n' "$s" "$logpath"
+      any=1
+    fi
+  done <<< "$plan_lines"
+  [ "$any" -eq 1 ]
+}
+
 run_prompts_mode() {
   local pass=0 fail=0
   self_test_log_matcher || return 1
   self_test_verify_log_resolution || return 1
+  self_test_prompt_plan || return 1
 
-  local pid skill keywords first_skill verify_log i=0
-  local -a verify_logs _verify_dofs
+  local pid skill keywords sk verify_log i=0
+  local plan_lines miss_detail kw missing_kw keyword_hit
+  local -a run_skills
   while [ "$i" -lt "$PROMPT_COUNT" ]; do
     if ! pid="$(json_prompt_field "$i" id)" || \
        ! skill="$(json_prompt_field "$i" skill)" || \
@@ -513,56 +631,63 @@ run_prompts_mode() {
       continue
     fi
 
-    # 目标名 = 首个 skill 去 "stata-" 前缀；do-file/log 集合由 target plan 解析。
-    # 跨 skill 联动 prompt（如 cross-01）只跑第一个 skill。
-    first_skill="${skill%% *}"
-    first_skill="${first_skill#stata-}"
-    mapfile -t verify_logs < <(verify_logs_for_skill "$first_skill")
-    # 有序 do-files 同样来自 plan（与 run-verify 主循环同源；本模式仍经 harness 执行）
-    mapfile -t _verify_dofs < <(verify_dofiles_for_skill "$first_skill")
-    if [ "${#verify_logs[@]}" -eq 0 ] || [ "${#_verify_dofs[@]}" -eq 0 ]; then
-      echo "FAIL  $pid · target plan 未解析出 do-file/log（skill=$first_skill）"
+    # #28：全部 normalized skills → target plan（去重保序）
+    mapfile -t run_skills < <(prompt_plan_each_skill "$skill")
+    plan_lines="$(prompt_plan_each_log_path "$skill" "$VERIFY_DIR")"
+    if [ "${#run_skills[@]}" -eq 0 ] || [ -z "$plan_lines" ]; then
+      echo "FAIL  $pid · prompt plan 未解析出 skill/log"
       fail=$((fail+1))
       i=$((i+1))
       continue
     fi
 
-    # 跑入口（用 run-verify.sh；内部同样走 plan each_pair）
-    if ! bash "$VERIFY_DIR/run-verify.sh" "$first_skill" >/dev/null 2>&1; then
-      echo "FAIL  $pid · run-verify.sh $first_skill 返回非零"
+    local run_ok=1
+    for sk in "${run_skills[@]}"; do
+      if ! bash "$VERIFY_DIR/run-verify.sh" "$sk" >/dev/null 2>&1; then
+        echo "FAIL  $pid · run-verify.sh $sk 返回非零"
+        run_ok=0
+        break
+      fi
+    done
+    if [ "$run_ok" -eq 0 ]; then
       fail=$((fail+1))
       i=$((i+1))
       continue
     fi
 
-    # 只认真实执行的命令；注释、cap which <package> 和输出文本不能充当覆盖。
-    local kw missing_kw="" keyword_hit
+    # 刷新 plan 路径（verify 已写出 log）；关键词须在某一 log 命中，
+    # 缺失时指出每个未覆盖的 skill/log。
+    plan_lines="$(prompt_plan_each_log_path "$skill" "$VERIFY_DIR")"
+    missing_kw=""
+    miss_detail=""
     for kw in $keywords; do
       keyword_hit=0
-      for verify_log in "${verify_logs[@]}"; do
+      while IFS=$'\t' read -r sk verify_log; do
+        [ -n "${verify_log:-}" ] || continue
         if [ -f "$verify_log" ] && log_has_executed_command "$kw" "$verify_log"; then
           keyword_hit=1
           break
         fi
-      done
+      done <<< "$plan_lines"
       if [ "$keyword_hit" -eq 0 ]; then
         missing_kw="$missing_kw $kw"
+        miss_detail="${miss_detail} [$kw → $(prompt_plan_missing_keyword_report "$kw" "$plan_lines" | tr '\n' ';')]"
       fi
     done
 
     if [ -z "$missing_kw" ]; then
-      echo "PASS  $pid · log 含关键词：$keywords"
+      echo "PASS  $pid · plan logs 含关键词：$keywords"
       pass=$((pass+1))
     else
-      echo "FAIL  $pid · log 缺关键词：$missing_kw"
+      echo "FAIL  $pid · plan logs 缺关键词：$missing_kw；$miss_detail"
       fail=$((fail+1))
     fi
     i=$((i+1))
   done
 
-  echo
-  echo "结果（--prompts 模式）：$pass 通过，$fail 失败"
-  [ "$fail" -eq 0 ] || exit 1
+  echo ""
+  echo "结果：${pass} 通过，${fail} 失败（prompts 模式）"
+  [ "$fail" -eq 0 ]
 }
 
 # ============================================================
