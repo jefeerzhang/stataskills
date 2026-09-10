@@ -1,6 +1,6 @@
 ---
 name: stata-regression
-description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 / margins 边际效应 / reghdfe 高维固定效应 / ivreghdfe IV 估计 / 工具变量五命令（ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe）+ 全套检验（KP F / Hansen J / 弱工具稳健推断）+ IV 识别与论文解释（联合秩条件 / LATE / complier / 第一阶段-简约式-2SLS 结果三角 / Wald ratio）/ fect 错时 DID 偏差修正。对应教材第 9–11 章（IV 为教材未覆盖扩展）。触发词：回归 / ANOVA / margins / reghdfe / ivregress / ivreg2 / xtivreg / ivreghdfe / 工具变量 / 内生性 / 弱工具 / 过度识别 / LATE / complier / 简约式 / 识别假设 / fect / 逻辑回归 / 固定效应。
+description: Stata 回归建模：ANOVA / ANCOVA / 多元回归 / 逻辑回归 / margins 边际效应 / reghdfe 高维固定效应 / 动态面板 GMM（xtabond / xtdpdsys / xtdpd / xtabond2 / xtdpdgmm）/ ivreghdfe IV 估计 / 工具变量五命令（ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe）+ 全套检验（KP F / Hansen J / 弱工具稳健推断）+ IV 识别与论文解释（联合秩条件 / LATE / complier / 第一阶段-简约式-2SLS 结果三角 / Wald ratio）/ fect 错时 DID 偏差修正。对应教材第 9–11 章（IV 与动态面板为教材未覆盖扩展）。触发词：回归 / ANOVA / margins / reghdfe / 动态面板 / dynamic panel / xtabond / xtabond2 / xtdpdgmm / ivregress / ivreg2 / xtivreg / xtivreghdfe / 工具变量 / 内生性 / 弱工具 / 过度识别 / LATE / complier / 简约式 / 识别假设 / fect / 逻辑回归 / 固定效应。
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
   触发即读本文，无需联网加载其他文件。reghdfe / ivreghdfe / ivreg2 / xtivreg2 / ranktest / weakivtest / avar / fect 需 ssc install；ivregress / xtivreg / margins / anova / regress 内置。
@@ -58,6 +58,7 @@ compatibility: >-
 | 10.8 工具变量五命令：`ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe`（扩展，教材未覆盖） | [iv.md](references/iv.md) | 命令选择 + 语法 + 最小对照 + 必须避开的写法 |
 | 10.9 IV 检验体系：`KP F` / Hansen J / AR / CLR（扩展，教材未覆盖） | [iv-testing.md](references/iv-testing.md) | 第一阶段 / 不可识别 / 弱识别 + Stock-Yogo / 弱工具稳健推断 / 过度识别 / 子集外生 / 内生性 + esttab 出表模板 |
 | 10.10 IV 识别与论文解释：`LATE`（扩展，教材未覆盖） | [iv-identification.md](references/iv-identification.md) | 联合识别 / relevance+independence+exclusion+monotonicity+SUTVA / complier / 第一阶段-简约式-2SLS 结果三角 + Wald ratio / OLS-IV 差异 / 论文主表与限制模板 |
+| 10.11 动态面板 GMM（扩展，教材未覆盖） | [dynamic-panel.md](references/dynamic-panel.md) | Arellano-Bond difference GMM / Blundell-Bond system GMM / xtdpd / xtabond2 / xtdpdgmm / AR(2) / Hansen / 工具变量数量控制 |
 | 10.6a 官方 `ivregress` 验证（内置，无需外部包） | — | verify-regression.do 已扩展覆盖 `ivregress 2sls ... first` + `estat firststage / endogenous / overid` + ch10.10 IV 结果三角与 `assert` 数值断言 |
 
 ## 关键陷阱速查

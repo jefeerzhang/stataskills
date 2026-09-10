@@ -13,6 +13,8 @@
 # shellcheck disable=SC2034
 _COMMUNITY_REGISTRY=$(cat <<'EOF'
 avar verify-regression required
+xtabond2 verify-regression optional
+xtdpdgmm verify-regression optional
 center verify-coefplot optional
 coefplot verify-coefplot required
 csdid verify-synth-sdid required
