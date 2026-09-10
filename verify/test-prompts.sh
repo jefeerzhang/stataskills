@@ -502,7 +502,7 @@ EOF
 # #28：跨 skill execution plan — 全 skill 经 target plan；去重保序；
 # 缺关键词时指出 skill 与 log。
 self_test_prompt_plan() {
-  local plan got expect skill_line
+  local plan expect
 
   # 单 skill：回归入口同时覆盖独立动态面板委托。
   plan=$(prompt_plan_each_target "stata-regression" | tr '\n' '|')

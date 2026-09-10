@@ -145,7 +145,7 @@ eval "$(data_locate "sim:200x10")"
 
 # ---- 4. missing / unlisted ----
 eval "$(data_locate "no_such_dataset_xyz.dta")"
-if [ "${DATA_KIND:-}" = "missing" ] || [ "${DATA_LISTED:-}" = "0" -a ! -f "${DATA_PATH:-/nonexistent}" ]; then
+if [ "${DATA_KIND:-}" = "missing" ] || { [ "${DATA_LISTED:-}" = "0" ] && [ ! -f "${DATA_PATH:-/nonexistent}" ]; }; then
   # prefer explicit missing kind
   if [ "${DATA_KIND:-}" = "missing" ]; then
     pass "data_locate missing：不存在的 agis6 基名"

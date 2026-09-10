@@ -114,10 +114,9 @@ targets_plan_each_pair() {
   local entry="$1"
   local -a ds ls
   local i
-  # shellcheck disable=SC2206
-  ds=($(targets_plan_dofiles "$entry"))
-  # shellcheck disable=SC2206
-  ls=($(targets_plan_logs "$entry"))
+  # 经 each_* 按行收集，避免 arr=($(cmd)) 触发 SC2207
+  mapfile -t ds < <(targets_plan_each_dofile "$entry")
+  mapfile -t ls < <(targets_plan_each_log "$entry")
   if [ "${#ds[@]}" -ne "${#ls[@]}" ]; then
     printf 'targets_plan_each_pair: dofiles/logs 长度不一致 (%s)\n' "$entry" >&2
     return 1

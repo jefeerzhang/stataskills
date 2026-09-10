@@ -49,13 +49,13 @@ fi
 
 # ---- 2. 双 adapter 对拍（两者都有时）----
 if [ "$HAS_JQ" -eq 1 ] && [ "$HAS_PY" -eq 1 ]; then
-  PROMPT_CORPUS_FORCE_ADAPTER=jq
+  export PROMPT_CORPUS_FORCE_ADAPTER=jq
   prompt_corpus_init "$REPO_ROOT/test-prompts.json" || bad "force jq init 失败"
   jq_norm="$(prompt_corpus_normalize 2>/dev/null | tr -d '\r')" || jq_norm="__ERR__"
   jq_rc=0
   prompt_corpus_count >/dev/null 2>&1 || jq_rc=$?
 
-  PROMPT_CORPUS_FORCE_ADAPTER=python
+  export PROMPT_CORPUS_FORCE_ADAPTER=python
   prompt_corpus_init "$REPO_ROOT/test-prompts.json" || bad "force python init 失败"
   py_norm="$(prompt_corpus_normalize 2>/dev/null | tr -d '\r')" || py_norm="__ERR__"
   py_rc=0
@@ -81,7 +81,7 @@ write_bad() {
 # 3a skill 非 string
 write_bad bad_skill_type \
   '{"prompts":[{"id":"x","skill":123,"expected_outputs":["a"]}]}'
-PROMPT_CORPUS_FORCE_ADAPTER="${adapter1}"
+export PROMPT_CORPUS_FORCE_ADAPTER="${adapter1}"
 prompt_corpus_init "$WORKDIR/bad_skill_type.json"
 if ! prompt_corpus_skill_values >/dev/null 2>&1; then
   pass "malformed：skill 非 string → 非零退出"
@@ -125,12 +125,12 @@ fi
 
 # ---- 4. 强制仅有的 adapter 仍可用 ----
 if [ "$HAS_JQ" -eq 1 ]; then
-  PROMPT_CORPUS_FORCE_ADAPTER=jq
+  export PROMPT_CORPUS_FORCE_ADAPTER=jq
   prompt_corpus_init "$REPO_ROOT/test-prompts.json" && prompt_corpus_count >/dev/null \
     && pass "仅 jq 路径可用" || bad "仅 jq 路径失败"
 fi
 if [ "$HAS_PY" -eq 1 ]; then
-  PROMPT_CORPUS_FORCE_ADAPTER=python
+  export PROMPT_CORPUS_FORCE_ADAPTER=python
   prompt_corpus_init "$REPO_ROOT/test-prompts.json" && prompt_corpus_count >/dev/null \
     && pass "仅 python 路径可用" || bad "仅 python 路径失败"
 fi

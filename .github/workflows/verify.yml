@@ -16,9 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # harness 自身质量门：判定脚本必须过 shellcheck
+      # harness 自身质量门：判定脚本必须过 shellcheck（warning+；info/style 如
+      # 测试里刻意的 A && B || C、trap cleanup 可达性分析不挡合并）
       - name: Shellcheck harness
-        run: shellcheck verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/lib/contract.sh verify/lib/community.sh verify/lib/prompt_corpus.sh verify/lib/prompt_plan.sh verify/run-verify.sh verify/test-harness.sh verify/test-targets.sh verify/test-contract.sh verify/test-community.sh verify/test-prompt-corpus.sh verify/test-prompt-plan.sh verify/test-acceptance.sh verify/check-claims.sh verify/test-prompts.sh
+        run: shellcheck -S warning verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/lib/contract.sh verify/lib/community.sh verify/lib/prompt_corpus.sh verify/lib/prompt_plan.sh verify/run-verify.sh verify/test-harness.sh verify/test-targets.sh verify/test-contract.sh verify/test-community.sh verify/test-prompt-corpus.sh verify/test-prompt-plan.sh verify/test-acceptance.sh verify/check-claims.sh verify/test-prompts.sh
 
       # 判定逻辑回归测试（Stata-free）：直接喂构造日志给 verify/lib/judge.sh 断言，
       # 覆盖 r(9) 漏判 / sentinel 语义 / sentinel 掩盖真实错误；不依赖真实 Stata 或平台，
