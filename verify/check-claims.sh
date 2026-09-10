@@ -464,7 +464,7 @@ fi
 
 # ---- 14. 社区包 contract（#26 / ADR-0003）：登记表 × probe × sentinel × ownership ----
 # shellcheck disable=SC1091
-. "$VERIFY_DIR/lib/community.sh"
+. "$VERIFY_DIR/lib/community.sh" || exit 1
 community_drift=""
 for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue
@@ -653,7 +653,7 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
 done
 ok "verify-*.do assert 覆盖率 fact：${assert_with}/${assert_total} 脚本含 assert（教学型 verify 依赖 end-of-do exit 0；扩展为 P3 候选）"
 
-# ---- 24. ADR-0004 与 target plan 三委托交叉验证（#27）----
+# ---- 24. ADR-0004 与 target plan 委托交叉验证（#27）----
 ADR4="$REPO_ROOT/docs/adr/0004-verification-target-registry.md"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/targets.sh"
@@ -661,21 +661,21 @@ adr4_drift=""
 if [ ! -f "$ADR4" ]; then
   adr4_drift="缺 ADR-0004 文件;"
 else
-  for d in verify-synth-sdid verify-power verify-trop; do
+  for d in verify-dynamic-panel verify-synth-sdid verify-power verify-trop; do
     grep -q "$d" "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 ${d};"
   done
   grep -q 'targets_plan_owner' "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 targets_plan_owner;"
   grep -qE 'targets_run_dofile|targets_delegates' "$ADR4" && adr4_drift="${adr4_drift} ADR 仍描述已删旧 API;"
 fi
 plan_d=$(targets_plan_delegate_bases)
-expect_d="verify-synth-sdid verify-power verify-trop"
+expect_d="verify-dynamic-panel verify-synth-sdid verify-power verify-trop"
 [ "$plan_d" = "$expect_d" ] || adr4_drift="${adr4_drift} plan delegates=[$plan_d];"
 owner=$(targets_plan_owner verify-did-community)
 [ "$owner" = "did-community" ] || adr4_drift="${adr4_drift} owner=$owner;"
 if [ -n "$adr4_drift" ]; then
   bad "ADR-0004 / target plan 交叉验证失败：${adr4_drift}"
 else
-  ok "ADR-0004 与 target plan 三委托 + ownership 一致（#27）"
+  ok "ADR-0004 与 target plan 委托 + ownership 一致（#27）"
 fi
 
 summary

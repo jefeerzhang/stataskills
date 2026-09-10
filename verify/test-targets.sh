@@ -57,7 +57,8 @@ declare -F targets_plan_is_delegate >/dev/null 2>&1 || has_plan=0
 # 普通 1:1 与 multi-delegate 各至少一行。
 FIXTURES=$(cat <<'EOF'
 verify-basics|basics|verify-basics
-verify-regression|regression|verify-regression
+verify-dce|dce|verify-dce
+verify-regression|regression|verify-regression verify-dynamic-panel
 verify-did-community|did-community|verify-synth-sdid verify-power verify-trop
 EOF
 )
@@ -145,7 +146,7 @@ EOF
 
   # ---- 孤儿 / delegate facts：由同一 plan 派生 ----
   got_delegates=$(targets_plan_delegate_bases)
-  expect_delegates="verify-synth-sdid verify-power verify-trop"
+  expect_delegates="verify-dynamic-panel verify-synth-sdid verify-power verify-trop"
   if [ "$got_delegates" = "$expect_delegates" ]; then
     pass "plan delegates：$expect_delegates"
   else
@@ -163,11 +164,12 @@ EOF
     bad "each_delegate 期望 [$expect_delegates]，得 [$each_delegates]"
   fi
 
-  if targets_plan_is_delegate verify-synth-sdid \
+  if targets_plan_is_delegate verify-dynamic-panel \
+    && targets_plan_is_delegate verify-synth-sdid \
     && targets_plan_is_delegate verify-power \
     && targets_plan_is_delegate verify-trop \
     && ! targets_plan_is_delegate verify-basics; then
-    pass "is_delegate：三委托命中、普通入口否"
+    pass "is_delegate：四委托命中、普通入口否"
   else
     bad "is_delegate 契约失败"
   fi

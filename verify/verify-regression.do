@@ -108,48 +108,6 @@ estat endogenous
 capture noisily estat overid
 display "overid_exact_rc=" _rc
 
-* ---- ch10.11 动态面板（内置 xtabond / xtdpdsys；固定 DGP）----
-clear
-set seed 20260910
-set obs 40
-gen id = _n
-expand 6
-bysort id: gen t = _n
-xtset id t
-gen u = rnormal()
-gen x = rnormal()
-gen y = .
-sort id t
-by id: replace y = u if t == 1
-by id: replace y = 0.55 * y[_n-1] + 0.35 * x + u if t > 1
-xtabond y x, lags(1) twostep vce(robust)
-estat abond
-capture noisily estat sargan
-xtdpdsys y x, lags(1) twostep vce(robust)
-estat abond
-
-* ---- ch10.11b 社区动态面板检验（可选包）----
-cap which xtabond2
-local has_xtabond2 = (_rc == 0)
-if !`has_xtabond2' display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__xtabond2__"
-if `has_xtabond2' {
-    xtabond2 y L.y x, gmmstyle(L.y, laglimits(2 3) collapse) ///
-        ivstyle(x) twostep robust small
-    display "xtabond2_instruments=" e(j)
-    display "xtabond2_groups=" e(N_g)
-    display "xtabond2_hansen_p=" e(hansenp)
-    matrix list e(diffsargan)
-}
-cap which xtdpdgmm
-local has_xtdpdgmm = (_rc == 0)
-if !`has_xtdpdgmm' display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__xtdpdgmm__"
-if `has_xtdpdgmm' {
-    xtdpdgmm y L.y x, model(diff) gmmiv(L.y, lag(2 3) collapse) ///
-        iv(x) twostep vce(robust)
-    capture noisily estat abond
-    capture noisily estat overid
-}
-
 ivregress 2sls tvhours sex (prestg80 = age marital), vce(robust)
 estat overid
 

@@ -89,3 +89,31 @@ for mode in 0 1; do
   fi
 done
 echo "PASS  探针：optional sentinel 在默认/--community 两模式均不掩盖真实 r(1)"
+
+# 探针 5：动态面板诊断契约完整时必须 PASS
+cat > "$WORKDIR/dynamic_ok.log" <<'EOF'
+__DYNAMIC_PANEL_OUTPUT__
+DYNAMIC_PANEL_CONTRACT_REQUIRED
+DYNAMIC_PANEL_AR_TEST_OK
+DYNAMIC_PANEL_OVERID_TEST_OK
+DYNAMIC_PANEL_INSTRUMENT_COUNT_OK
+end of do-file
+EOF
+if ! judge_raw_log zzprobe "$WORKDIR/dynamic_ok.log" 0 >/dev/null 2>&1; then
+  echo "FAIL  探针：动态面板诊断契约完整时未 PASS"
+  exit 1
+fi
+echo "PASS  探针：动态面板诊断契约完整时正确 PASS"
+
+# 探针 6：缺少任一动态面板诊断标记必须 FAIL，且不能被普通 end marker 掩盖
+cat > "$WORKDIR/dynamic_missing.log" <<'EOF'
+DYNAMIC_PANEL_CONTRACT_REQUIRED
+DYNAMIC_PANEL_AR_TEST_OK
+DYNAMIC_PANEL_INSTRUMENT_COUNT_OK
+end of do-file
+EOF
+if judge_raw_log zzprobe "$WORKDIR/dynamic_missing.log" 0 >/dev/null 2>&1; then
+  echo "FAIL  探针：动态面板诊断契约缺失时被误判为 PASS"
+  exit 1
+fi
+echo "PASS  探针：动态面板诊断契约缺失时正确 FAIL"

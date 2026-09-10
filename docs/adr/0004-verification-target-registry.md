@@ -19,6 +19,7 @@ Caller（`run-verify.sh` / `check-claims.sh` / `test-prompts.sh`）只经 `each_
 
 | 入口 | owner | do-files（有序） |
 |------|--------|------------------|
+| `verify-regression` | `regression` | `verify-regression` · `verify-dynamic-panel` |
 | `verify-did-community` | `did-community` | `verify-synth-sdid` · `verify-power` · `verify-trop` |
 
 全量枚举按 `stata-*/SKILL.md` 驱动入口；占位 `verify-did-community.do` 已删除。
@@ -35,7 +36,7 @@ Caller（`run-verify.sh` / `check-claims.sh` / `test-prompts.sh`）只经 `each_
 - 新增 skill 入口由 `stata-*/SKILL.md` 决定；`verify/verify-<name>.do` 必须存在或经 plan 解析为存在的 do-file。
 - 纯委托脚本经 `targets_plan_is_delegate` / `each_delegate` 放行孤儿检测。
 - 显式单目标（如 `run-verify.sh synth-sdid`）对恒等入口仍可用。
-- ADR / AGENTS 中的三委托事实由 `check-claims` 与 `test-targets` 交叉验证；delegate 漂移会失败。
+- ADR / AGENTS 中的委托事实由 `check-claims` 与 `test-targets` 交叉验证；delegate 漂移会失败。
 
 ## 未来再评估
 

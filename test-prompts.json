@@ -209,6 +209,64 @@
       ]
     },
     {
+      "id": "regression-06-dynamic-panel-estimation",
+      "skill": "stata-regression",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": [
+        "dynamic_panel_not_static_fe",
+        "system_gmm_extra_moments"
+      ],
+      "scenario": "用户有短 T、较多个体的公司面板，模型包含滞后因变量，想比较 Difference GMM 与 System GMM。",
+      "expected_actions": [
+        "load stata-regression SKILL.md → references/dynamic-panel.md",
+        "先 xtset id t，说明滞后因变量与个体效应相关，不能直接把 xtreg, fe 当作动态面板主估计",
+        "用 xtabond 或 xtdpd 跑 Difference GMM，再用 xtdpdsys 作为有额外初始条件假设的敏感性规格",
+        "报告 AR(1)/AR(2)、过度识别检验、工具数与 groups 数，并说明 system GMM 的额外假设",
+        "不把 GMM 自动用于静态面板，也不把 system GMM 当作默认更优方法"
+      ],
+      "expected_outputs": [
+        "Difference/System GMM 对照",
+        "AR(1)/AR(2) 与 Hansen/Sargan 诊断",
+        "工具数相对 groups 的报告"
+      ],
+      "verify_keywords": [
+        "xtabond",
+        "xtdpdsys"
+      ]
+    },
+    {
+      "id": "regression-07-dynamic-panel-diagnostics",
+      "skill": "stata-regression",
+      "difficulty": "hard",
+      "requires_package": [
+        "xtabond2",
+        "xtdpdgmm"
+      ],
+      "gotchas": [
+        "ar2_invalid_moments",
+        "instrument_proliferation",
+        "hansen_not_identification_proof"
+      ],
+      "scenario": "动态面板 two-step GMM 输出 AR(1) 显著、AR(2) p=0.03、Hansen p=0.99，工具数 86、groups 40。请判断结果并给出修正路径。",
+      "expected_actions": [
+        "检查 AR(2) 而不是把 AR(1) 显著当作失败；AR(2) 显著说明当前滞后工具矩条件有问题",
+        "识别工具变量爆炸：instruments 86 > groups 40，Hansen p=0.99 可能因工具过多而失去功效",
+        "用 collapse、缩窄 laglimits 或减少 IV-style 工具，重新比较工具数与 groups 数",
+        "不要把 Hansen p=0.99 写成工具外生性的证明",
+        "调整后重新报告 Difference-in-Hansen 分块检验，并比较 difference/system GMM"
+      ],
+      "expected_outputs": [
+        "AR(2) 诊断与修正",
+        "工具变量数量控制",
+        "Hansen 检验局限与 Difference-in-Hansen"
+      ],
+      "verify_keywords": [
+        "xtabond2",
+        "xtdpdgmm"
+      ]
+    },
+    {
       "id": "advanced-01-factor-not-just-alpha",
       "skill": "stata-advanced",
       "difficulty": "hard",
@@ -695,6 +753,41 @@
         "IPWRA ATET 主表、官方对照、独立诊断与 psmatch2 敏感性结果"
       ],
       "verify_keywords": []
+    },
+    {
+      "id": "dce-01-choice-set-contract",
+      "skill": "stata-dce",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["dce_not_plain_mlogit", "choice_set_exactly_one"],
+      "scenario": "用户有 respondent-task-alternative 的 DCE long 数据，chosen=1 表示选中方案；请先检查 choice set，再估计条件 logit。",
+      "expected_actions": [
+        "load stata-dce SKILL.md → references/dce.md",
+        "确认每个 choice set 有多个 alternatives 且恰好一个 chosen==1",
+        "检查 isid respondent task alternative，并用 cmset respondent task alternative 声明选择数据",
+        "使用 cmclogit chosen price quality，并按 respondent 聚类或说明重复选择推断"
+      ],
+      "expected_outputs": ["choice-set 完整性证据", "conditional logit 结果与 VCE 说明"],
+      "verify_keywords": ["cmset", "cmclogit"]
+    },
+    {
+      "id": "dce-02-mixed-logit-wtp-diagnostics",
+      "skill": "stata-dce",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["wtp_needs_price_denominator", "iiA_not_single_test"],
+      "scenario": "用户想用 DCE 估计属性偏好异质性并报告支付意愿，同时担心 IIA 和重复选择问题；另给出 wtp、mixlogit、probcalc 和带 membership(male age income) 的五类别 lclogit，要求解释 pr0/pr/up/cp 及后验加权系数。",
+      "expected_actions": [
+        "先以 cmclogit 作为基准，再用 cmmixlogit 或 cmxtmixlogit 指定随机系数",
+        "记录 random distribution、integration method、intpoints 与 intseed，并按 respondent 处理面板推断",
+        "用 WTP=-beta_attribute/beta_price，先检查价格系数符号和非零性，再用 nlcom、bootstrap 或 simulation 给不确定性",
+        "不要把单个 Hausman/IIA p 值当作唯一诊断；结合替代方案设计与 mixed-logit 稳健性",
+        "读取 references/community.md；wtp 成本变量放第一项，区分 delta/Fieller/Krinsky-Robb；probcalc 是常见分布计算器，DCE 预测用 mixlpred 或 lclogitpr",
+        "lclogit membership 需要 fmlogit，成员变量在同一人全部任务间不变；pr 同时生成总体和类别条件概率，总体以先验 H 加权，cp 使用整个选择序列；按人去重汇总 H/G",
+        "区分类别 WTP 后验平均与后验平均系数之比；原始 EM 没有通常的估计量 VCE，不能直接调用 wtp 宣称有效区间；五类需比较类别数及多起点"
+      ],
+      "expected_outputs": ["mixed/panel mixed logit 结果", "WTP 定义与不确定性", "IIA 与数值稳定性诊断"],
+      "verify_keywords": ["cmmixlogit", "DCE_WTP_OK", "DCE_COMMUNITY_MIXLOGIT_OK", "DCE_LCLOGIT_PROBABILITIES_OK", "DCE_PROBCALC_DISTRIBUTION_ONLY_OK"]
     }
   ]
 }

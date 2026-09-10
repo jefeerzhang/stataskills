@@ -58,7 +58,7 @@ compatibility: >-
 | 10.8 工具变量五命令：`ivregress / ivreg2 / xtivreg / xtivreg2 / ivreghdfe`（扩展，教材未覆盖） | [iv.md](references/iv.md) | 命令选择 + 语法 + 最小对照 + 必须避开的写法 |
 | 10.9 IV 检验体系：`KP F` / Hansen J / AR / CLR（扩展，教材未覆盖） | [iv-testing.md](references/iv-testing.md) | 第一阶段 / 不可识别 / 弱识别 + Stock-Yogo / 弱工具稳健推断 / 过度识别 / 子集外生 / 内生性 + esttab 出表模板 |
 | 10.10 IV 识别与论文解释：`LATE`（扩展，教材未覆盖） | [iv-identification.md](references/iv-identification.md) | 联合识别 / relevance+independence+exclusion+monotonicity+SUTVA / complier / 第一阶段-简约式-2SLS 结果三角 + Wald ratio / OLS-IV 差异 / 论文主表与限制模板 |
-| 10.11 动态面板 GMM（扩展，教材未覆盖） | [dynamic-panel.md](references/dynamic-panel.md) | Arellano-Bond difference GMM / Blundell-Bond system GMM / xtdpd / xtabond2 / xtdpdgmm / AR(2) / Hansen / 工具变量数量控制 |
+| 10.11 `动态面板 GMM`（扩展，教材未覆盖） | [dynamic-panel.md](references/dynamic-panel.md) | Arellano-Bond difference GMM / Blundell-Bond system GMM / xtdpd / xtabond2 / xtdpdgmm / AR(2) / Hansen / 工具变量数量控制 |
 | 10.6a 官方 `ivregress` 验证（内置，无需外部包） | — | verify-regression.do 已扩展覆盖 `ivregress 2sls ... first` + `estat firststage / endogenous / overid` + ch10.10 IV 结果三角与 `assert` 数值断言 |
 
 ## 关键陷阱速查

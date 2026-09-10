@@ -43,7 +43,21 @@ judge_raw_log() {
   PARSE_COMMUNITY_REQ="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
   PARSE_COMMUNITY_OPT="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
 
-  if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ]; then
+  # 动态面板诊断契约：do-file 明确声明后，日志必须包含每类核心诊断的成功标记。
+  # 这些标记由 Stata 在对应命令成功、结构性 assert 通过后输出；不依赖随机 p 值阈值。
+  local PARSE_DYNAMIC_REQUIRED=0 PARSE_DYNAMIC_MISSING=""
+  if grep -q "DYNAMIC_PANEL_CONTRACT_REQUIRED" "$log"; then
+    PARSE_DYNAMIC_REQUIRED=1
+    local dynamic_lines
+    dynamic_lines="$(grep -vE '^[.][[:space:]]*display' "$log" 2>/dev/null)"
+    for marker in DYNAMIC_PANEL_AR_TEST_OK DYNAMIC_PANEL_OVERID_TEST_OK DYNAMIC_PANEL_INSTRUMENT_COUNT_OK; do
+      if ! printf '%s\n' "$dynamic_lines" | grep -q "$marker"; then
+        PARSE_DYNAMIC_MISSING="${PARSE_DYNAMIC_MISSING}${marker} "
+      fi
+    done
+  fi
+
+  if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ] && [ -z "$PARSE_DYNAMIC_MISSING" ]; then
     if [ -n "$PARSE_COMMUNITY_REQ" ] && [ "$community_mode" -eq 1 ]; then
       bad "${name}（--community 模式下缺必需包：${PARSE_COMMUNITY_REQ}，请 ssc install 后重跑）"
       return 1
@@ -56,7 +70,11 @@ judge_raw_log() {
     fi
     return 0
   else
-    bad "${name}（end of do-file x${PARSE_ENDS}，r(错误 x${PARSE_ERRS}，静默错误 x${PARSE_SILENT}）→ 见 ${log}"
+    if [ -n "$PARSE_DYNAMIC_MISSING" ]; then
+      bad "${name}（动态面板诊断契约缺失：${PARSE_DYNAMIC_MISSING}→ 见 ${log}）"
+    else
+      bad "${name}（end of do-file x${PARSE_ENDS}，r(错误 x${PARSE_ERRS}，静默错误 x${PARSE_SILENT}）→ 见 ${log}"
+    fi
     return 1
   fi
 }

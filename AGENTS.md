@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 10 个 skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`、`stata-did-community`、`stata-rdd`、`stata-selection`、`stata-identification`）。仓库含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
+Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 11 个 skills（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`、`stata-coefplot`、`stata-did`、`stata-did-community`、`stata-rdd`、`stata-selection`、`stata-identification`、`stata-dce`）。仓库含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
 
 ## 目录
 
@@ -13,12 +13,14 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 
 
 ## 关键惯例
 
+- DCE 社区工具来源与概率语义统一维护在 `stata-dce/references/community.md`。`verify-dce.do` 可执行验证 `wtp`、`mixlogit`/`mixlpred`、`lclogit`/`lclogitpr`（membership 依赖 `fmlogit`）；`probcalc` 仅验证常见分布计算，不能用于 DCE 选择概率。社区包统一 optional，安装后才运行对应断言。
+
 - SKILL.md 中 Stata 内置命令的示例语法必须经 `verify/` 脚本实测通过
 - 社区包（`ssc install`，如 reghdfe / csdid / jwdid / did_imputation / synth / sdid）：**部分章节的示例语法现在已纳入验证**（见 `stata-did/SKILL.md` 第 13–15 节 / `verify/verify-synth-sdid.do`）。机制：`run-verify.sh` 默认模式静默 PASS（cap which 风格，CI 不被网络绑定）；`--community` 模式强制要求必需包安装齐全才 PASS。可选包用 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__` sentinel，与必需包 `__COMMUNITY_PACKAGE_MISSING__` 区分。
-- 验证目标解析单一来源：`verify/lib/targets.sh`。Declarative target plan（`targets_plan_owner` / `dofiles` / `logs` / `delegate_bases`）与 caller 按行迭代（`targets_plan_each_dofile` / `each_log` / `each_pair` / `each_delegate` / `is_delegate`）；`run-verify.sh` / `check-claims.sh` / `test-prompts.sh` 经 each_* 消费（不拆空格、不推日志名；prompt harness 的 do-file/log 集合与 table-driven 自测同源 plan，无内置三委托日志名）。旧空格 API 已删除（#27）。每个 skill `stata-<name>` 对应验证入口 `verify-<name>`（默认 1:1）；`did-community` 委托三个 do-file（`verify-synth-sdid.do` + `verify-power.do` + `verify-trop.do`）。改委托只改 `targets.sh` 的 override；回归见 `bash verify/test-targets.sh`。
+- 验证目标解析单一来源：`verify/lib/targets.sh`。Declarative target plan（`targets_plan_owner` / `dofiles` / `logs` / `delegate_bases`）与 caller 按行迭代（`targets_plan_each_dofile` / `each_log` / `each_pair` / `each_delegate` / `is_delegate`）；`run-verify.sh` / `check-claims.sh` / `test-prompts.sh` 经 each_* 消费（不拆空格、不推日志名；prompt harness 的 do-file/log 集合与 table-driven 自测同源 plan，无内置委托日志名）。旧空格 API 已删除（#27）。每个 skill `stata-<name>` 对应验证入口 `verify-<name>`（默认 1:1）；`stata-regression` 委托独立动态面板 do-file，`did-community` 委托三个 do-file。改委托只改 `targets.sh` 的 override；回归见 `bash verify/test-targets.sh`。
 - VERIFY CONTRACT / data locator：`verify/lib/contract.sh` 解析契约 metadata 与 data 声明，并按 ADR-0003/0006 区分 agis6 / 外部扩展 / 项目内生成；穷尽 data contract 经 `contract_data_report`（missing/stale declaration、missing/unlisted/ambiguous file）；`run-verify.sh` / `check-claims.sh` 只经此 seam 判 readiness（无平行 use 路径解析）。回归 `bash verify/test-contract.sh`。
 - 社区包 contract：`verify/lib/community.sh` 登记 (pkg, owner, required|optional)；claims 交叉验证 probe / sentinel 分类 / ownership；`center` / `ivreg2` / `weakivtest` 纳入漏检锁。judge 只解释日志 sentinel。回归 `bash verify/test-community.sh`。
-- Agent 行为回归：`test-prompts.json` 27 条 prompt 三层模式——docs（CI 静态断言）/ `--prompts`（Stata 子集，需本机 Stata）/ `--llm`（真实 Agent，需 claude CLI 且 API key 或 OAuth 登录态任一）。`--llm` 已于 2026-08-27 全量实测（MiniMax M3 后端）：25/27 直接 PASS；2 条 FAIL 归因为 fixture 数据漂移（basics-01）与判定器点号剥离缺陷（cross-02 部分），修复后重放转绿；台账 `verify/llm-results.md`、`verify/llm-smoke-results.md`。
+- Agent 行为回归：`test-prompts.json` 31 条 prompt 三层模式——docs（CI 静态断言）/ `--prompts`（Stata 子集，需本机 Stata）/ `--llm`（真实 Agent，需 claude CLI 且 API key 或 OAuth 登录态任一）。`--llm` 台账中的 25/27 结果对应 2026-08-27 当时的 prompt corpus；动态面板与 DCE prompt 尚未重跑 LLM 层；台账 `verify/llm-results.md`、`verify/llm-smoke-results.md`。
 - prompt corpus 解析经 `verify/lib/prompt_corpus.sh`，jq/Python 为 seam 后 adapters；回归 `bash verify/test-prompt-corpus.sh`。
 - 跨 skill prompt execution plan：`verify/lib/prompt_plan.sh` 将 fixture 全部 normalized skills 经 target plan 展开为去重保序的 do-file/log；`--prompts` 与 docs 自测共用；缺关键词报告 skill+log。回归 `bash verify/test-prompt-plan.sh`。
 - 架构深化整体验收（#29 / parent #18）：六个 locality seams 的回归入口 + 反模式清零见 `bash verify/test-acceptance.sh`；四套 exit-0 门禁为 `--static` / `check-claims` / `test-harness` / `test-prompts`。

@@ -84,3 +84,7 @@ estat overid
 - 政策处理时点、事件研究或错时处理 → `stata-did` / `stata-did-community`。
 - 只需要静态个体固定效应 → `xtreg, fe` 或 `reghdfe`，不要为了“面板”自动上 GMM。
 - T 很大或 N 很小 → 先评估 Nickell bias、有限样本和 GMM 工具有效性，不直接套模板。
+
+## 7. 验证契约
+
+仓库验证不仅检查命令退出状态，还要求动态面板日志留下三类核心诊断证据：AR(1)/AR(2) 检验、过度识别检验、工具数与 groups 的结构检查。随机 DGP 不把具体 p 值写死；但缺少任一诊断证据、结构性 `assert` 失败或出现 Stata 错误码，都必须判定为失败。`xtabond2` 安装时还记录 Hansen、Difference-in-Hansen 和工具数；未安装时按社区包契约输出 optional sentinel。

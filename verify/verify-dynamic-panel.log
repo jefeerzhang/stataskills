@@ -1,0 +1,308 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-dynamic-panel.do 
+
+. version 19.5
+
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-regression
+. * chapter:  ch10.11
+. * data:     sim:40x6
+. * checks:   xtabond+xtdpdsys+dynamic-panel-diagnostics
+. * =========================
+. 
+. display "DYNAMIC_PANEL_CONTRACT_REQUIRED"
+DYNAMIC_PANEL_CONTRACT_REQUIRED
+
+. clear
+
+. set seed 20260910
+
+. set obs 40
+Number of observations (_N) was 0, now 40.
+
+. gen id = _n
+
+. expand 6
+(200 observations created)
+
+. bysort id: gen t = _n
+
+. xtset id t
+
+Panel variable: id (strongly balanced)
+ Time variable: t, 1 to 6
+         Delta: 1 unit
+
+. gen u = rnormal()
+
+. gen x = rnormal()
+
+. gen y = .
+(240 missing values generated)
+
+. sort id t
+
+. by id: replace y = u if t == 1
+(40 real changes made)
+
+. by id: replace y = 0.55 * y[_n-1] + 0.35 * x + u if t > 1
+(200 real changes made)
+
+. 
+. * 内置 Difference GMM：AR(1)/AR(2) 与过度识别证据
+. xtabond y x, lags(1) twostep vce(robust)
+
+Arellano–Bond dynamic panel-data estimation     Number of obs     =        160
+Group variable: id                              Number of groups  =         40
+Time variable: t
+                                                Obs per group:
+                                                              min =          4
+                                                              avg =          4
+                                                              max =          4
+
+Number of instruments =     12                  Wald chi2(2)      =      54.04
+                                                Prob > chi2       =     0.0000
+Two-step results
+                                     (Std. err. adjusted for clustering on id)
+------------------------------------------------------------------------------
+             |              WC-robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           y |
+         L1. |    .883466   .1437225     6.15   0.000     .6017751    1.165157
+             |
+           x |   .3020098   .0737378     4.10   0.000     .1574863    .4465333
+       _cons |  -.0393465    .059417    -0.66   0.508    -.1558018    .0771087
+------------------------------------------------------------------------------
+Instruments for differenced equation
+        GMM-type: L(2/.).y
+        Standard: D.x
+Instruments for level equation
+        Standard: _cons
+
+. estat abond
+
+Arellano–Bond test for zero autocorrelation in first-differenced errors
+H0: No autocorrelation 
+
+Order         z   Prob > z
+--------------------------
+    1   -3.3626     0.0008
+    2   1.3073      0.1911
+--------------------------
+
+. display "DYNAMIC_PANEL_AR_TEST_OK"
+DYNAMIC_PANEL_AR_TEST_OK
+
+. * Sargan 需要非 robust VCE；robust 规格的有效性判断由 Hansen 承担。
+. xtabond y x, lags(1) twostep
+
+Arellano–Bond dynamic panel-data estimation     Number of obs     =        160
+Group variable: id                              Number of groups  =         40
+Time variable: t
+                                                Obs per group:
+                                                              min =          4
+                                                              avg =          4
+                                                              max =          4
+
+Number of instruments =     12                  Wald chi2(2)      =      63.45
+                                                Prob > chi2       =     0.0000
+Two-step results
+------------------------------------------------------------------------------
+           y | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           y |
+         L1. |    .883466   .1413101     6.25   0.000     .6065033    1.160429
+             |
+           x |   .3020098   .0678336     4.45   0.000     .1690583    .4349613
+       _cons |  -.0393465   .0524553    -0.75   0.453    -.1421571     .063464
+------------------------------------------------------------------------------
+Warning: gmm two-step standard errors are biased; robust standard 
+         errors are recommended.
+Instruments for differenced equation
+        GMM-type: L(2/.).y
+        Standard: D.x
+Instruments for level equation
+        Standard: _cons
+
+. estat sargan
+Sargan test of overidentifying restrictions
+H0: Overidentifying restrictions are valid
+
+        chi2(9)      =  4.015598
+        Prob > chi2  =    0.9104
+
+. display "DYNAMIC_PANEL_OVERID_TEST_OK"
+DYNAMIC_PANEL_OVERID_TEST_OK
+
+. assert e(zrank) > 0 & e(N_g) > 0
+
+. display "DYNAMIC_PANEL_INSTRUMENT_COUNT=" e(zrank) "/" e(N_g)
+DYNAMIC_PANEL_INSTRUMENT_COUNT=12/40
+
+. display "DYNAMIC_PANEL_INSTRUMENT_COUNT_OK"
+DYNAMIC_PANEL_INSTRUMENT_COUNT_OK
+
+. 
+. * 内置 System GMM：作为独立敏感性规格运行
+. xtdpdsys y x, lags(1) twostep vce(robust)
+
+System dynamic panel-data estimation            Number of obs     =        200
+Group variable: id                              Number of groups  =         40
+Time variable: t
+                                                Obs per group:
+                                                              min =          5
+                                                              avg =          5
+                                                              max =          5
+
+Number of instruments =     16                  Wald chi2(2)      =      98.97
+                                                Prob > chi2       =     0.0000
+Two-step results
+------------------------------------------------------------------------------
+             |              WC-robust
+           y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           y |
+         L1. |   .6751279   .0738073     9.15   0.000     .5304683    .8197875
+             |
+           x |   .3022314   .0707944     4.27   0.000     .1634768    .4409859
+       _cons |   -.028712   .0631782    -0.45   0.649     -.152539     .095115
+------------------------------------------------------------------------------
+Instruments for differenced equation
+        GMM-type: L(2/.).y
+        Standard: D.x
+Instruments for level equation
+        GMM-type: LD.y
+        Standard: _cons
+
+. estat abond
+
+Arellano–Bond test for zero autocorrelation in first-differenced errors
+H0: No autocorrelation 
+
+Order         z   Prob > z
+--------------------------
+    1   -3.3502     0.0008
+    2   1.3439      0.1790
+--------------------------
+
+. 
+. * GitHub 社区包：已安装时验证额外诊断；未安装时保持 optional sentinel。
+. cap which xtabond2
+
+. local has_xtabond2 = (_rc == 0)
+
+. if !`has_xtabond2' display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__xtabond2__"
+
+. if `has_xtabond2' {
+.     xtabond2 y L.y x, gmmstyle(L.y, laglimits(2 3) collapse) ///
+>         ivstyle(x) twostep robust small
+Favoring space over speed. To switch, type or click on mata: mata set matafavor
+>  speed, perm.
+
+Dynamic panel-data estimation, two-step system GMM
+------------------------------------------------------------------------------
+Group variable: id                              Number of obs      =       200
+Time variable : t                               Number of groups   =        40
+Number of instruments = 5                       Obs per group: min =         5
+F(2, 39)      =     22.48                                      avg =      5.00
+Prob > F      =     0.000                                      max =         5
+------------------------------------------------------------------------------
+             |              Corrected
+           y | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           y |
+         L1. |   .7528621   .1880506     4.00   0.000     .3724938     1.13323
+             |
+           x |   .2592397   .0676634     3.83   0.000     .1223776    .3961019
+       _cons |  -.0185154   .0673345    -0.27   0.785    -.1547123    .1176815
+------------------------------------------------------------------------------
+Instruments for first differences equation
+  Standard
+    D.x
+  GMM-type (missing=0, separate instruments for each period unless collapsed)
+    L(2/3).L.y collapsed
+Instruments for levels equation
+  Standard
+    x
+    _cons
+  GMM-type (missing=0, separate instruments for each period unless collapsed)
+    DL.L.y collapsed
+------------------------------------------------------------------------------
+Arellano-Bond test for AR(1) in first differences: z =  -2.32  Pr > z =  0.021
+Arellano-Bond test for AR(2) in first differences: z =   1.28  Pr > z =  0.201
+------------------------------------------------------------------------------
+Sargan test of overid. restrictions: chi2(2)    =   4.15  Prob > chi2 =  0.126
+  (Not robust, but not weakened by many instruments.)
+Hansen test of overid. restrictions: chi2(2)    =   2.98  Prob > chi2 =  0.226
+  (Robust, but weakened by many instruments.)
+
+Difference-in-Hansen tests of exogeneity of instrument subsets:
+  GMM instruments for levels
+    Hansen test excluding group:     chi2(1)    =   0.61  Prob > chi2 =  0.434
+    Difference (null H = exogenous): chi2(1)    =   2.36  Prob > chi2 =  0.124
+  iv(x)
+    Hansen test excluding group:     chi2(1)    =   1.82  Prob > chi2 =  0.177
+    Difference (null H = exogenous): chi2(1)    =   1.15  Prob > chi2 =  0.283
+
+.     display "xtabond2_instruments=" e(j)
+xtabond2_instruments=5
+.     display "xtabond2_groups=" e(N_g)
+xtabond2_groups=40
+.     display "xtabond2_hansen_p=" e(hansenp)
+xtabond2_hansen_p=.22564905
+.     matrix list e(diffsargan)
+
+e(diffsargan)[5,2]
+              GMM instru~s          iv(x)
+Unrestrict~n     .61277259     1.8228118
+Difference~n     2.3647762     1.1547369
+Instrument~d             1             1
+Unrestrict~p     .43374579     .17697894
+Difference~p     .12410171     .28255974
+.     assert e(j) > 0
+.     assert e(N_g) > e(j)
+.     display "DYNAMIC_PANEL_XTABOND2_DIAGNOSTICS_OK"
+DYNAMIC_PANEL_XTABOND2_DIAGNOSTICS_OK
+. }
+
+. 
+. cap which xtdpdgmm
+
+. local has_xtdpdgmm = (_rc == 0)
+
+. if !`has_xtdpdgmm' display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__xtdpdgmm__"
+__COMMUNITY_PACKAGE_OPTIONAL_MISSING__xtdpdgmm__
+
+. if `has_xtdpdgmm' {
+.     xtdpdgmm y L.y x, model(diff) gmmiv(L.y, lag(2 3) collapse) ///
+>         iv(x) twostep vce(robust)
+.     capture noisily estat abond
+.     capture noisily estat overid
+. }
+
+. 
+end of do-file

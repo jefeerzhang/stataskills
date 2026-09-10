@@ -28,15 +28,25 @@ done
 [ "$fail" -gt 0 ] && { echo "结果：${fail} 失败"; exit 1; }
 
 plan=$(prompt_plan_each_target "stata-regression")
-[ "$plan" = $'regression\tverify-regression\tverify-regression' ] \
+expect=$(printf '%s\n' \
+  $'regression\tverify-regression\tverify-regression' \
+  $'regression\tverify-dynamic-panel\tverify-dynamic-panel')
+[ "$plan" = "$expect" ] \
   && pass "单 skill plan" || bad "单 skill：[$plan]"
 
 plan=$(prompt_plan_each_target "stata-basics + stata-descriptives")
 expect=$(printf '%s\n' $'basics\tverify-basics\tverify-basics' $'descriptives\tverify-descriptives\tverify-descriptives')
 [ "$plan" = "$expect" ] && pass "跨 skill plan" || bad "跨 skill：[$plan]"
 
+plan=$(prompt_plan_each_target "stata-dce")
+expect=$(printf '%s\n' $'dce\tverify-dce\tverify-dce')
+[ "$plan" = "$expect" ] && pass "DCE 单 skill plan" || bad "DCE：[$plan]"
+
 plan=$(prompt_plan_each_target "stata-regression + stata-basics + stata-regression")
-expect=$(printf '%s\n' $'regression\tverify-regression\tverify-regression' $'basics\tverify-basics\tverify-basics')
+expect=$(printf '%s\n' \
+  $'regression\tverify-regression\tverify-regression' \
+  $'regression\tverify-dynamic-panel\tverify-dynamic-panel' \
+  $'basics\tverify-basics\tverify-basics')
 [ "$plan" = "$expect" ] && pass "共享 target 去重保序" || bad "去重：[$plan]"
 
 plan=$(prompt_plan_each_target "stata-did-community")

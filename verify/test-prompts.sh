@@ -442,7 +442,7 @@ self_test_verify_log_resolution() {
   local fixtures skill n entry expected_logs actual_logs expected_dofs actual_dofs
   local got_n pd pl
   fixtures=$(cat <<'EOF'
-regression|1
+regression|2
 did-community|3
 EOF
 )
@@ -504,9 +504,11 @@ EOF
 self_test_prompt_plan() {
   local plan got expect skill_line
 
-  # 单 skill：与旧行为一致（1 行 target）
+  # 单 skill：回归入口同时覆盖独立动态面板委托。
   plan=$(prompt_plan_each_target "stata-regression" | tr '\n' '|')
-  expect="regression	verify-regression	verify-regression|"
+  expect=$(printf '%s\n' \
+    "regression	verify-regression	verify-regression" \
+    "regression	verify-dynamic-panel	verify-dynamic-panel" | tr '\n' '|')
   if [ "$plan" = "$expect" ]; then
     : # ok — continue aggregating via return at end
   else
@@ -529,6 +531,7 @@ self_test_prompt_plan() {
   plan=$(prompt_plan_each_target "stata-regression + stata-basics + stata-regression")
   expect=$(printf '%s\n' \
     "regression	verify-regression	verify-regression" \
+    "regression	verify-dynamic-panel	verify-dynamic-panel" \
     "basics	verify-basics	verify-basics")
   if [ "$plan" != "$expect" ]; then
     echo "FAIL  共享 target 去重漂移："
