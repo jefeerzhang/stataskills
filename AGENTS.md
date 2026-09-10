@@ -8,7 +8,7 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 
 - `CONTEXT.md` — 术语表（强制路径 / 可执行禁令 / 陷阱四件套 / 踢走）
 - `verify/verify-<skill>.do` — 对应验证脚本；`bash verify/run-verify.sh [skill名]` 运行，Stata 19.5 批处理模式
 - `docs/run-stata.md` — 各平台 Stata 批处理路径
-- `docs/adr/` — 6 份架构决策记录（ADR-0001 至 ADR-0006）
+- `docs/adr/` — 7 份架构决策记录（ADR-0001 至 ADR-0007）
 - `CLAUDE.md` — 旧版项目指令（issue tracker / triage labels / domain docs），保留有效，本文件不重复其内容
 
 ## 关键惯例
@@ -21,7 +21,8 @@ Stata skills 仓库：基于《A Gentle Introduction to Stata》第 6 版构建 
 - 社区包（`ssc install`，如 reghdfe / csdid / jwdid / did_imputation / synth / sdid）：**部分章节的示例语法现在已纳入验证**（见 `stata-did/SKILL.md` 第 13–15 节 / `verify/verify-synth-sdid.do`）。机制：`run-verify.sh` 默认模式静默 PASS（cap which 风格，CI 不被网络绑定）；`--community` 模式强制要求必需包安装齐全才 PASS。可选包用 `__COMMUNITY_PACKAGE_OPTIONAL_MISSING__` sentinel，与必需包 `__COMMUNITY_PACKAGE_MISSING__` 区分。
 - 验证目标解析单一来源：`verify/lib/targets.sh`。Declarative target plan（`targets_plan_owner` / `dofiles` / `logs` / `delegate_bases`）与 caller 按行迭代（`targets_plan_each_dofile` / `each_log` / `each_pair` / `each_delegate` / `is_delegate`）；`run-verify.sh` / `check-claims.sh` / `test-prompts.sh` 经 each_* 消费（不拆空格、不推日志名；prompt harness 的 do-file/log 集合与 table-driven 自测同源 plan，无内置委托日志名）。旧空格 API 已删除（#27）。每个 skill `stata-<name>` 对应验证入口 `verify-<name>`（默认 1:1）；`stata-regression` 委托独立动态面板 do-file，`did-community` 委托三个 do-file。改委托只改 `targets.sh` 的 override；回归见 `bash verify/test-targets.sh`。
 - VERIFY CONTRACT / data locator：`verify/lib/contract.sh` 解析契约 metadata 与 data 声明，并按 ADR-0003/0006 区分 agis6 / 外部扩展 / 项目内生成；穷尽 data contract 经 `contract_data_report`（missing/stale declaration、missing/unlisted/ambiguous file）；`run-verify.sh` / `check-claims.sh` 只经此 seam 判 readiness（无平行 use 路径解析）。回归 `bash verify/test-contract.sh`。
-- 社区包 contract：`verify/lib/community.sh` 登记 (pkg, owner, required|optional)；claims 交叉验证 probe / sentinel 分类 / ownership；`center` / `ivreg2` / `weakivtest` 纳入漏检锁。judge 只解释日志 sentinel。回归 `bash verify/test-community.sh`。
+- 社区包 contract：`verify/lib/community.sh` 登记 (pkg, owner, required|optional)；claims 交叉验证 probe / sentinel 分类 / ownership；`center` / `ivreg2` / `weakivtest` 纳入漏检锁。judge 只解释日志，不承载第二份 package 名单。回归 `bash verify/test-community.sh`。
+- 诊断证据（ADR-0007，取代 ADR-0005）：`verify/*.log` 不再入库，由 `run-verify.sh` 本地生成供阅读。证据 = `.do` 内可重跑的 `assert` + `display "VERIFY_MARKERS_REQUIRED=<M1> <M2> ..."` 声明式标记；`judge.sh` 只解释日志里观察到的声明，**不硬编码任何 marker 名单**（与 package 名单同一原则）。标记必须由标量断言托底而非只看 return code——实测 `estat sargan` 在 `vce(robust)` 下 `_rc` 仍为 0、`e(sargan)` 为缺失，须 `assert e(sargan) < .`。sentinel 与 marker 一律写成 `if .. { display .. }` 块形式：单行 `if !.. display ".."` 的回显行以 `. if` 开头。回归 `bash verify/test-harness.sh`。
 - Agent 行为回归：`test-prompts.json` 37 条 prompt 三层模式——docs（CI 静态断言）/ `--prompts`（Stata 子集，需本机 Stata）/ `--llm`（真实 Agent，需 claude CLI 且 API key 或 OAuth 登录态任一）。`--llm` 台账中的 25/27 结果对应 2026-08-27 当时的 prompt corpus；后续动态面板、DCE 和结果模型 prompt 尚未重跑 LLM 层；台账 `verify/llm-results.md`、`verify/llm-smoke-results.md`。
 - prompt corpus 解析经 `verify/lib/prompt_corpus.sh`，jq/Python 为 seam 后 adapters；回归 `bash verify/test-prompt-corpus.sh`。
 - 跨 skill prompt execution plan：`verify/lib/prompt_plan.sh` 将 fixture 全部 normalized skills 经 target plan 展开为去重保序的 do-file/log；`--prompts` 与 docs 自测共用；缺关键词报告 skill+log。回归 `bash verify/test-prompt-plan.sh`。

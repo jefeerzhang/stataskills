@@ -1,8 +1,11 @@
 # Stata 临时日志
 *.smcl
 # 数据目录只放数据：验证运行 / 教材 chapter 复现产生的日志一律不入库
-# （正式验证记录在 verify/ 下）
 data/agis6/*.log
+# verify raw logs（ADR-0007）：由 run-verify.sh 本地生成，判定证据靠 .do 内的
+# assert 与 VERIFY_MARKERS_REQUIRED 标记复现，不再随仓库提交完整 Stata transcript。
+# 与 ADR-0005 的旧决定相反；demo/logs/*.log 仍入库（CI 硬依赖，见 check-claims.sh）。
+verify/*.log
 # panelview / fect 安装时复制到 demo/ 的配套数据（net install ... , all replace 会重出）
 demo/simdata.dta
 demo/simdata1.dta

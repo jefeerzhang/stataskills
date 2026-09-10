@@ -10,7 +10,9 @@
 # 让假阳性在 GitHub 上可见。
 #
 # 探针覆盖：普通 r(9) 错误、纯必需包 sentinel、纯可选包 sentinel、
-#          optional sentinel 掩盖真实 r(1) 错误。
+#          optional sentinel 掩盖真实 r(1) 错误、声明式 marker 契约
+#          （VERIFY_MARKERS_REQUIRED）完整 / 自我满足 / 与 r() 同时报告、
+#          单行 `if .. display` 回显行误判为缺包、bare sentinel 仍被识别。
 #
 # 用法：bash verify/test-harness.sh
 # ============================================================
@@ -90,30 +92,84 @@ for mode in 0 1; do
 done
 echo "PASS  探针：optional sentinel 在默认/--community 两模式均不掩盖真实 r(1)"
 
-# 探针 5：动态面板诊断契约完整时必须 PASS
+# 探针 5：标记契约完整时必须 PASS（声明行与 marker 都是真实输出，非回显）
 cat > "$WORKDIR/dynamic_ok.log" <<'EOF'
-__DYNAMIC_PANEL_OUTPUT__
-DYNAMIC_PANEL_CONTRACT_REQUIRED
-DYNAMIC_PANEL_AR_TEST_OK
-DYNAMIC_PANEL_OVERID_TEST_OK
-DYNAMIC_PANEL_INSTRUMENT_COUNT_OK
+. display "VERIFY_MARKERS_REQUIRED=M_A M_B M_C"
+VERIFY_MARKERS_REQUIRED=M_A M_B M_C
+. xtabond y x, lags(1) twostep
+M_A
+M_B
+M_C
 end of do-file
 EOF
 if ! judge_raw_log zzprobe "$WORKDIR/dynamic_ok.log" 0 >/dev/null 2>&1; then
-  echo "FAIL  探针：动态面板诊断契约完整时未 PASS"
+  echo "FAIL  探针：诊断标记契约完整时未 PASS"
   exit 1
 fi
-echo "PASS  探针：动态面板诊断契约完整时正确 PASS"
+echo "PASS  探针：诊断标记契约完整时正确 PASS"
 
-# 探针 6：缺少任一动态面板诊断标记必须 FAIL，且不能被普通 end marker 掩盖
-cat > "$WORKDIR/dynamic_missing.log" <<'EOF'
-DYNAMIC_PANEL_CONTRACT_REQUIRED
-DYNAMIC_PANEL_AR_TEST_OK
-DYNAMIC_PANEL_INSTRUMENT_COUNT_OK
+# 探针 6：marker 只出现在声明串里（未真实输出）必须 FAIL，
+#          且失败信息要同时带 r() 计数，不得被契约信息掩盖
+cat > "$WORKDIR/dynamic_selfsat.log" <<'EOF'
+VERIFY_MARKERS_REQUIRED=M_A M_B M_C
 end of do-file
 EOF
-if judge_raw_log zzprobe "$WORKDIR/dynamic_missing.log" 0 >/dev/null 2>&1; then
-  echo "FAIL  探针：动态面板诊断契约缺失时被误判为 PASS"
+if judge_raw_log zzprobe "$WORKDIR/dynamic_selfsat.log" 0 >/dev/null 2>&1; then
+  echo "FAIL  探针：marker 被声明行自我满足时误判为 PASS"
   exit 1
 fi
-echo "PASS  探针：动态面板诊断契约缺失时正确 FAIL"
+if ! judge_raw_log zzprobe "$WORKDIR/dynamic_selfsat.log" 0 2>&1 | grep -q "M_B"; then
+  echo "FAIL  探针：缺失 marker 未逐项列出"
+  exit 1
+fi
+echo "PASS  探针：marker 不能由声明行自我满足，缺失项逐项报告"
+
+cat > "$WORKDIR/dynamic_err_and_missing.log" <<'EOF'
+VERIFY_MARKERS_REQUIRED=M_A
+some output
+r(198);
+end of do-file
+end of do-file
+EOF
+if ! judge_raw_log zzprobe "$WORKDIR/dynamic_err_and_missing.log" 0 2>&1 \
+   | grep -qE "r\(错误 x1.*诊断标记缺失"; then
+  echo "FAIL  探针：真实 r() 与缺失 marker 未同时报告（信息被掩盖）"
+  exit 1
+fi
+echo "PASS  探针：r() 错误与缺失 marker 同时报告，互不掩盖"
+
+# 探针 7：单行 `if !.. display "SENTINEL"` 的**回显行**以 `. if` 开头，
+#         包实际装着时不得被误报成未安装（回归 verify-dynamic-panel.do 旧形状）
+cat > "$WORKDIR/sentinel_echo_only.log" <<'EOF'
+. cap which ftools
+. local has_ftools = (_rc == 0)
+. if !`has_ftools' display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ftools__"
+. if `has_ftools' {
+.     reghdfe y x, absorb(id)
+M_A
+.     display "PKG_RAN_OK"
+PKG_RAN_OK
+. }
+end of do-file
+EOF
+if judge_raw_log zzprobe "$WORKDIR/sentinel_echo_only.log" 1 2>&1 \
+   | grep -q "ftools"; then
+  echo "FAIL  探针：仅回显的 optional sentinel 被当作真实缺包"
+  exit 1
+fi
+echo "PASS  探针：单行 if 回显的 sentinel 不被误判为缺包"
+
+# 探针 8：bare（非回显）optional sentinel 仍须被识别为真实缺包
+cat > "$WORKDIR/sentinel_real.log" <<'EOF'
+. cap which ftools
+. if !`has_ftools' {
+.     display "__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ftools__"
+__COMMUNITY_PACKAGE_OPTIONAL_MISSING__ftools__
+. }
+end of do-file
+EOF
+if ! judge_raw_log zzprobe "$WORKDIR/sentinel_real.log" 0 2>&1 | grep -q "ftools"; then
+  echo "FAIL  探针：真实输出的 optional sentinel 未被识别"
+  exit 1
+fi
+echo "PASS  探针：真实输出的 sentinel 仍被正确识别"

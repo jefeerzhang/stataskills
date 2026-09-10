@@ -16,4 +16,4 @@ Issues 和 PRDs 存放在 GitHub Issues 中（使用 `gh` CLI）。See `docs/age
 
 仓库根目录维护 `CONTEXT.md`，作为强制路径、可执行禁令、陷阱四件套与“踢走”等项目术语的单一术语表。命名与 domain 文档规则详见 `docs/agents/domain.md`。
 
-已有 6 份 ADR：`docs/adr/`（ADR-0001 SKILL 围栏不执行化、ADR-0002 demo 独立全景层、ADR-0003 社区包验证、ADR-0004 验证目标注册表、ADR-0005 保留 raw verify logs、ADR-0006 四个识别方法支柱与横切路由）。详见 `docs/agents/domain.md`。
+已有 7 份 ADR：`docs/adr/`（ADR-0001 SKILL 围栏不执行化、ADR-0002 demo 独立全景层、ADR-0003 社区包验证、ADR-0004 验证目标注册表、ADR-0005 保留 raw verify logs（已被 ADR-0007 取代）、ADR-0006 四个识别方法支柱与横切路由、ADR-0007 verify raw log 退库与声明式 marker 契约）。详见 `docs/agents/domain.md`。

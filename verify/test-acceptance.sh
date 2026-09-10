@@ -98,16 +98,38 @@ fi
 # ---- 7. ADR 语义锚点仍在（不重开）----
 ADR3="$REPO_ROOT/docs/adr/0003-community-packages-as-first-class-verifiable-subjects.md"
 ADR5="$REPO_ROOT/docs/adr/0005-keep-raw-verify-logs.md"
+ADR7="$REPO_ROOT/docs/adr/0007-untrack-verify-raw-logs.md"
 ADR6="$REPO_ROOT/docs/adr/0006-identification-four-pillars.md"
 if [ -f "$ADR3" ] && grep -E -- '--community|OPTIONAL_MISSING|COMMUNITY_PACKAGE_MISSING' "$ADR3" >/dev/null 2>&1; then
   pass "ADR-0003 联网/package 模式锚点仍在"
 else
   bad "ADR-0003 语义锚点缺失"
 fi
-if [ -f "$ADR5" ] && grep -E -- 'raw|verify/\*\.log|不采纳' "$ADR5" >/dev/null 2>&1; then
-  pass "ADR-0005 raw log 决策锚点仍在"
+if [ -f "$ADR5" ] && grep -E -- 'Superseded' "$ADR5" >/dev/null 2>&1 \
+   && grep -E -- 'ADR-0007' "$ADR5" >/dev/null 2>&1; then
+  pass "ADR-0005 已显式标注 Superseded → ADR-0007"
 else
-  bad "ADR-0005 语义锚点缺失"
+  bad "ADR-0005 取代关系未记录（应标 Superseded 并指向 ADR-0007）"
+fi
+if [ -f "$ADR7" ] && grep -E -- 'verify/\*\.log|取消跟踪|untrack' "$ADR7" >/dev/null 2>&1 \
+   && grep -E -- 'VERIFY_MARKERS_REQUIRED' "$ADR7" >/dev/null 2>&1; then
+  pass "ADR-0007 raw log 退库 + 声明式 marker 契约锚点在位"
+else
+  bad "ADR-0007 语义锚点缺失"
+fi
+# 反回归锁：log 不得重新回到 git 索引（否则 ADR-0007 被无声推翻）
+if grep -qE '^verify/\*\.log$' "$REPO_ROOT/.gitignore" 2>/dev/null; then
+  pass ".gitignore 覆盖 verify/*.log"
+else
+  bad ".gitignore 缺少 verify/*.log 规则"
+fi
+if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  tracked_logs="$(git -C "$REPO_ROOT" ls-files 'verify/*.log' 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "$tracked_logs" = "0" ]; then
+    pass "git 索引中无 verify/*.log（工作区副本不受影响）"
+  else
+    bad "有 $tracked_logs 份 verify/*.log 仍在 git 索引中（违反 ADR-0007）"
+  fi
 fi
 if [ -f "$ADR6" ] && grep -E -- 'estimand|识别|pillar|RCT|RDD' "$ADR6" >/dev/null 2>&1; then
   pass "ADR-0006 识别路由/estimand 锚点仍在"

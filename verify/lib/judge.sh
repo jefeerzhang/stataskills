@@ -15,6 +15,11 @@
 # 社区包 sentinel（ADR-0003）：缺必需包分支只输出 sentinel 并跳过对应命令，
 # 不产生错误码；任何 r(N) 都必须保留为真实失败，不能因 sentinel 被豁免。
 #
+# 诊断标记契约：需要哪些成功标记由 do-file 自己在日志里声明
+#   display "VERIFY_MARKERS_REQUIRED=<M1> <M2> ..."
+# judge 只解释日志观察到的声明，不承载第二份 marker 名单（同 community.sh
+# 对 package 名单的约定）。未声明的入口行为不变，只看 end / r() / 静默错误。
+#
 # 用法：先 source "$VERIFY_DIR/lib/report.sh"，再
 #       source "$VERIFY_DIR/lib/judge.sh"
 #   judge_raw_log <entry> <raw_log_path> <community_mode(0|1)>
@@ -33,30 +38,31 @@ judge_raw_log() {
   PARSE_ERRS=$(grep -cE '^[[:space:]]*r\([0-9]+\);[[:space:]]*$' "$log")
   PARSE_SILENT=$(grep -cE "\(variable .* not found\)|option .* not allowed|invalid syntax|no observations|(^|[^0-9])0 observations|insufficient observations|not sorted" "$log")
 
-  # sentinel 匹配：Stata batch mode 会把 do 文件里的 `display "SENTINEL"` 命令
-  # 文本回显成 `.     display "SENTINEL"`（行首带点号 + display 前缀），导致
-  # "包从未缺失但命令被回显"时误匹配。用 grep -v 剔除回显行（行首 `. display`），
-  # 再在剩余行里匹配 sentinel。缺包分支只输出 sentinel 并跳过对应命令，
-  # 不产生错误码；任何 r(N) 都必须保留为真实失败，不能因 sentinel 被豁免。
-  local sentinel_lines
-  sentinel_lines="$(grep -vE '^[.][[:space:]]*display' "$log" 2>/dev/null)"
-  PARSE_COMMUNITY_REQ="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-  PARSE_COMMUNITY_OPT="$(printf '%s\n' "$sentinel_lines" | grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  # sentinel / marker 匹配：Stata batch mode 会把 do 源码逐行回显成 `. ...` 行，
+  # 导致 "TOKEN 从未真实输出、只是命令被回显" 时误匹配。剔除回显行时不能只盯
+  # `. display` 前缀——单行 `if !`has_x' display "TOKEN"` 的回显以 `. if` 开头。
+  # 按「回显行且含 display」剔除：真实输出是裸 TOKEN，不含 display 一词。
+  local log_body
+  log_body="$(grep -vE '^[.].*display' "$log" 2>/dev/null || true)"
+  PARSE_COMMUNITY_REQ="$(printf '%s\n' "$log_body" | grep -oE '__COMMUNITY_PACKAGE_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  PARSE_COMMUNITY_OPT="$(printf '%s\n' "$log_body" | grep -oE '__COMMUNITY_PACKAGE_OPTIONAL_MISSING__[a-zA-Z0-9_]+__' 2>/dev/null | sort -u | tr '\n' ' ' || true)"
 
-  # 动态面板诊断契约：do-file 明确声明后，日志必须包含每类核心诊断的成功标记。
-  # 这些标记由 Stata 在对应命令成功、结构性 assert 通过后输出；不依赖随机 p 值阈值。
-  local PARSE_DYNAMIC_MISSING=""
-  if grep -q "DYNAMIC_PANEL_CONTRACT_REQUIRED" "$log"; then
-    local dynamic_lines
-    dynamic_lines="$(grep -vE '^[.][[:space:]]*display' "$log" 2>/dev/null)"
-    for marker in DYNAMIC_PANEL_AR_TEST_OK DYNAMIC_PANEL_OVERID_TEST_OK DYNAMIC_PANEL_INSTRUMENT_COUNT_OK; do
-      if ! printf '%s\n' "$dynamic_lines" | grep -q "$marker"; then
-        PARSE_DYNAMIC_MISSING="${PARSE_DYNAMIC_MISSING}${marker} "
+  # 诊断标记契约：需要哪些成功标记由 do-file 自己在日志里声明
+  # （`display "VERIFY_MARKERS_REQUIRED=A B C"`），judge 只解释日志观察到的
+  # 声明，不承载第二份 marker 名单——与 community.sh 对 package 名单的约定一致。
+  # 校验时必须先剔除声明行本身，否则名单里的 marker 会被声明串自我满足。
+  local PARSE_MARKERS="" PARSE_MARKER_MISSING="" PARSE_MARKER_EVIDENCE="" marker
+  PARSE_MARKERS="$(printf '%s\n' "$log_body" | grep -oE 'VERIFY_MARKERS_REQUIRED=.*' 2>/dev/null | head -1 | sed 's/^VERIFY_MARKERS_REQUIRED=//')"
+  if [ -n "$PARSE_MARKERS" ]; then
+    PARSE_MARKER_EVIDENCE="$(printf '%s\n' "$log_body" | grep -v '^VERIFY_MARKERS_REQUIRED=')"
+    for marker in $PARSE_MARKERS; do
+      if ! printf '%s\n' "$PARSE_MARKER_EVIDENCE" | grep -qF -- "$marker"; then
+        PARSE_MARKER_MISSING="${PARSE_MARKER_MISSING}${marker} "
       fi
     done
   fi
 
-  if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ] && [ -z "$PARSE_DYNAMIC_MISSING" ]; then
+  if [ "$PARSE_ENDS" -eq 1 ] && [ "$PARSE_ERRS" -eq 0 ] && [ "$PARSE_SILENT" -eq 0 ] && [ -z "$PARSE_MARKER_MISSING" ]; then
     if [ -n "$PARSE_COMMUNITY_REQ" ] && [ "$community_mode" -eq 1 ]; then
       bad "${name}（--community 模式下缺必需包：${PARSE_COMMUNITY_REQ}，请 ssc install 后重跑）"
       return 1
@@ -69,11 +75,13 @@ judge_raw_log() {
     fi
     return 0
   else
-    if [ -n "$PARSE_DYNAMIC_MISSING" ]; then
-      bad "${name}（动态面板诊断契约缺失：${PARSE_DYNAMIC_MISSING}→ 见 ${log}）"
-    else
-      bad "${name}（end of do-file x${PARSE_ENDS}，r(错误 x${PARSE_ERRS}，静默错误 x${PARSE_SILENT}）→ 见 ${log}"
+    # 两类问题必须同时报：只有 marker 缺失时曾把 r() 计数吞掉，逼作者去开日志。
+    local fail_detail
+    fail_detail="end of do-file x${PARSE_ENDS}，r(错误 x${PARSE_ERRS}，静默错误 x${PARSE_SILENT}"
+    if [ -n "$PARSE_MARKER_MISSING" ]; then
+      fail_detail="${fail_detail}，诊断标记缺失：${PARSE_MARKER_MISSING}"
     fi
+    bad "${name}（${fail_detail}）→ 见 ${log}"
     return 1
   fi
 }

@@ -254,7 +254,8 @@ for name in "${TARGETS[@]}"; do
     run_stata "$base" "$dofile"
     raw_log="$DATA_DIR/${logbase}.log"
     judge_raw_log "$base" "$raw_log" "$COMMUNITY_MODE" || overall_bad=1
-    # log 原地更新，保持随 repo 提交（.log = 最近一次验证状态）
+    # log 只留工作区供本机阅读，不再随仓库提交（ADR-0007，取代 ADR-0005）：
+    # 证据由 .do 内的 assert 与 VERIFY_MARKERS_REQUIRED 标记承担，可重跑复现。
     if [ -f "$raw_log" ]; then
       cp "$raw_log" "$VERIFY_DIR/${logbase}.log"
       rm -f "$raw_log"
@@ -262,7 +263,8 @@ for name in "${TARGETS[@]}"; do
   done < <(targets_plan_each_pair "$name")
 done
 
-# --community 模式下任何验证失败都让 harness 以非零退出码结束
+# 任何验证失败都以非零退出码结束（默认 / --static / --community 三模式一致；
+# overall_bad 在上述三处检查中均无条件置位）
 if [ "${overall_bad:-0}" -eq 1 ]; then
   exit 1
 fi

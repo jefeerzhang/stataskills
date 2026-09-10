@@ -2,7 +2,7 @@
 
 > **Stata 实证方法：9 个 DiD 估计量 · 计数/PPML · 分数响应 · 删失与样本选择 · 一条命令安装。**
 >
-> 14 个 Skill · 14 个验证入口 · 6 ADR · 38 个 AGIS6 数据集 · 37 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
+> 14 个 Skill · 14 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 37 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
 > 再扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router——中文实证研究者装上即可用。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
@@ -54,7 +54,7 @@
 
 给 Agent 写 Stata 代码，最怕的不是它不会写，而是它写得像会。
 
-问一句「帮我跑个错时 DID」，常见的结果是一段结构完整的代码——命令名对、选项像样，但它可能在这一版 Stata 上根本没跑过，用的估计量也可能配不上你的数据。期刊审稿人不会因为「这是 Agent 生成的」就少看半行；你得对每一个命令负责。stataskills 想消掉这层赌的成分：凡是写进 SKILL.md 的命令链，都在这台机器上用 Stata 19.5 批处理跑过，原始 log 留在 `verify/` 里当证据。
+问一句「帮我跑个错时 DID」，常见的结果是一段结构完整的代码——命令名对、选项像样，但它可能在这一版 Stata 上根本没跑过，用的估计量也可能配不上你的数据。期刊审稿人不会因为「这是 Agent 生成的」就少看半行；你得对每一个命令负责。stataskills 想消掉这层赌的成分：凡是写进 SKILL.md 的命令链，都在这台机器上用 Stata 19.5 批处理跑过；证据不是留在仓库里的一份旧日志，而是 `verify/*.do` 内的 `assert` 与 `VERIFY_MARKERS_REQUIRED` 标记——你执行 `bash verify/run-verify.sh <skill>` 就能在自己的机器上复现同一批结论。
 
 另一个动机是「方法选择」这类知识太散。错时 DID 该走 hdidregress、csdid 还是 jwdid？断点回归读 `e(tau_cl)` 还是 `e(tau)`？恰好识别时 Hansen J 去哪了？这些答案散在论坛、期刊附录和 help 文件里，每次现查一遍等于让 Agent 重新踩一遍坑。把它们固化进强制路径、陷阱四件套和黑名单，就是把踩过的坑变成路标。
 
@@ -216,7 +216,7 @@ stataskills/
 │   ├── test-prompts.sh             ← 动态 skill / route_branch 回归 + `--llm` Agent 行为实测（docs / Stata 子集 / 真实 Agent 三层）
 │   ├── stata.conf                  ← 平台路径（单一来源）
 │   ├── lib/                        ← 共享 report 与 target registry
-│   └── verify-<skill>.{do,log}     ← 14 个验证入口（多 do-file 入口使用 registry 委托）
+│   └── verify-<skill>.do           ← 14 个验证入口（多 do-file 入口使用 registry 委托；raw log 本地生成、不入库）
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 8 个 do-file（含 did）
@@ -239,7 +239,8 @@ bash verify/run-verify.sh selection  # 单个 skill
 GitHub Actions（`.github/workflows/verify.yml`）在 push/PR 自动跑 Stata-free 静态层：
 version 政策、双 manifest 一致性、shellcheck、动态文档 claims 与 Agent 路由回归。
 执行层由本机 `bash verify/run-verify.sh` 运行；默认模式允许 optional 社区包缺失，
-`--community` 强制必需社区包。raw logs 按 ADR-0005 保留。
+`--community` 强制必需社区包。verify raw log 本地生成、不再入库（ADR-0007 取代 ADR-0005），
+证据由 `.do` 内的 `assert` 与 `VERIFY_MARKERS_REQUIRED` 标记承载；`demo/logs/*.log` 仍入库。
 
 **判定标准**：日志恰好一次 `end of do-file`，且无 `r(错误码)`、静默错误；optional sentinel 不得掩盖真实错误。
 新增结果模型分别使用 `bash verify/run-verify.sh count`、`fractional`、`limited-dependent` 实测。默认模式中缺失的必需社区包按 cap/sentinel 语义跳过；`--community` 强制必需包，可选包仍可跳过。

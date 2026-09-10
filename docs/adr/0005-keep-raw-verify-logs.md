@@ -1,5 +1,11 @@
 # ADR-0005：保留完整 verify log 随仓库提交；不替换为稳定摘要
 
+- 状态：**Superseded by ADR-0007**（2026-09-10）。正文保留为历史决策记录，不改写。
+  当初两条 load-bearing 理由中，「可追溯性优先于 review 整洁度」仍然成立，但代价
+  已被实测证明过高：一次 code review 的 ~5000 行新增里约 2400 行是 raw log，
+  真实语义改动被完全淹没。取代后，可追溯性由 `.do` 内的 `assert` 与
+  `VERIFY_MARKERS_REQUIRED` 标记承担（可在任意机器重跑复现），不再依赖 transcript。
+
 ## 背景
 
 架构评审曾提出候选「用稳定 snapshot 代替 tracked raw logs」：把 `verify/*.log`（完整 Stata 会话记录）替换为一个小而稳定的「验证证据摘要」，原始 log 只留临时目录。评审指出 `verify/*.log` 约九成是环境噪声（Stata 版本横幅、许可/序列号、绝对路径、echo 行），一次小逻辑改动即可触发数百行 log diff（如 `de68073`：verify-coefplot.log 462 行、verify-rdd.log 432 行），掩盖真正的验证语义。
