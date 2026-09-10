@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-本仓库是基于《A Gentle Introduction to Stata》第 6 版构建的 10 个 Stata skills 仓库：4 个教材 skill（`stata-basics`、`stata-descriptives`、`stata-regression`、`stata-advanced`）与 6 个扩展 skill（`stata-coefplot`、`stata-did`、`stata-did-community`、`stata-rdd`、`stata-selection`、`stata-identification`）。仓库含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
+本仓库是基于《A Gentle Introduction to Stata》第 6 版构建的 14 个 Stata skills 仓库。技能清单、验证入口与协作约定以根目录 `AGENTS.md` 为准；本文件只保留 issue tracker / triage labels / domain docs 入口，不重复项目地图。仓库含配套数据集（`data/agis6/`）、教材原文（`book/`）与验证脚本（`verify/`）。
 
 ## Agent skills
 

@@ -70,7 +70,7 @@ v1 只覆盖横截面、二元处理、处理前可观测混杂，默认 estiman
 
 v1 的方法边界如下：
 
-- Heckman 在 v1 外部；相关请求只说明其不属于当前路径或停止当前路径，不新增仓库内 Heckman 指针、section、reference 或 verify；
+- 原 v1 将 Heckman 排除在外。2026-09-10 经用户授权新增独立 `stata-limited-dependent`，承接样本选择、删失与 hurdle；它不进入 `stata-selection` 的处理效应对照链，也不新增因果设计支柱。以下 v1 排除条目保留为原决策范围记录，以本条扩展为准。
 - `psmatch2` 不作为默认主估计，但作为社区敏感性/兼容性对照独立维护；`teffects-psmatch.md` 只负责官方 `teffects psmatch`，`psmatch2.md` 独立负责社区包安装、常用匹配语法、ATT/ATE estimand、权重/匹配样本、标准误和限制，不得暗示其优于 IPWRA；
 - `cem` 完全不进入 v1，不新增 reference、指针、主路径或 verify；
 - 面板 selection（Wooldridge 反事实面板、CRE、`xtpsmatch`）列为 future-work；
@@ -208,7 +208,7 @@ selection 数据走项目内生成分支：正式数据进入 `data/manifest-ext
 - 方法 skill 与 router 的边界变更需要同时更新本地指针、`stata-did-community/references/sdid.md`、`stata-did-community/references/workflow-8step.md` 和带 `route_branch` 的路由行为回归；静态检查和 prompt 测试分别检查运行时文档与行为契约。
 - `data/manifest-extra.txt` 与 AGENTS 的治理说明需要维护两个分支；外部来源数据仍承担 ADR-0003 的 README、license / provenance、download script 与 `EXPECTED_SIZE` 成本。
 - 模拟数据只验证已声明 DGP 下的命令与数值行为，不提供真实研究中的 conditional exchangeability 证据，也不支持外推有效性声明；社区 `psmatch2` smoke test 只验证可执行契约，不证明方法优越性。
-- v1 不覆盖 `cem`、Heckman、面板 selection、ML causal 或连续 / 多值 treatment；`cem` 不建立任何仓库入口，Heckman 请求只获得外部范围说明或停止当前路径，其余项目保持明确排除或 future-work。
+- v1 selection 路径仍不覆盖 `cem`、面板 selection、ML causal 或连续 / 多值 treatment；`cem` 不建立任何仓库入口。Heckman / 删失 / hurdle 自 2026-09-10 起由独立 `stata-limited-dependent` 承接（见上文 §4 扩展注记），不进入 selection 的 ATET 对照链，也不新增因果设计支柱；其余项目保持明确排除或 future-work。
 - 中间 tickets 不能独立发布或合并；历史快照不回写，活跃当前态声明必须等最终证据，增加了发布顺序约束。
 
 ## 拒绝方案

@@ -49,6 +49,8 @@ description: Identification router 的唯一完整顺序化 stop rules；用于�
 
 ## 3. Named-method trigger ownership
 
+2026-09-10 结果模型扩展：明确点名 Poisson/PPML → `stata-count`，fracreg/betareg → `stata-fractional`，Tobit/Heckman/heckprobit → `stata-limited-dependent`。这些是结果分布或可观测性模型，不增加因果设计支柱，不绕过下面的识别规则。
+
 明确点名方法时直接进入对应 skill，并先执行其最短本地 gate；不要先绕本 router：
 
 | 用户明确点名 | 直达入口 | 本地 gate 失败动作 |
@@ -59,6 +61,9 @@ description: Identification router 的唯一完整顺序化 stop rules；用于�
 | IV、2SLS、`ivregress`、`ivreg2`、LATE | `stata-regression` 的 IV references | 返回 router |
 | PSM、IPW、IPWRA、`teffects`、entropy balancing、`ebalance` | `stata-selection` | 返回 router |
 | `psmatch2` | 先进入 `stata-selection` 并执行设计 gate；gate 通过后才读 `stata-selection/references/psmatch2.md` | selection gate 失败则返回 router；不得先读 reference 再补 gate |
+| Poisson、负二项、ZIP/ZINB、PPML、`ppmlhdfe`、exposure/offset | `stata-count` | 返回 router（结果分布模型，不新增因果支柱） |
+| 比例/份额、`fracreg`、`betareg`、分数响应 | `stata-fractional` | 返回 router（结果分布模型，不新增因果支柱） |
+| Tobit、删失、hurdle、两部模型、Heckman、`heckprobit` | `stata-limited-dependent` | 返回 router；二元处理 ATET 且两组 outcome 可观测 → `stata-selection` |
 
 ## 4. Stop causal 的输出合同
 

@@ -41,6 +41,9 @@ lclogit verify-dce optional
 fmlogit verify-dce optional
 wtp verify-dce optional
 probcalc verify-dce optional
+ppmlhdfe verify-count optional
+ftools verify-count optional
+reghdfe verify-count optional
 require verify-regression required
 sdid verify-synth-sdid required
 synth verify-synth-sdid required

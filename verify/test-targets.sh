@@ -58,6 +58,9 @@ declare -F targets_plan_is_delegate >/dev/null 2>&1 || has_plan=0
 FIXTURES=$(cat <<'EOF'
 verify-basics|basics|verify-basics
 verify-dce|dce|verify-dce
+verify-count|count|verify-count
+verify-fractional|fractional|verify-fractional
+verify-limited-dependent|limited-dependent|verify-limited-dependent
 verify-regression|regression|verify-regression verify-dynamic-panel
 verify-did-community|did-community|verify-synth-sdid verify-power verify-trop
 EOF

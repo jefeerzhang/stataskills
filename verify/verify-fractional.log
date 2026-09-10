@@ -1,0 +1,319 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-fractional.do 
+
+. version 19.5
+
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-fractional
+. * chapter:  fractional-response
+. * data:     sim:800
+. * checks:   fracreg-logit+fracreg-probit+betareg+boundaries+ame
+. * =========================
+. clear
+
+. set seed 20260912
+
+. set obs 800
+Number of observations (_N) was 0, now 800.
+
+. gen id = ceil(_n/4)
+
+. gen double x = rnormal()
+
+. gen byte treated = runiform() > .5
+
+. gen double target = invlogit(-.3 + .7*x + .3*treated)
+
+. gen double beta_y = rbeta(target*8, (1-target)*8)
+
+. gen double share = beta_y
+
+. replace share = 0 if mod(_n,20) == 0
+(40 real changes made)
+
+. replace share = 1 if mod(_n,25) == 0
+(32 real changes made)
+
+. assert inrange(share,0,1) & !missing(share)
+
+. count if share == 0
+  32
+
+. assert r(N) > 0
+
+. count if share == 1
+  32
+
+. assert r(N) > 0
+
+. fracreg logit share c.x i.treated, vce(cluster id)
+
+Iteration 0:  Log pseudolikelihood = -574.03143  
+Iteration 1:  Log pseudolikelihood = -521.37306  
+Iteration 2:  Log pseudolikelihood = -521.31859  
+Iteration 3:  Log pseudolikelihood = -521.31858  
+
+Fractional logistic regression                          Number of obs =    800
+                                                        Wald chi2(2)  = 228.77
+                                                        Prob > chi2   = 0.0000
+Log pseudolikelihood = -521.31858                       Pseudo R2     = 0.0575
+
+                                   (Std. err. adjusted for 200 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+       share | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .6076917   .0402927    15.08   0.000     .5287195    .6866639
+   1.treated |    .195532   .0647078     3.02   0.003     .0687071    .3223569
+       _cons |  -.2165406   .0436972    -4.96   0.000    -.3021857   -.1308956
+------------------------------------------------------------------------------
+
+. estimates store frac_logit
+
+. assert e(converged) == 1
+
+. assert e(N) == 800
+
+. predict double fractional_mean, cm
+
+. assert inrange(fractional_mean,0,1)
+
+. gen double analytic_dx = _b[x]*fractional_mean*(1-fractional_mean)
+
+. summarize analytic_dx, meanonly
+
+. scalar expected_ame = r(mean)
+
+. margins, dydx(x) predict(cm)
+
+Average marginal effects                                   Number of obs = 800
+Model VCE: Robust
+
+Expression: Conditional mean of share, predict(cm)
+dy/dx wrt:  x
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .1397521   .0079491    17.58   0.000     .1241721    .1553321
+------------------------------------------------------------------------------
+
+. matrix ame = r(b)
+
+. assert abs(ame[1,1] - expected_ame) < 1e-6
+
+. margins, dydx(treated) predict(cm)
+
+Average marginal effects                                   Number of obs = 800
+Model VCE: Robust
+
+Expression: Conditional mean of share, predict(cm)
+dy/dx wrt:  1.treated
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   1.treated |   .0449978   .0148351     3.03   0.002     .0159215    .0740742
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. test x
+
+ ( 1)  [share]x = 0
+
+           chi2(  1) =  227.46
+         Prob > chi2 =    0.0000
+
+. display "FRACTIONAL_ENDPOINTS_AME_OK"
+FRACTIONAL_ENDPOINTS_AME_OK
+
+. 
+. * RESET-type mean-specification diagnostic with generated index terms.
+. predict double link_index, xb
+
+. gen double index_sq = link_index^2
+
+. gen double index_cube = link_index^3
+
+. fracreg logit share c.x i.treated index_sq index_cube, vce(cluster id)
+
+Iteration 0:  Log pseudolikelihood = -574.02202  
+Iteration 1:  Log pseudolikelihood = -521.43237  
+Iteration 2:  Log pseudolikelihood = -521.27555  
+Iteration 3:  Log pseudolikelihood = -521.27502  
+Iteration 4:  Log pseudolikelihood = -521.27502  
+
+Fractional logistic regression                          Number of obs =    800
+                                                        Wald chi2(4)  = 223.36
+                                                        Prob > chi2   = 0.0000
+Log pseudolikelihood = -521.27502                       Pseudo R2     = 0.0576
+
+                                   (Std. err. adjusted for 200 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+       share | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .5752725   .0639083     9.00   0.000     .4500145    .7005306
+   1.treated |   .1834796    .064861     2.83   0.005     .0563544    .3106049
+    index_sq |   .0219049   .1029903     0.21   0.832    -.1799524    .2237621
+  index_cube |   .0642407   .0972773     0.66   0.509    -.1264193    .2549007
+       _cons |  -.2107343   .0499561    -4.22   0.000    -.3086465   -.1128222
+------------------------------------------------------------------------------
+
+. test index_sq index_cube
+
+ ( 1)  [share]index_sq = 0
+ ( 2)  [share]index_cube = 0
+
+           chi2(  2) =    0.44
+         Prob > chi2 =    0.8032
+
+. display "FRACTIONAL_SPECIFICATION_TEST_OK"
+FRACTIONAL_SPECIFICATION_TEST_OK
+
+. fracreg probit share c.x i.treated, vce(cluster id)
+
+Iteration 0:  Log pseudolikelihood = -608.15353  
+Iteration 1:  Log pseudolikelihood = -521.46454  
+Iteration 2:  Log pseudolikelihood =  -521.2995  
+Iteration 3:  Log pseudolikelihood =  -521.2995  
+
+Fractional probit regression                            Number of obs =    800
+                                                        Wald chi2(2)  = 240.68
+                                                        Prob > chi2   = 0.0000
+Log pseudolikelihood = -521.2995                        Pseudo R2     = 0.0576
+
+                                   (Std. err. adjusted for 200 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+       share | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .3753184   .0242669    15.47   0.000     .3277561    .4228807
+   1.treated |   .1192369   .0400239     2.98   0.003     .0407916    .1976822
+       _cons |  -.1328777   .0270253    -4.92   0.000    -.1858463   -.0799092
+------------------------------------------------------------------------------
+
+. assert e(converged) == 1
+
+. predict double probit_mean, cm
+
+. assert inrange(probit_mean,0,1)
+
+. margins, dydx(x treated) predict(cm)
+
+Average marginal effects                                   Number of obs = 800
+Model VCE: Robust
+
+Expression: Conditional mean of share, predict(cm)
+dy/dx wrt:  x 1.treated
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .1400333   .0079769    17.55   0.000     .1243988    .1556678
+   1.treated |   .0445144   .0148994     2.99   0.003     .0153121    .0737168
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. 
+. * Separate interior-only DGP, not a silent deletion of share endpoints.
+. assert beta_y > 0 & beta_y < 1
+
+. betareg beta_y c.x i.treated, vce(robust)
+Initial:      Log pseudolikelihood =  210.01017
+Rescale:      Log pseudolikelihood =  210.01017
+Rescale eq:   Log pseudolikelihood =  375.12095
+(setting technique to bhhh)
+Iteration 0:  Log pseudolikelihood =  375.12095  
+Iteration 1:  Log pseudolikelihood =   394.1075  
+Iteration 2:  Log pseudolikelihood =  394.13323  
+Iteration 3:  Log pseudolikelihood =  394.13334  
+Iteration 4:  Log pseudolikelihood =  394.13334  
+
+Beta regression                                 Number of obs     =        800
+                                                Wald chi2(2)      =     749.56
+                                                Prob > chi2       =     0.0000
+
+Link function        :  g(u) = log(u/(1-u))     [Logit]
+Slink function       :  g(u) = log(u)           [Log]
+
+Log pseudolikelihood =  394.13334
+
+------------------------------------------------------------------------------
+             |               Robust
+      beta_y | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+beta_y       |
+           x |   .7247792   .0269676    26.88   0.000     .6719238    .7776347
+   1.treated |   .2535174   .0480099     5.28   0.000     .1594198    .3476151
+       _cons |  -.2599159   .0344143    -7.55   0.000    -.3273667   -.1924651
+-------------+----------------------------------------------------------------
+scale        |
+       _cons |   2.113296   .0445804    47.40   0.000     2.025921    2.200672
+------------------------------------------------------------------------------
+
+. assert e(converged) == 1
+
+. predict double beta_mean, cmean
+
+. assert beta_mean > 0 & beta_mean < 1
+
+. margins, dydx(x treated) predict(cmean)
+
+Average marginal effects                                   Number of obs = 800
+Model VCE: Robust
+
+Expression: Conditional mean of beta_y, predict(cmean)
+dy/dx wrt:  x 1.treated
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .1616699   .0049049    32.96   0.000     .1520565    .1712833
+   1.treated |   .0566103   .0107045     5.29   0.000     .0356298    .0775908
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |          N   ll(null)  ll(model)      df        AIC        BIC
+-------------+---------------------------------------------------------------
+           . |        800   96.20852   394.1333       4  -780.2667  -761.5282
+-----------------------------------------------------------------------------
+Note: BIC uses N = number of observations. See [R] IC note.
+
+. display "FRACTIONAL_BETA_OK"
+FRACTIONAL_BETA_OK
+
+. 
+end of do-file

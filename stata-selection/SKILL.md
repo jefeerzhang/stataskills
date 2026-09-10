@@ -60,6 +60,8 @@ version 19.5
 
 ## 方法边界与识别术语
 
+- 结果仅在样本被选中时可见、用户点名 Heckman/heckprobit → `stata-limited-dependent` 的样本选择 gate。它不属于这里的 treatment selection-on-observables / ATET 对照链。
+
 - **IPWRA**（`teffects ipwra`）同时拟合 treatment model 与 outcome regression；在 treatment model 或 outcome model 其中一个正确指定时具有双重稳健性（仍要求一致处理、无未测混杂、positivity/overlap、正确结果/处理变量定义与独立性/SUTVA）。双重稳健不是万能修复。
 - **`teffects aipw`** 是 augmented inverse-probability weighting，另一个官方 AIPW estimator；不要把它简称成 IPWRA，也不要把两者输出当作同一估计量。需要比较时单独估计、单独存储并说明模型结构。
 - **`hdidregress aipw`** 属于时间维度的异质性稳健 DID；它要求政策时间/组结构，不是横截面 `teffects` 的替代。时间处理或错时处理走 `stata-did`。

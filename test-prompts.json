@@ -788,6 +788,99 @@
       ],
       "expected_outputs": ["mixed/panel mixed logit 结果", "WTP 定义与不确定性", "IIA 与数值稳定性诊断"],
       "verify_keywords": ["cmmixlogit", "DCE_WTP_OK", "DCE_COMMUNITY_MIXLOGIT_OK", "DCE_LCLOGIT_PROBABILITIES_OK", "DCE_PROBCALC_DISTRIBUTION_ONLY_OK"]
+    },
+    {
+      "id": "count-01-exposure-zero-process",
+      "skill": "stata-count",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["offset_is_log_exposure", "zeros_do_not_imply_inflation"],
+      "scenario": "各人观察月数不同，结局是就医次数且零值很多。请比较 Poisson、负二项与零膨胀模型并报告原尺度效应。",
+      "expected_actions": [
+        "读取 stata-count，确认非负整数结果、正 exposure 与缺失；exposure() 使用原尺度窗口，offset() 使用其自然对数",
+        "Poisson 与 NB 比较条件过度离散；不因无条件方差大于均值就判 PPML 无效",
+        "只有结构零机制可辩护时使用 ZIP/ZINB 并解释 inflate 方程；核对预测零概率",
+        "区分 IRR、预测次数与单位窗口率，使用 margins 给出原尺度 AME；不以 Vuong 单个 p 值自动选模型"
+      ],
+      "expected_outputs": ["exposure 与 offset 等价证据", "零值机制及 AME"],
+      "verify_keywords": ["COUNT_EXPOSURE_OK", "COUNT_NB_OK", "COUNT_ZERO_MODELS_OK"]
+    },
+    {
+      "id": "count-02-ppml-continuous-separation",
+      "skill": "stata-count",
+      "difficulty": "hard",
+      "requires_package": ["ppmlhdfe", "ftools", "reghdfe"],
+      "gotchas": ["ppml_noninteger_valid", "separation_changes_sample"],
+      "scenario": "企业贸易额含零和小数，需要企业与年份固定效应 PPML。某企业所有年份都是零，预测时该企业缺失。",
+      "expected_actions": [
+        "读取 stata-count 的 PPML 路径；非负连续因变量可用 PPML，不先取 log(y+1)",
+        "用 ppmlhdfe absorb(id t) vce(cluster id) d(fe_sum)，预测包含固定效应总和",
+        "核对 separation/singletons 与 e(sample)，解释全零 FE 组的剔除；不强行把其缺失预测补零",
+        "同样本与显式 dummy-FE Poisson 核对系数；robust VCE 不代替条件均值与外生性假设"
+      ],
+      "expected_outputs": ["PPML 固定效应结果", "分离与样本剔除记录"],
+      "verify_keywords": ["COUNT_PPML_EQUIVALENCE_OK", "COUNT_PPML_SEPARATION_OK"]
+    },
+    {
+      "id": "fractional-01-endpoints-ame",
+      "skill": "stata-fractional",
+      "difficulty": "medium",
+      "requires_package": null,
+      "gotchas": ["keep_fractional_endpoints", "ame_percentage_points"],
+      "scenario": "农户土地流转比例在 0 到 1，包含完全不流转和全部流转。希望用 fractional logit，并解释某变量 AME=0.03。",
+      "expected_actions": [
+        "读取 stata-fractional，检查 [0,1] 与端点；保留 0/1 用 fracreg logit，不删端点或取 logit(y)",
+        "使用适当 robust/cluster VCE，predict cm 和 margins；0.03 是 3 个百分点，不是相对增加 3%",
+        "对连续 x 与因子变量区分导数/离散变化，检查预测范围与估计样本"
+      ],
+      "expected_outputs": ["端点保留的 fracreg 结果", "百分点尺度 AME"],
+      "verify_keywords": ["FRACTIONAL_ENDPOINTS_AME_OK"]
+    },
+    {
+      "id": "fractional-02-beta-specification",
+      "skill": "stata-fractional",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["beta_strict_interior", "quasi_likelihood_not_density"],
+      "scenario": "用户想把含端点比例加 epsilon 后跑 betareg，凭 AIC 小于 fracreg 宣称模型正确。",
+      "expected_actions": [
+        "标准 betareg 要求严格 (0,1)，不任意改变端点；含端点用 fracreg 或单独论证端点机制",
+        "区分 Beta 完整似然与 fractional quasi-likelihood，不机械按不同样本/目标的 AIC 排名",
+        "对同样本 logit/probit 比较 AME 和均值校准，执行扩展链接项 Wald 诊断；不拒绝不证明设定正确"
+      ],
+      "expected_outputs": ["Beta 数据边界判断", "均值设定检验与 AME 对照"],
+      "verify_keywords": ["FRACTIONAL_SPECIFICATION_TEST_OK", "FRACTIONAL_BETA_OK"]
+    },
+    {
+      "id": "limited-dependent-01-zero-vs-censoring",
+      "skill": "stata-limited-dependent",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["true_zero_not_censoring", "two_part_joint_uncertainty"],
+      "scenario": "家庭支出含大量真实零；另一变量因仪器检出限被记为零。用户想都跑 Tobit 并直接解释系数为支出效应。",
+      "expected_actions": [
+        "读取 stata-limited-dependent，区分真实零、已知删失与选择性缺失；两份数据分别选模型",
+        "已知零下界删失使用 tobit ll(0)，区分潜在指数与 predict ystar(0,.) 的观测均值 AME",
+        "真实零考虑 churdle 或 logit 参与概率乘正值 GLM 条件均值；整体区间须传播两部不确定性"
+      ],
+      "expected_outputs": ["数据机制选择", "Tobit 与两部模型的不同 estimand"],
+      "verify_keywords": ["LIMITED_TOBIT_TARGETS_OK", "LIMITED_HURDLE_OK", "LIMITED_TWO_PART_OK"]
+    },
+    {
+      "id": "limited-dependent-02-sample-selection",
+      "skill": "stata-limited-dependent + stata-selection",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["heckman_not_treatment_selection", "rho_not_exclusion_proof"],
+      "scenario": "工资只对就业者可见，非就业者的协变量仍在数据里。用户想把缺失工资填零后用 PSM 修正，或手工加入 IMR 用 OLS 标准误。",
+      "expected_actions": [
+        "区分样本结果可观测性与处理选择，转 stata-limited-dependent；保留非就业者及其 outcome 缺失",
+        "论证 select 方程排除变量；用官方 heckman ML/两步，二元 outcome 才用 heckprobit",
+        "检查收敛、选择支持、rho 及独立方程检验；rho 不显著不证明没有选择问题，z 显著不证明排除有效",
+        "明确 ycond/xb 和 p11/psel/pcond 目标，不用普通 OLS SE 或两步结果做 ML 似然比较"
+      ],
+      "expected_outputs": ["Heckman 与处理选择路由区别", "选择方程诊断与预测目标"],
+      "verify_keywords": ["LIMITED_HECKMAN_OK", "LIMITED_HECKPROBIT_OK"]
     }
   ]
 }

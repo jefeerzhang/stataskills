@@ -57,6 +57,12 @@ expect=$(printf '%s\n' \
 [ "$plan" = "$expect" ] && pass "multi-delegate plan" || bad "delegate：[$plan]"
 
 skills=$(prompt_plan_each_skill "stata-a + stata-b + stata-a" | paste -sd' ' -)
+plan=$(prompt_plan_each_target "stata-count + stata-fractional + stata-limited-dependent + stata-count")
+expect=$(printf '%s\n' \
+  $'count\tverify-count\tverify-count' \
+  $'fractional\tverify-fractional\tverify-fractional' \
+  $'limited-dependent\tverify-limited-dependent\tverify-limited-dependent')
+[ "$plan" = "$expect" ] && pass "结果模型跨 skill 去重 plan" || bad "结果模型：[$plan]"
 [ "$skills" = "a b" ] && pass "skill 去重保序" || bad "skills=[$skills]"
 
 echo ""

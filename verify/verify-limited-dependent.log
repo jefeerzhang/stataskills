@@ -1,0 +1,479 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: 114514-student 64-core lab perpetual
+Serial number: 9223372036854775807
+  Licensed to: zhangjian
+               sicau
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do C:/Users/jefeer/Downloads/stataskills/verify/verify-limited-dependent.do 
+
+. version 19.5
+
+. * ==== VERIFY CONTRACT ====
+. * skill:    stata-limited-dependent
+. * chapter:  censoring-hurdle-sample-selection
+. * data:     sim:1200
+. * checks:   tobit+churdle+two-part+heckman+heckprobit
+. * =========================
+. clear
+
+. set seed 20260913
+
+. set obs 1200
+Number of observations (_N) was 0, now 1,200.
+
+. gen double x = rnormal()
+
+. gen double z = rnormal()
+
+. gen double u = rnormal()
+
+. gen double v = .5*u + sqrt(.75)*rnormal()
+
+. gen double latent = .3 + .7*x + u
+
+. gen double censored = max(0,latent)
+
+. assert censored >= 0 & censored < .
+
+. count if censored == 0
+  500
+
+. assert r(N) > 0
+
+. tobit censored c.x, ll(0) vce(robust)
+
+Refining starting values:
+
+Grid node 0:  Log likelihood = -1523.3109
+
+Fitting full model:
+
+Iteration 0:  Log pseudolikelihood = -1523.3109  
+Iteration 1:  Log pseudolikelihood = -1348.2631  
+Iteration 2:  Log pseudolikelihood = -1325.0375  
+Iteration 3:  Log pseudolikelihood = -1324.5162  
+Iteration 4:  Log pseudolikelihood = -1324.5157  
+Iteration 5:  Log pseudolikelihood = -1324.5157  
+
+Tobit regression                                    Number of obs     =  1,200
+                                                           Uncensored =    700
+Limits: Lower =    0                                    Left-censored =    500
+        Upper = +inf                                   Right-censored =      0
+
+                                                    F(1, 1199)        = 466.42
+                                                    Prob > F          = 0.0000
+Log pseudolikelihood = -1324.5157                   Pseudo R2         = 0.1451
+
+------------------------------------------------------------------------------
+             |               Robust
+    censored | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .7161024   .0331579    21.60   0.000     .6510484    .7811564
+       _cons |   .2693071   .0354092     7.61   0.000     .1998363    .3387779
+-------------+----------------------------------------------------------------
+var(e.cens~d)|   1.017641   .0576581                      .9105796     1.13729
+------------------------------------------------------------------------------
+
+. assert e(converged) == 1
+
+. predict double observed_mean, ystar(0,.)
+
+. predict double positive_mean, e(0,.)
+
+. predict double positive_prob, pr(0,.)
+
+. assert abs(observed_mean-positive_prob*positive_mean) < 1e-7
+
+. margins, dydx(x) predict(ystar(0,.))
+
+Average marginal effects                                 Number of obs = 1,200
+Model VCE: Robust
+
+Expression: E(censored*|censored>0), predict(ystar(0,.))
+dy/dx wrt:  x
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .4231598   .0179761    23.54   0.000     .3879273    .4583922
+------------------------------------------------------------------------------
+
+. margins, dydx(x) predict(pr(0,.))
+
+Average marginal effects                                 Number of obs = 1,200
+Model VCE: Robust
+
+Expression: Pr(censored>0), predict(pr(0,.))
+dy/dx wrt:  x
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |    .221466     .00718    30.84   0.000     .2073934    .2355385
+------------------------------------------------------------------------------
+
+. display "LIMITED_TOBIT_TARGETS_OK"
+LIMITED_TOBIT_TARGETS_OK
+
+. 
+. gen byte participates = runiform() < normal(.2 + .3*x + .6*z)
+
+. gen double spending = participates*exp(.4 + .5*x + .5*rnormal())
+
+. churdle exponential spending c.x, select(x z) ll(0) vce(robust)
+ 
+Iteration 0:  Log pseudolikelihood = -1127.1639  (not concave)
+Iteration 1:  Log pseudolikelihood = -958.38281  
+Iteration 2:  Log pseudolikelihood = -907.92037  
+Iteration 3:  Log pseudolikelihood = -888.78774  
+Iteration 4:  Log pseudolikelihood = -888.75975  
+Iteration 5:  Log pseudolikelihood = -888.75974  
+
+Cragg hurdle regression                                 Number of obs =  1,200
+                                                        Wald chi2(1)  = 733.64
+                                                        Prob > chi2   = 0.0000
+Log pseudolikelihood = -888.75974                       Pseudo R2     = 0.3284
+
+------------------------------------------------------------------------------
+             |               Robust
+    spending | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+spending     |
+           x |    .545106   .0201251    27.09   0.000     .5056615    .5845505
+       _cons |   .4053857   .0192297    21.08   0.000     .3676962    .4430752
+-------------+----------------------------------------------------------------
+selection_ll |
+           x |   .3171894   .0380506     8.34   0.000     .2426116    .3917673
+           z |    .648466   .0444414    14.59   0.000     .5613625    .7355696
+       _cons |   .2354064   .0400842     5.87   0.000     .1568428    .3139701
+-------------+----------------------------------------------------------------
+lnsigma      |
+       _cons |  -.7012675   .0256073   -27.39   0.000    -.7514568   -.6510782
+-------------+----------------------------------------------------------------
+      /sigma |   .4959563   .0127001                      .4716789    .5214832
+------------------------------------------------------------------------------
+
+. assert e(converged) == 1
+
+. predict double hurdle_mean, ystar
+
+. assert hurdle_mean > 0 & hurdle_mean < .
+
+. margins, dydx(x) predict(ystar)
+
+Average marginal effects                                 Number of obs = 1,200
+Model VCE: Robust
+
+Expression: Conditional mean estimates of dependent variable, predict(ystar)
+dy/dx wrt:  x
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .8880908   .0510305    17.40   0.000     .7880728    .9881088
+------------------------------------------------------------------------------
+
+. display "LIMITED_HURDLE_OK"
+LIMITED_HURDLE_OK
+
+. 
+. * Two-part expectation: P(y>0|x,z) * E(y|y>0,x).
+. logit participates c.x c.z, vce(robust)
+
+Iteration 0:  Log pseudolikelihood =  -820.5348  
+Iteration 1:  Log pseudolikelihood = -670.13943  
+Iteration 2:  Log pseudolikelihood = -668.66512  
+Iteration 3:  Log pseudolikelihood = -668.66208  
+Iteration 4:  Log pseudolikelihood = -668.66208  
+
+Logistic regression                                     Number of obs =  1,200
+                                                        Wald chi2(2)  = 221.18
+                                                        Prob > chi2   = 0.0000
+Log pseudolikelihood = -668.66208                       Pseudo R2     = 0.1851
+
+------------------------------------------------------------------------------
+             |               Robust
+participates | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |    .527215   .0640246     8.23   0.000     .4017291     .652701
+           z |   1.084531   .0786994    13.78   0.000     .9302826    1.238779
+       _cons |   .3942541   .0675594     5.84   0.000     .2618401     .526668
+------------------------------------------------------------------------------
+
+. predict double participation_prob, pr
+
+. glm spending c.x if participates, family(gamma) link(log) vce(robust)
+
+Iteration 0:  Log pseudolikelihood = -1126.0199  
+Iteration 1:  Log pseudolikelihood =  -1123.894  
+Iteration 2:  Log pseudolikelihood = -1123.8885  
+Iteration 3:  Log pseudolikelihood = -1123.8885  
+
+Generalized linear models                         Number of obs   =        682
+Optimization     : ML                             Residual df     =        680
+                                                  Scale parameter =   .2780558
+Deviance         =  168.7454993                   (1/df) Deviance =   .2481551
+Pearson          =  189.0779476                   (1/df) Pearson  =   .2780558
+
+Variance function: V(u) = u^2                     [Gamma]
+Link function    : g(u) = ln(u)                   [Log]
+
+                                                  AIC             =   3.301726
+Log pseudolikelihood =   -1123.8885               BIC             =  -4268.275
+
+------------------------------------------------------------------------------
+             |               Robust
+    spending | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .5511897    .020634    26.71   0.000     .5107479    .5916315
+       _cons |   .5277732   .0204766    25.77   0.000     .4876399    .5679065
+------------------------------------------------------------------------------
+
+. predict double positive_spend, mu
+
+. gen double two_part_mean = participation_prob*positive_spend
+
+. assert two_part_mean > 0 & two_part_mean < .
+
+. display "LIMITED_TWO_PART_OK"
+LIMITED_TWO_PART_OK
+
+. 
+. gen byte selected = (.2 + .4*x + .8*z + v > 0)
+
+. gen double outcome = latent if selected
+(524 missing values generated)
+
+. assert missing(outcome) if !selected
+
+. assert !missing(outcome) if selected
+
+. heckman outcome c.x, select(selected = c.x c.z) vce(robust)
+
+Iteration 0:  Log pseudolikelihood = -1529.1934  
+Iteration 1:  Log pseudolikelihood = -1529.1398  
+Iteration 2:  Log pseudolikelihood = -1529.1397  
+
+Heckman selection model                         Number of obs     =      1,200
+(regression model with sample selection)              Selected    =        676
+                                                      Nonselected =        524
+
+                                                Wald chi2(1)      =     336.28
+Log pseudolikelihood =  -1529.14                Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------
+             |               Robust
+             | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+outcome      |
+           x |    .723643   .0394617    18.34   0.000     .6462994    .8009865
+       _cons |   .3363335   .0683295     4.92   0.000     .2024101     .470257
+-------------+----------------------------------------------------------------
+selected     |
+           x |   .3676263   .0402972     9.12   0.000     .2886452    .4466073
+           z |   .8295067   .0484841    17.11   0.000     .7344796    .9245338
+       _cons |   .2448388    .041722     5.87   0.000     .1630652    .3266125
+-------------+----------------------------------------------------------------
+     /athrho |   .4478307   .1081785     4.14   0.000     .2358048    .6598567
+    /lnsigma |  -.0180866   .0320805    -0.56   0.573    -.0809632    .0447899
+-------------+----------------------------------------------------------------
+         rho |   .4201142   .0890854                      .2315293    .5782681
+       sigma |   .9820759   .0315055                      .9222276    1.045808
+      lambda |   .4125841   .0950075                      .2263729    .5987953
+------------------------------------------------------------------------------
+Wald test of indep. eqns. (rho = 0): chi2(1) = 17.14      Prob > chi2 = 0.0000
+
+. estimates store selection_ml
+
+. assert e(converged) == 1
+
+. test [selected]z
+
+ ( 1)  [selected]z = 0
+
+           chi2(  1) =  292.71
+         Prob > chi2 =    0.0000
+
+. test /athrho = 0
+
+ ( 1)  [/]athrho = 0
+
+           chi2(  1) =   17.14
+         Prob > chi2 =    0.0000
+
+. predict double selected_mean, ycond
+
+. predict double population_mean, xb
+
+. assert selected_mean < . & population_mean < .
+
+. margins, dydx(x) predict(ycond)
+
+Average marginal effects                                 Number of obs = 1,200
+Model VCE: Robust
+
+Expression: E(outcome|Zg>0), predict(ycond)
+dy/dx wrt:  x
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .6395167   .0367182    17.42   0.000     .5675505     .711483
+------------------------------------------------------------------------------
+
+. heckman outcome c.x, select(selected = c.x c.z) twostep
+
+Heckman selection model -- two-step estimates   Number of obs     =      1,200
+(regression model with sample selection)              Selected    =        676
+                                                      Nonselected =        524
+
+                                                Wald chi2(1)      =     360.13
+                                                Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+outcome      |
+           x |   .7193588   .0379069    18.98   0.000     .6450626    .7936549
+       _cons |   .3513056   .0688271     5.10   0.000     .2164071    .4862042
+-------------+----------------------------------------------------------------
+selected     |
+           x |   .3752582   .0415008     9.04   0.000     .2939182    .4565983
+           z |   .8333827   .0501245    16.63   0.000     .7351406    .9316249
+       _cons |   .2460596   .0418307     5.88   0.000     .1640728    .3280463
+-------------+----------------------------------------------------------------
+/mills       |
+      lambda |   .3855211   .1053461     3.66   0.000     .1790465    .5919958
+-------------+----------------------------------------------------------------
+         rho |    0.39402
+       sigma |  .97842788
+------------------------------------------------------------------------------
+
+. assert e(N) == 1200
+
+. display "LIMITED_HECKMAN_OK"
+LIMITED_HECKMAN_OK
+
+. 
+. gen byte binary_outcome = (latent > 0) if selected
+(524 missing values generated)
+
+. heckprobit binary_outcome c.x, select(selected = c.x c.z) vce(robust)
+
+Fitting probit model:
+
+Iteration 0:  Log pseudolikelihood = -393.76476  
+Iteration 1:  Log pseudolikelihood = -318.75027  
+Iteration 2:  Log pseudolikelihood = -317.06729  
+Iteration 3:  Log pseudolikelihood =  -317.0629  
+Iteration 4:  Log pseudolikelihood =  -317.0629  
+
+Fitting selection model:
+
+Iteration 0:  Log pseudolikelihood = -822.12404  
+Iteration 1:  Log pseudolikelihood = -610.63175  
+Iteration 2:  Log pseudolikelihood = -610.38369  
+Iteration 3:  Log pseudolikelihood = -610.38367  
+
+Fitting starting values:
+
+Iteration 0:  Log pseudolikelihood = -468.56749  
+Iteration 1:  Log pseudolikelihood = -314.70152  
+Iteration 2:  Log pseudolikelihood = -313.67756  
+Iteration 3:  Log pseudolikelihood = -313.67684  
+Iteration 4:  Log pseudolikelihood = -313.67684  
+
+Fitting full model:
+
+Iteration 0:  Log pseudolikelihood = -924.64739  
+Iteration 1:  Log pseudolikelihood = -924.31623  
+Iteration 2:  Log pseudolikelihood = -924.31577  
+Iteration 3:  Log pseudolikelihood = -924.31577  
+
+Probit model with sample selection              Number of obs     =      1,200
+                                                      Selected    =        676
+                                                      Nonselected =        524
+
+                                                Wald chi2(1)      =     128.75
+Log pseudolikelihood = -924.3158                Prob > chi2       =     0.0000
+
+------------------------------------------------------------------------------
+             |               Robust
+             | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+binary_out~e |
+           x |   .7603913   .0670148    11.35   0.000     .6290446    .8917379
+       _cons |   .3989708   .0933247     4.28   0.000     .2160577    .5818839
+-------------+----------------------------------------------------------------
+selected     |
+           x |   .3778116   .0410292     9.21   0.000      .297396    .4582273
+           z |    .832911   .0486793    17.11   0.000     .7375013    .9283207
+       _cons |   .2458568   .0418713     5.87   0.000     .1637905    .3279231
+-------------+----------------------------------------------------------------
+     /athrho |   .3804156   .1447785     2.63   0.009     .0966549    .6641762
+-------------+----------------------------------------------------------------
+         rho |   .3630683    .125694                      .0963551     .581136
+------------------------------------------------------------------------------
+Wald test of indep. eqns. (rho = 0): chi2(1) = 6.90       Prob > chi2 = 0.0086
+
+. assert e(converged) == 1
+
+. test /athrho = 0
+
+ ( 1)  [/]athrho = 0
+
+           chi2(  1) =    6.90
+         Prob > chi2 =    0.0086
+
+. predict double p_joint, p11
+
+. predict double p_select, psel
+
+. predict double p_cond, pcond
+
+. assert inrange(p_joint,0,1) & inrange(p_select,0,1) & inrange(p_cond,0,1)
+
+. assert abs(p_joint-p_select*p_cond) < 1e-7
+
+. margins, dydx(x) predict(pcond)
+
+Average marginal effects                                 Number of obs = 1,200
+Model VCE: Robust
+
+Expression: Pr(binary_outcome=1|selected=1), predict(pcond)
+dy/dx wrt:  x
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           x |   .1905765    .015186    12.55   0.000     .1608126    .2203404
+------------------------------------------------------------------------------
+
+. display "LIMITED_HECKPROBIT_OK"
+LIMITED_HECKPROBIT_OK
+
+. 
+end of do-file
