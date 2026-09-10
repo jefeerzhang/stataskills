@@ -16,10 +16,12 @@ demo/.png
 Thumbs.db
 .DS_Store
 
-# Agent 运行产物（--llm 行为回归 / 本地演示临时物）
-/.scratch/llm-smoke/
-/.scratch/*.do
-/.scratch/*.dta
+# Agent 运行产物与本地临时物（--llm 行为回归 / 架构图源 / Stata 草稿）
+# .scratch/ 不可整目录当垃圾扫，内含不可再生内容：
+#   archify/     ← 已提交资产 docs/stataskills-architecture.png 的唯一源
+#   llm-smoke/   ← verify/llm-results.md、llm-smoke-results.md 引用的原始响应
+#   *.do         ← 多数 .png / .dta 由同目录 .do 经 graph export / save 再生
+/.scratch/
+/.tmp/
 /stata_batch__*.log
-/logit-forest-or.png
-/.scratch/*.png
+/*_test.log
