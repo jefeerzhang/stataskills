@@ -436,64 +436,60 @@ self_test_log_matcher() {
   rm -f "$probe"
 }
 
-# Table-driven：skill|expected_count —— expected paths 由 plan 派生，
-# 不硬编码 DID-community 三委托日志名（#24）。
+# Table-driven：skill|期望 do-file 基名序列（**字面量**）。
+# #24 要的是「生产 caller 不内置委托知识」；测试的形状相反——期望值必须独立于
+# 被测 primitive 现算，否则 actual 与 expected 同源、路径比较永真（旧实现即如此，
+# 只有计数一步有信号）。加 skill 只需在这里补一行。
 self_test_verify_log_resolution() {
-  local fixtures skill n entry expected_logs actual_logs expected_dofs actual_dofs
-  local got_n pd pl
-  fixtures=$(cat <<'EOF'
-regression|2
-did-community|3
-EOF
-)
-  while IFS='|' read -r skill n; do
-    [ -n "${skill:-}" ] || continue
-    entry="verify-$skill"
+  local fixtures skill bases expected_dofs expected_logs actual_dofs actual_logs
+  local got_n pd pl base pair_plan base_idx n_expected=0
+  fixtures='regression|verify-regression verify-dynamic-panel
+did-community|verify-synth-sdid verify-power verify-trop
+basics|verify-basics'
 
+  while IFS='|' read -r skill bases; do
+    [ -n "${skill:-}" ] || continue
     expected_dofs=""
-    while IFS= read -r base; do
-      [ -n "$base" ] || continue
-      expected_dofs="${expected_dofs:+$expected_dofs$'\n'}$VERIFY_DIR/${base}.do"
-    done < <(targets_plan_each_dofile "$entry")
+    expected_logs=""
+    n_expected=0
+    for base in $bases; do
+      expected_dofs="${expected_dofs:+$expected_dofs$'\n'}$VERIFY_DIR/$base.do"
+      expected_logs="${expected_logs:+$expected_logs$'\n'}$VERIFY_DIR/$base.log"
+      n_expected=$((n_expected + 1))
+    done
+
     actual_dofs="$(verify_dofiles_for_skill "$skill")" || return 1
     if [ "$actual_dofs" != "$expected_dofs" ]; then
-      echo "FAIL  $skill do-files 未按 target plan 有序解析"
+      echo "FAIL  $skill do-files 与字面期望不符（期望有序 [$bases]）："
+      printf '%s\n' "$actual_dofs"
       return 1
     fi
 
-    expected_logs=""
-    while IFS= read -r logbase; do
-      [ -n "$logbase" ] || continue
-      expected_logs="${expected_logs:+$expected_logs$'\n'}$VERIFY_DIR/${logbase}.log"
-    done < <(targets_plan_each_log "$entry")
     actual_logs="$(verify_logs_for_skill "$skill")" || return 1
     if [ "$actual_logs" != "$expected_logs" ]; then
-      echo "FAIL  $skill logs 未按 target plan 有序解析"
+      echo "FAIL  $skill logs 与字面期望不符（期望有序 [$bases]）："
+      printf '%s\n' "$actual_logs"
       return 1
     fi
 
     got_n=$(printf '%s\n' "$actual_logs" | grep -c . || true)
-    if [ "$got_n" -ne "$n" ]; then
-      echo "FAIL  $skill 期望 $n 条 log，得 $got_n"
+    if [ "$got_n" -ne "$n_expected" ]; then
+      echo "FAIL  $skill 期望 $n_expected 条 log，得 $got_n"
       return 1
     fi
 
-    # pair 同序：每条 dofile 基名与 log 基名对齐（caller 不推日志名）
-    while IFS=$'\t' read -r pd pl; do
-      [ -n "${pd:-}" ] || continue
-      case "$actual_dofs"$'\n' in
-        *"$VERIFY_DIR/${pd}.do"*) ;;
-        *) echo "FAIL  $skill pair dofile 缺失：$pd"; return 1 ;;
-      esac
-      case "$actual_logs"$'\n' in
-        *"$VERIFY_DIR/${pl}.log"*) ;;
-        *) echo "FAIL  $skill pair log 缺失：$pl"; return 1 ;;
-      esac
-      if [ "$pd" != "$pl" ]; then
-        echo "FAIL  $skill plan pair 基名不一致：$pd vs $pl"
+    # each_pair 必须与同一份字面量同序（caller 不自行推日志名）
+    pair_plan="$(targets_plan_each_pair "verify-$skill")"
+    base_idx=0
+    for base in $bases; do
+      base_idx=$((base_idx + 1))
+      pd="$(printf '%s\n' "$pair_plan" | sed -n "${base_idx}p" | cut -f1)"
+      pl="$(printf '%s\n' "$pair_plan" | sed -n "${base_idx}p" | cut -f2)"
+      if [ "$pd" != "$base" ] || [ "$pl" != "$base" ]; then
+        echo "FAIL  $skill pair 第 $base_idx 项期望 $base/$base，得 $pd/$pl"
         return 1
       fi
-    done < <(targets_plan_each_pair "$entry")
+    done
   done <<EOF
 $fixtures
 EOF
@@ -658,9 +654,8 @@ run_prompts_mode() {
       continue
     fi
 
-    # 刷新 plan 路径（verify 已写出 log）；关键词须在某一 log 命中，
-    # 缺失时指出每个未覆盖的 skill/log。
-    plan_lines="$(prompt_plan_each_log_path "$skill" "$VERIFY_DIR")"
+    # 复用上方已解析的 plan 路径（纯函数，内容随 verify 运行而变化）；
+    # 关键词须在某一 log 命中，缺失时指出每个未覆盖的 skill/log。
     missing_kw=""
     miss_detail=""
     for kw in $keywords; do

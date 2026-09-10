@@ -130,7 +130,7 @@ _community_sentinel_class() {
 # KIND ∈ missing_probe|late_probe|undeclared_call|wrong_sentinel|ownership_drift
 community_check_dofile() {
   local dofile="$1"
-  local owner pkg call_ln probe_ln expect_class sent_class owners
+  local owner pkg o c call_ln probe_ln expect_class sent_class owners
   owner="$(basename "$dofile" .do)"
 
   # 1) 登记项：每个声明包必须有前置 probe；sentinel 与 class 一致

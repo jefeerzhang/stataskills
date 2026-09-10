@@ -25,7 +25,14 @@ xtabond y x1 x2, lags(1) vce(robust)
 xtset id t
 xtabond y x1 x2, lags(1) twostep vce(robust)
 estat abond                 // AR(1) 通常显著，AR(2) 不应显著
-estat sargan                // 仅在 iid 假设下解释；robust 时谨慎
+assert e(arm1) < . & e(arm2) < .
+
+// Sargan 只在非 robust VCE 下可算；robust 规格的有效性判断交给 Hansen。
+// 实测：vce(robust) 后跑 estat sargan 只打印 "cannot calculate Sargan test
+// with vce(robust)"，_rc 仍为 0、e(sargan) 是缺失值 —— 不会报错，容易当成通过了。
+xtabond y x1 x2, lags(1) twostep
+estat sargan
+assert e(sargan) < .
 ```
 
 ### System GMM：Arellano-Bover / Blundell-Bond
@@ -33,7 +40,7 @@ estat sargan                // 仅在 iid 假设下解释；robust 时谨慎
 ```stata
 xtdpdsys y x1 x2, lags(1) twostep vce(robust)
 estat abond
-estat sargan
+assert e(arm1) < . & e(arm2) < .
 ```
 
 系统 GMM 额外使用水平方程，必须说明额外的初始条件/平稳性假设；不能因为效率更高就默认替代 difference GMM。
@@ -87,4 +94,6 @@ estat overid
 
 ## 7. 验证契约
 
-仓库验证不仅检查命令退出状态，还要求动态面板日志留下三类核心诊断证据：AR(1)/AR(2) 检验、过度识别检验、工具数与 groups 的结构检查。随机 DGP 不把具体 p 值写死；但缺少任一诊断证据、结构性 `assert` 失败或出现 Stata 错误码，都必须判定为失败。`xtabond2` 安装时还记录 Hansen、Difference-in-Hansen 和工具数；未安装时按社区包契约输出 optional sentinel。
+仓库验证不仅检查命令退出状态，还要求动态面板日志留下三类核心诊断证据：AR(1)/AR(2) 检验、过度识别检验、工具数与 groups 的结构检查。所需标记清单由 `verify/verify-dynamic-panel.do` 自己用 `display "VERIFY_MARKERS_REQUIRED=..."` 在日志里声明，`judge.sh` 只解释声明、不硬编码名单。随机 DGP 不把具体 p 值写死；但缺少任一诊断证据、结构性 `assert` 失败或出现 Stata 错误码，都必须判定为失败。
+
+关键陷阱是「检验没算出来但也不报错」：`estat sargan` 在 `vce(robust)` 下 `_rc` 仍为 0，所以标记必须由 `assert e(sargan) < .` / `assert e(arm1) < . & e(arm2) < .` 这类标量断言托底，而不能只看 return code。`xtabond2` 安装时还记录 Hansen、Difference-in-Hansen 和工具数；未安装时按社区包契约输出 optional sentinel。

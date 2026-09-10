@@ -52,6 +52,8 @@ assert !missing(outcome) if selected
 heckman outcome c.x, select(selected = c.x c.z) vce(robust)
 estimates store selection_ml
 assert e(converged) == 1
+scalar ml_N = e(N)
+scalar ml_b_x = _b[outcome:x]
 test [selected]z
 test /athrho = 0
 predict double selected_mean, ycond
@@ -60,6 +62,11 @@ assert selected_mean < . & population_mean < .
 margins, dydx(x) predict(ycond)
 heckman outcome c.x, select(selected = c.x c.z) twostep
 assert e(N) == 1200
+* 两步与 ML 的交叉不变量：样本量与方向必须一致（数值可不同，两步非有效）。
+* 只查 e(N) 抓不到样本被悄悄丢掉或主方程系数反号。
+assert e(N) == ml_N
+assert !missing(_b[outcome:x])
+assert sign(_b[outcome:x]) == sign(ml_b_x)
 display "LIMITED_HECKMAN_OK"
 
 gen byte binary_outcome = (latent > 0) if selected

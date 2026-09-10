@@ -33,12 +33,14 @@ cmset respondent task alternative
 display "DCE_CMSET_OK"
 cmclogit chosen price quality, vce(cluster respondent)
 assert e(N) > 0
+assert e(converged) == 1
 display "DCE_CL_RESULTS_OK"
 
 cmmixlogit chosen price, random(quality) ///
     intmethod(random) intpoints(10) intseed(20260910) ///
     vce(cluster respondent)
 assert e(N) > 0
+assert e(converged) == 1
 display "DCE_MIXED_LOGIT_OK"
 
 cap which mixlogit
@@ -70,6 +72,10 @@ if !`has_probcalc' {
 egen grid = group(respondent task)
 clogit chosen price quality, group(grid) vce(cluster respondent)
 assert e(converged) == 1
+* 注意：cmclogit 默认拟合带 alternative-specific constants 的 logit，
+* 与无 ASC 的 clogit + group() 不是同一个似然，系数不可逐位比对。
+* 本机 DGP 实测 cmclogit price=-0.8865 / quality=0.9706，
+* clogit price=-1.0667 / quality=1.1076 —— 同向但不同值，属预期。
 scalar expected_wtp = -_b[quality]/_b[price]
 if `has_wtp' {
     wtp price quality, delta

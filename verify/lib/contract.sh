@@ -193,22 +193,17 @@ contract_stale_declarations() {
   printf '%s\n' "$stale"
 }
 
-# manifest 行：去空白、去 CR
-_contract_manifest_lines() {
-  local file="$1"
-  [ -f "$file" ] || return 0
-  # shellcheck disable=SC2001
-  sed 's/\r$//' "$file" | sed 's/[[:space:]]*$//' | grep -vE '^[[:space:]]*(#|$)' || true
-}
-
+# manifest 行计数：去 CR、去行尾空白、跳过空行与 # 注释（含缩进注释）。
+# 刻意用纯 bash 内联而不 fork sed/grep：本函数对每个 data token 都会被调用，
+# Windows Git Bash 上每次 fork 的成本会被 manifest 规模放大。
 _contract_manifest_count() {
-  local file="$1" base="$2" n=0 line
+  local file="$1" base="$2" n=0 line trimmed
   [ -f "$file" ] || { printf '0\n'; return 0; }
-  # 单次 sed，避免双重管道
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%$'\r'}"
     line="${line%"${line##*[![:space:]]}"}"
-    case "$line" in
+    trimmed="${line#"${line%%[![:space:]]*}"}"
+    case "$trimmed" in
       ''|'#'*) continue ;;
     esac
     [ "$line" = "$base" ] && n=$((n + 1))
