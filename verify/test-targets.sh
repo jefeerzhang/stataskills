@@ -3,7 +3,8 @@
 # 回归测试：verification target plan（verify/lib/targets.sh）
 #
 # Issue #20 / #23 / #27 / parent #18：table-driven 覆盖普通入口、DID-community
-# 三委托、唯一性、孤儿 delegate；each_* 按行迭代；#27 确认旧空格 API 已删除。
+# 三委托、identification 单委托、唯一性、孤儿 delegate；each_* 按行迭代；
+# #27 确认旧空格 API 已删除。
 #
 # 用法：bash verify/test-targets.sh
 # ============================================================
@@ -63,6 +64,7 @@ verify-fractional|fractional|verify-fractional
 verify-limited-dependent|limited-dependent|verify-limited-dependent
 verify-regression|regression|verify-regression verify-dynamic-panel
 verify-did-community|did-community|verify-synth-sdid verify-power verify-trop
+verify-identification|identification|verify-identification verify-sensitivity
 EOF
 )
 
@@ -149,7 +151,7 @@ EOF
 
   # ---- 孤儿 / delegate facts：由同一 plan 派生 ----
   got_delegates=$(targets_plan_delegate_bases)
-  expect_delegates="verify-dynamic-panel verify-synth-sdid verify-power verify-trop"
+  expect_delegates="verify-dynamic-panel verify-synth-sdid verify-power verify-trop verify-sensitivity"
   if [ "$got_delegates" = "$expect_delegates" ]; then
     pass "plan delegates：$expect_delegates"
   else
@@ -171,8 +173,9 @@ EOF
     && targets_plan_is_delegate verify-synth-sdid \
     && targets_plan_is_delegate verify-power \
     && targets_plan_is_delegate verify-trop \
+    && targets_plan_is_delegate verify-sensitivity \
     && ! targets_plan_is_delegate verify-basics; then
-    pass "is_delegate：四委托命中、普通入口否"
+    pass "is_delegate：五委托命中、普通入口否"
   else
     bad "is_delegate 契约失败"
   fi

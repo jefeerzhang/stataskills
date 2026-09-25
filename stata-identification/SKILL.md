@@ -1,6 +1,6 @@
 ---
 name: stata-identification
-description: Use when choosing among randomized assignment, RDD, IV, panel-policy designs, DID, synth/sdid, and cross-sectional selection-on-observables, or deciding whether causal language is defensible; triggers include identification strategy, causal design, can I claim causality, and which method should I use.
+description: Use when choosing among randomized assignment, RDD, IV, panel-policy designs, DID, synth/sdid, and cross-sectional selection-on-observables, or deciding whether causal language is defensible; triggers include identification strategy, causal design, can I claim causality, which method should I use, and sensitivity analysis to unobserved confounding / omitted variable bias (psacalc, sensemakr, konfound, regsensitivity, evalue, rbounds).
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；面向 StataNow 19.5 MP（macOS / Windows / Linux）。
   本 skill 是跨设计 router，不执行方法估计；共同假设模拟与断言由 `verify/verify-identification.do` 验证。
@@ -26,7 +26,7 @@ version 19.5
 
 1. **Named method 直达**：用户明确点名 DID / 事件研究 / `csdid` / `jwdid` / `synth` / `sdid`、RDD / `rdrobust`、IV / 2SLS / `ivregress` / `ivreg2` / LATE，或 PSM / `psmatch2` / IPW / IPWRA / `teffects` / entropy balancing / `ebalance` 时，直接进入权威表指定的方法 skill，不先绕 router。明确点名 `psmatch2` 时先进入 `stata-selection` 并执行设计 gate；gate 通过后才读 `stata-selection/references/psmatch2.md`。任何方法本地 gate 失败后返回本 router。
 2. **通用设计选择**：用户问“该选什么设计”“能否识别”或只给数据形状 / 政策关键词时，先定义 treatment、outcome、unit、时间、目标总体和 estimand，再按高层顺序检查：随机分配 → RDD → IV → 面板政策公共 gate（standard DID 或 `synth` / `sdid`）→ 横截面 selection → stop causal。不得凭关键词跳支柱。
-3. **共同假设审计**：路由到方法后，读 [identification-common-assumptions.md](references/identification-common-assumptions.md)，逐项区分共同假设、设计特定假设与 power / precision。
+3. **共同假设审计**：路由到方法后，读 [identification-common-assumptions.md](references/identification-common-assumptions.md)，逐项区分共同假设、设计特定假设与 power / precision。需要量化未观测混杂的威胁（「多强的遗漏变量才能推翻结论」）时，读 [sensitivity-analysis.md](references/sensitivity-analysis.md)。
 4. **论文表述**：只有对应 gate 可辩护时，才按 [identification-paper-writing.md](references/identification-paper-writing.md) 写 estimand、机制、证据、限制、目标总体与外推边界；否则停止因果措辞。
 
 ## 3. 高层路由入口
@@ -50,8 +50,9 @@ version 19.5
 | [identification-decision-tree.md](references/identification-decision-tree.md) | 完整且唯一的顺序化 stop rules、named-method ownership 与失败去向 |
 | [identification-common-assumptions.md](references/identification-common-assumptions.md) | 共同识别假设，以及 power / precision 的分离 |
 | [identification-paper-writing.md](references/identification-paper-writing.md) | 可审计的论文识别表述、诊断边界与外推边界 |
+| [sensitivity-analysis.md](references/sensitivity-analysis.md) | 未观测混杂 / 遗漏变量偏误的量化：psacalc / sensemakr / konfound / regsensitivity / evalue / rbounds |
 
-references 数量固定为 3；完整树不得复制到本文件或其他运行时材料。
+references 数量固定为 4；完整树不得复制到本文件或其他运行时材料。
 
 ## 5. 关键陷阱速查
 
@@ -83,7 +84,7 @@ references 数量固定为 3；完整树不得复制到本文件或其他运行�
 
 ## 8. 发布 gate
 
-本 skill 交付 router 文档和 3 个 references；共同假设 DGP 模拟与断言已由 `verify/verify-identification.do` 落地。Stata 实测日志仍需在装 Stata 的机器跑该 do 生成后归档；在此之前不宣称完整 Stata 行为回归已通过。
+本 skill 交付 router 文档和 4 个 references；共同假设 DGP 模拟与断言已由 `verify/verify-identification.do` 落地，未观测混杂的敏感性分析由 `verify/verify-sensitivity.do` 落地（内置 OVB / partial R² / E-value 恒等式 + 6 个可选社区包的交叉校验）。两者均已在本机 StataNow 19.5 MP 跑通；raw log 按 ADR-0007 本地生成、不入库。
 
 ## ✅ 交付前自检清单（跑完命令后逐条核对）
 

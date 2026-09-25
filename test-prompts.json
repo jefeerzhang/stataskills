@@ -730,6 +730,42 @@
       "verify_keywords": []
     },
     {
+      "id": "identification-11-sensitivity-analysis",
+      "skill": "stata-identification",
+      "difficulty": "hard",
+      "requires_package": [
+        "psacalc",
+        "sensemakr",
+        "konfound",
+        "regsensitivity",
+        "evalue",
+        "rbounds"
+      ],
+      "gotchas": [
+        "sensitivity_is_not_identification_proof",
+        "psacalc_rmax_is_absolute_literal",
+        "delta_alone_misses_sign_flip"
+      ],
+      "scenario": "用户已有线性回归主结果，问「遗漏变量/未观测混杂要多强才能推翻这个结论」，需要按问题类型选对工具并报对量。",
+      "expected_actions": [
+        "先分流三类问题：回归系数对遗漏变量的稳健性（psacalc / sensemakr / konfound / regsensitivity）、效应量的 E-value（evalue）、匹配设计的隐藏偏误（rbounds），不混用",
+        "psacalc 的 rmax() 只接受 (R2_controlled, 1] 的字面量，用宏展开写 rmax(`=min(1.3*e(r2),1)')，不写 rmax(1.3) 或表达式",
+        "sensemakr 报 partial R2 与 RV_q / RV_qa；konfound 必须紧接模型估计，中间不得插入其他命令",
+        "同时报归零点与符号翻转点（regsensitivity），不只报 Oster 的 delta",
+        "把结果写成「需要多强的混杂才能推翻」的支持性证据，不写成「已排除未观测混杂」"
+      ],
+      "expected_outputs": [
+        "未观测混杂的敏感性分析",
+        "按问题类型选定的工具与报告口径（delta / RV / ITCV / breakdown point / E-value）",
+        "把敏感性结果写成支持性证据，而不是识别结论的证明"
+      ],
+      "verify_keywords": [
+        "psacalc",
+        "sensemakr",
+        "regsensitivity"
+      ]
+    },
+    {
       "id": "selection-01-complete-atet",
       "skill": "stata-selection",
       "difficulty": "hard",

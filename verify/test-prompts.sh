@@ -445,6 +445,7 @@ self_test_verify_log_resolution() {
   local got_n pd pl base pair_plan base_idx n_expected=0
   fixtures='regression|verify-regression verify-dynamic-panel
 did-community|verify-synth-sdid verify-power verify-trop
+identification|verify-identification verify-sensitivity
 basics|verify-basics'
 
   while IFS='|' read -r skill bases; do
@@ -539,6 +540,7 @@ self_test_prompt_plan() {
   plan=$(prompt_plan_each_target "stata-identification + stata-did-community")
   expect=$(printf '%s\n' \
     "identification	verify-identification	verify-identification" \
+    "identification	verify-sensitivity	verify-sensitivity" \
     "did-community	verify-synth-sdid	verify-synth-sdid" \
     "did-community	verify-power	verify-power" \
     "did-community	verify-trop	verify-trop")

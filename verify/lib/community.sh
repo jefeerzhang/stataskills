@@ -50,6 +50,12 @@ synth verify-synth-sdid required
 synth_runner verify-synth-sdid optional
 trop verify-trop required
 weakivtest verify-regression required
+evalue verify-sensitivity optional
+konfound verify-sensitivity optional
+psacalc verify-sensitivity optional
+rbounds verify-sensitivity optional
+regsensitivity verify-sensitivity optional
+sensemakr verify-sensitivity optional
 EOF
 )
 

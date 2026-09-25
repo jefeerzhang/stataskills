@@ -2,12 +2,12 @@
 
 > **Stata 实证方法：9 个 DiD 估计量 · 计数/PPML · 分数响应 · 删失与样本选择 · 一条命令安装。**
 >
-> 14 个 Skill · 14 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 37 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
+> 14 个 Skill · 14 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 38 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
 > 再扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router——中文实证研究者装上即可用。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
-> 🎯 **14 个 Skill · 14 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 27 张 demo PNG · 37 条 Agent 行为回归 prompt**
+> 🎯 **14 个 Skill · 14 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 27 张 demo PNG · 38 条 Agent 行为回归 prompt**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
@@ -132,6 +132,7 @@ bash verify/run-verify.sh
 | "分数线 70 分处 RDD 因果效应" | `stata-rdd` | 「6 步工作流」+ sharp 验合规 + rdrobust + rddensity + placebo |
 | "横截面二元处理用 IPWRA 估计 ATET" | `stata-selection` | 强制路径 + `references/teffects-ipwra.md` + `references/balance-overlap.md` |
 | "这份数据该选哪种因果设计？" | `stata-identification` | `references/identification-decision-tree.md` + `references/identification-common-assumptions.md` |
+| "遗漏变量/未观测混杂要多强才能推翻结论？" | `stata-identification` | `references/sensitivity-analysis.md`（psacalc / sensemakr / konfound / regsensitivity / evalue / rbounds） |
 | "DCE 条件 logit / mixed logit / WTP" | `stata-dce` | `references/dce.md` |
 | "零贸易额用 PPML；计数的观察窗口不同" | `stata-count` | `references/count-ppml.md` |
 | "含 0/1 的份额可以用 Beta 吗" | `stata-fractional` | `references/fractional.md` |
@@ -160,7 +161,7 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 个 AGIS6 `.dta` + 受治理的项目级扩展数据 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令动态运行 14 个验证入口 | ❌ | ⚠️ log 验证 |
-| Agent 行为回归 | ✅ `test-prompts.json` 37 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
+| Agent 行为回归 | ✅ `test-prompts.json` 38 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
 | Demo 报告 | ✅ 8 个 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 至 ADR-0006 | ❌ | ❌ |
 | 单一来源 | ✅ 双 manifest + target registry + `verify/stata.conf` | ❌ | ❌ |
@@ -184,7 +185,7 @@ stataskills/
 ├── CHANGELOG.md                    ← 变更历史
 ├── CITATION.cff                    ← 学术引用
 ├── download_data.do                ← 一键下载全部数据
-├── test-prompts.json               ← 37 条 Agent 行为回归测试（动态覆盖 14 skills）
+├── test-prompts.json               ← 38 条 Agent 行为回归测试（动态覆盖 14 skills）
 ├── stata-basics/SKILL.md           ← skill 1（数据管理 / 清洗）
 ├── stata-descriptives/SKILL.md     ← skill 2（描述 / 检验）
 ├── stata-regression/SKILL.md       ← skill 3（回归 / IV）
@@ -300,7 +301,7 @@ bash verify/run-verify.sh
 | `stata-did-community` | extension | staggered DiD community packages: csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid |
 | `stata-rdd` | extension | regression discontinuity: rdrobust / rdplot / rddensity (sharp & fuzzy, manipulation test, bandwidth sensitivity, placebo cutoff) |
 | `stata-selection` | extension | cross-sectional binary treatment under selection on observables: IPWRA ATET, balance/overlap, official matching/IPW comparisons, optional community sensitivity checks |
-| `stata-identification` | extension | cross-design stop rules, common identification assumptions, estimand definition, and causal-claim stopping rules |
+| `stata-identification` | extension | cross-design stop rules, common identification assumptions, estimand definition, causal-claim stopping rules, and sensitivity analysis to unobserved confounding (Oster / Cinelli-Hazlett / Frank ITCV / E-value / Rosenbaum bounds) |
 | `stata-dce` | extension | choice experiments, conditional/mixed/latent-class logit, WTP and choice probabilities |
 | `stata-count` | extension | Poisson, negative binomial, ZIP/ZINB, exposure and HDFE PPML |
 | `stata-fractional` | extension | fractional logit/probit, Beta, endpoints, mean specification and AME |

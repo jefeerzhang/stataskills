@@ -21,6 +21,7 @@ Caller（`run-verify.sh` / `check-claims.sh` / `test-prompts.sh`）只经 `each_
 |------|--------|------------------|
 | `verify-regression` | `regression` | `verify-regression` · `verify-dynamic-panel` |
 | `verify-did-community` | `did-community` | `verify-synth-sdid` · `verify-power` · `verify-trop` |
+| `verify-identification` | `identification` | `verify-identification` · `verify-sensitivity` |
 
 全量枚举按 `stata-*/SKILL.md` 驱动入口；占位 `verify-did-community.do` 已删除。
 

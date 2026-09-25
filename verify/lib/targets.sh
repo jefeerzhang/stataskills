@@ -25,7 +25,7 @@
 
 # 已登记的非恒等 plan 入口（空格分隔）。delegate 清单由此扫描派生，
 # 不另行手写第二份名单。
-_TARGETS_OVERRIDES="verify-regression verify-did-community"
+_TARGETS_OVERRIDES="verify-regression verify-did-community verify-identification"
 
 # _targets_plan_override <entry>
 # 命中非恒等 plan 时设置 _TARGETS_OWNER / _TARGETS_DOFILES 并 return 0；
@@ -40,6 +40,11 @@ _targets_plan_override() {
     verify-did-community)
       _TARGETS_OWNER="did-community"
       _TARGETS_DOFILES="verify-synth-sdid verify-power verify-trop"
+      return 0
+      ;;
+    verify-identification)
+      _TARGETS_OWNER="identification"
+      _TARGETS_DOFILES="verify-identification verify-sensitivity"
       return 0
       ;;
     *)

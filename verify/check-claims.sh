@@ -661,14 +661,14 @@ adr4_drift=""
 if [ ! -f "$ADR4" ]; then
   adr4_drift="缺 ADR-0004 文件;"
 else
-  for d in verify-dynamic-panel verify-synth-sdid verify-power verify-trop; do
+  for d in verify-dynamic-panel verify-synth-sdid verify-power verify-trop verify-sensitivity; do
     grep -q "$d" "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 ${d};"
   done
   grep -q 'targets_plan_owner' "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 targets_plan_owner;"
   grep -qE 'targets_run_dofile|targets_delegates' "$ADR4" && adr4_drift="${adr4_drift} ADR 仍描述已删旧 API;"
 fi
 plan_d=$(targets_plan_delegate_bases)
-expect_d="verify-dynamic-panel verify-synth-sdid verify-power verify-trop"
+expect_d="verify-dynamic-panel verify-synth-sdid verify-power verify-trop verify-sensitivity"
 [ "$plan_d" = "$expect_d" ] || adr4_drift="${adr4_drift} plan delegates=[$plan_d];"
 owner=$(targets_plan_owner verify-did-community)
 [ "$owner" = "did-community" ] || adr4_drift="${adr4_drift} owner=$owner;"
