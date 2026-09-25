@@ -56,6 +56,11 @@ psacalc verify-sensitivity optional
 rbounds verify-sensitivity optional
 regsensitivity verify-sensitivity optional
 sensemakr verify-sensitivity optional
+spmap verify-spatial optional
+spmat verify-spatial optional
+spatwmat verify-spatial optional
+spxtivdfreg verify-spatial optional
+xsmle verify-spatial optional
 EOF
 )
 

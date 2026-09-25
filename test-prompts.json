@@ -917,6 +917,33 @@
       ],
       "expected_outputs": ["Heckman 与处理选择路由区别", "选择方程诊断与预测目标"],
       "verify_keywords": ["LIMITED_HECKMAN_OK", "LIMITED_HECKPROBIT_OK"]
+    },
+    {
+      "id": "spatial-01-weights-and-impact",
+      "skill": "stata-spatial",
+      "difficulty": "hard",
+      "requires_package": ["spatwmat", "xsmle", "spxtivdfreg"],
+      "gotchas": [
+        "spatial_dependence_is_not_identification",
+        "spgenerate_star_no_spaces",
+        "estat_moran_after_regress_only",
+        "sg162_not_on_ssc"
+      ],
+      "scenario": "用户有省级面板数据，怀疑邻省结果会影响本省，问怎么构造空间权重矩阵、跑空间回归并报告溢出效应。",
+      "expected_actions": [
+        "先用 spset 声明空间数据，再用 spmatrix create contiguity / idistance 构造 W，并报告归一化方式",
+        "自相关诊断用 regress 加 estat moran, errorlag(W)；它是 regress 的后估计命令，挂在 spregress 后会被拒",
+        "主估计用 spregress ..., gs2sls dvarlag(W)；面板用 spxtregress 或 xsmle；怀疑未观测共同因子时用 spxtivdfreg",
+        "溢出效应必须经 estat impact 分解为直接 / 间接 / 总效应，不把 [W]y 系数直接当溢出",
+        "Pisati 的 spatwmat / spatgsa 需 net install sg162（不在 SSC）；spxtivdfreg 需从作者站点装 xtivdfreg",
+        "空间依赖不等于因果识别；需要因果声明时返回 stata-identification 走设计 gate"
+      ],
+      "expected_outputs": [
+        "空间权重矩阵",
+        "直接/间接/总效应的分解与报告口径",
+        "空间依赖不等于因果识别的边界说明"
+      ],
+      "verify_keywords": ["spregress", "estat", "spmatrix"]
     }
   ]
 }

@@ -2,12 +2,12 @@
 
 > **Stata 实证方法：9 个 DiD 估计量 · 计数/PPML · 分数响应 · 删失与样本选择 · 一条命令安装。**
 >
-> 14 个 Skill · 14 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 38 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
+> 15 个 Skill · 15 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 39 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
 > 再扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router——中文实证研究者装上即可用。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
-> 🎯 **14 个 Skill · 14 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 27 张 demo PNG · 38 条 Agent 行为回归 prompt**
+> 🎯 **15 个 Skill · 15 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 27 张 demo PNG · 39 条 Agent 行为回归 prompt**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
@@ -29,6 +29,7 @@
 [![skills.sh: stata-count](https://img.shields.io/badge/skills.sh-stata--count-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-count)
 [![skills.sh: stata-fractional](https://img.shields.io/badge/skills.sh-stata--fractional-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-fractional)
 [![skills.sh: stata-limited-dependent](https://img.shields.io/badge/skills.sh-stata--limited--dependent-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-limited-dependent)
+[![skills.sh: stata-spatial](https://img.shields.io/badge/skills.sh-stata--spatial-4A90D9.svg)](https://skills.sh/jefeerzhang/stataskills/stata-spatial)
 
 ## 项目展示
 
@@ -36,10 +37,10 @@
 
 ## 特性
 
-- **4 个教材分章节 Skill + 10 个扩展**：basics / descriptives / regression / advanced 对应教材第 1–16 章 + 附录 A；扩展覆盖 coefplot、官方与社区 DID、RDD、selection-on-observables、identification router、DCE、计数/PPML、分数响应、删失与样本选择
+- **4 个教材分章节 Skill + 11 个扩展**：basics / descriptives / regression / advanced 对应教材第 1–16 章 + 附录 A；扩展覆盖 coefplot、官方与社区 DID、RDD、selection-on-observables、identification router、DCE、计数/PPML、分数响应、删失与样本选择、空间计量
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，按强制路径和 references 渐进加载
 - **38 个 AGIS6 配套数据集 + 项目级扩展数据**：分别由 `data/manifest.txt` 与 `data/manifest-extra.txt` 管理
-- **可一行复现的 verify harness**：`bash verify/run-verify.sh` 动态发现 14 个 skill 验证入口
+- **可一行复现的 verify harness**：`bash verify/run-verify.sh` 动态发现 15 个 skill 验证入口
 - **真实 demo** 报告：8 个 do-file + 27 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + Bacon 分解图）
 - **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
@@ -87,12 +88,12 @@ git clone https://github.com/jefeerzhang/stataskills.git ~/.claude/skills/
 
 # 2. （可选）验证：需要本机 StataNow 19.5（macOS / Windows 路径见 docs/run-stata.md）
 bash verify/run-verify.sh
-# 预期：14 个验证入口全部通过；默认模式允许可选社区包缺失，--community 强制必需社区包
+# 预期：15 个验证入口全部通过；默认模式允许可选社区包缺失，--community 强制必需社区包
 ```
 
 ## 触发方式
 
-- **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced` · `/stata-coefplot` · `/stata-did` · `/stata-did-community` · `/stata-rdd` · `/stata-selection` · `/stata-identification` · `/stata-dce` · `/stata-count` · `/stata-fractional` · `/stata-limited-dependent`
+- **Slash 命令**：`/stata-basics` · `/stata-descriptives` · `/stata-regression` · `/stata-advanced` · `/stata-coefplot` · `/stata-did` · `/stata-did-community` · `/stata-rdd` · `/stata-selection` · `/stata-identification` · `/stata-dce` · `/stata-count` · `/stata-fractional` · `/stata-limited-dependent` · `/stata-spatial`
 - **自然语言**：「用 Stata 帮我做多元回归诊断」/「这份数据能否作因果解释」/「用 IPWRA 估计 ATET」
 - **路由表**：明确点名方法时直达对应方法 skill；通用设计选择先走 `stata-identification` 的 stop rules。分数线 / 年龄门槛 / 地理边界路由到 `stata-rdd`，不进入 DID。
 
@@ -133,6 +134,7 @@ bash verify/run-verify.sh
 | "横截面二元处理用 IPWRA 估计 ATET" | `stata-selection` | 强制路径 + `references/teffects-ipwra.md` + `references/balance-overlap.md` |
 | "这份数据该选哪种因果设计？" | `stata-identification` | `references/identification-decision-tree.md` + `references/identification-common-assumptions.md` |
 | "遗漏变量/未观测混杂要多强才能推翻结论？" | `stata-identification` | `references/sensitivity-analysis.md`（psacalc / sensemakr / konfound / regsensitivity / evalue / rbounds） |
+| "邻省/邻接单位的结果会不会影响本地？" | `stata-spatial` | 强制路径六步 + `references/spatial-weights.md`（W 构造 / Moran） |
 | "DCE 条件 logit / mixed logit / WTP" | `stata-dce` | `references/dce.md` |
 | "零贸易额用 PPML；计数的观察窗口不同" | `stata-count` | `references/count-ppml.md` |
 | "含 0/1 的份额可以用 Beta 吗" | `stata-fractional` | `references/fractional.md` |
@@ -160,8 +162,8 @@ bash verify/run-verify.sh
 |---|---|---|---|
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 个 AGIS6 `.dta` + 受治理的项目级扩展数据 | ❌ | ❌ |
-| 验证 harness | ✅ 一行命令动态运行 14 个验证入口 | ❌ | ⚠️ log 验证 |
-| Agent 行为回归 | ✅ `test-prompts.json` 38 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
+| 验证 harness | ✅ 一行命令动态运行 15 个验证入口 | ❌ | ⚠️ log 验证 |
+| Agent 行为回归 | ✅ `test-prompts.json` 39 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
 | Demo 报告 | ✅ 8 个 do-file + 27 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 至 ADR-0006 | ❌ | ❌ |
 | 单一来源 | ✅ 双 manifest + target registry + `verify/stata.conf` | ❌ | ❌ |
@@ -185,7 +187,7 @@ stataskills/
 ├── CHANGELOG.md                    ← 变更历史
 ├── CITATION.cff                    ← 学术引用
 ├── download_data.do                ← 一键下载全部数据
-├── test-prompts.json               ← 38 条 Agent 行为回归测试（动态覆盖 14 skills）
+├── test-prompts.json               ← 39 条 Agent 行为回归测试（动态覆盖 15 skills）
 ├── stata-basics/SKILL.md           ← skill 1（数据管理 / 清洗）
 ├── stata-descriptives/SKILL.md     ← skill 2（描述 / 检验）
 ├── stata-regression/SKILL.md       ← skill 3（回归 / IV）
@@ -200,6 +202,7 @@ stataskills/
 ├── stata-count/SKILL.md            ← skill 12（计数与 PPML）
 ├── stata-fractional/SKILL.md       ← skill 13（分数响应）
 ├── stata-limited-dependent/SKILL.md ← skill 14（删失与样本选择）
+├── stata-spatial/SKILL.md          ← skill 15（空间计量：权重矩阵 / SAR / 空间面板）
 ├── book/                           ← 教材原文 Markdown（教学使用）
 ├── data/
 │   ├── manifest.txt                ← 38 个 AGIS6 .dta 清单（单一来源）
@@ -208,16 +211,16 @@ stataskills/
 │   └── selection/                  ← 项目内生成的 selection 教学数据
 ├── docs/
 │   ├── run-stata.md                ← 平台命令速查（单一来源）
-│   ├── adr/                        ← 6 份架构决策（ADR-0001 至 ADR-0006）
+│   ├── adr/                        ← 7 份架构决策（ADR-0001 至 ADR-0007）
 │   └── agents/                     ← Agent 工作流
 ├── verify/                         ← 验证 harness
-│   ├── run-verify.sh               ← 动态发现并运行 14 个验证入口
+│   ├── run-verify.sh               ← 动态发现并运行 15 个验证入口
 │   ├── check-claims.sh             ← 文档断言检查（facts vs 计数）
 │   ├── test-harness.sh             ← 判定逻辑与 sentinel 回归测试
 │   ├── test-prompts.sh             ← 动态 skill / route_branch 回归 + `--llm` Agent 行为实测（docs / Stata 子集 / 真实 Agent 三层）
 │   ├── stata.conf                  ← 平台路径（单一来源）
 │   ├── lib/                        ← 共享 report 与 target registry
-│   └── verify-<skill>.do           ← 14 个验证入口（多 do-file 入口使用 registry 委托；raw log 本地生成、不入库）
+│   └── verify-<skill>.do           ← 15 个验证入口（多 do-file 入口使用 registry 委托；raw log 本地生成、不入库）
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 8 个 do-file（含 did）
@@ -233,7 +236,7 @@ bash verify/test-harness.sh         # harness 与社区 sentinel 语义
 bash verify/test-prompts.sh         # 动态 skill / route_branch 文档回归
 bash verify/test-prompts.sh --llm   # Agent 行为回归实测（claude CLI + API key 或 OAuth 登录态任一）
 bash verify/check-claims.sh          # 文件系统 facts 与活跃声明
-bash verify/run-verify.sh            # 全量 14 个验证入口（需本机 Stata）
+bash verify/run-verify.sh            # 全量 15 个验证入口（需本机 Stata）
 bash verify/run-verify.sh selection  # 单个 skill
 ```
 
@@ -284,7 +287,7 @@ bash verify/run-verify.sh
 
 ## English Summary
 
-> **14 skills · Stata 19.5 MP verification · 9 DiD estimators · 37 agent-behavior regression prompts** — one-line install: `npx skills add jefeerzhang/stataskills`
+> **15 skills · Stata 19.5 MP verification · 9 DiD estimators · 39 agent-behavior regression prompts** — one-line install: `npx skills add jefeerzhang/stataskills`
 >
 > Each skill ships with a data-governed dataset manifest, a verify/ harness entry, and a delivery self-check checklist.
 
@@ -306,8 +309,9 @@ bash verify/run-verify.sh
 | `stata-count` | extension | Poisson, negative binomial, ZIP/ZINB, exposure and HDFE PPML |
 | `stata-fractional` | extension | fractional logit/probit, Beta, endpoints, mean specification and AME |
 | `stata-limited-dependent` | extension | Tobit, hurdle/two-part means, Heckman and binary sample selection |
+| `stata-spatial` | extension | spatial econometrics: spmatrix weights, spregress / spivregress (SAR/SEM/SDM/SLX), spxtregress / xsmle / spregdpd / spxtivdfreg panels, Moran test, direct-indirect-total impact decomposition |
 
-Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 8-do-file, 27-PNG layer. The verify harness dynamically discovers 14 verification entry points, and `test-prompts.json` contains 37 prompts covering all 14 skills and the locked routing branches. The historical `--llm` run (2026-08-27, MiniMax M3) covered the original 27 prompts; later prompts have not been rerun at the LLM layer. See `verify/llm-results.md`.
+Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 8-do-file, 27-PNG layer. The verify harness dynamically discovers 15 verification entry points, and `test-prompts.json` contains 39 prompts covering all 15 skills and the locked routing branches. The historical `--llm` run (2026-08-27, MiniMax M3) covered the original 27 prompts; later prompts have not been rerun at the LLM layer. See `verify/llm-results.md`.
 
 Latest release: `v1.2.0` (2026-08-27) - https://github.com/jefeerzhang/stataskills/releases/latest
 
