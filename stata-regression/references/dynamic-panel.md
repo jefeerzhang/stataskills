@@ -1,6 +1,6 @@
 ---
 name: stata-regression-dynamic-panel
-description: 动态面板估计：Arellano-Bond difference GMM、Blundell-Bond system GMM、xtdpd，以及 GitHub 社区包 xtabond2 / xtdpdgmm 的可审计工作流。
+description: 动态面板估计：Arellano-Bond difference GMM、Blundell-Bond system GMM、xtdpd，以及社区包 xtabond2 / xtdpdgmm 的可审计工作流。
 ---
 
 # 动态面板模型
@@ -54,14 +54,15 @@ estat abond
 
 `lagrange(2 4)` 限制滞后工具窗口，实际分析应按 T 和理论外生性缩窄窗口。
 
-## 3. GitHub 社区实现
+## 3. 社区包实现
 
-两个常用项目是 Roodman 的 [`xtabond2`](https://github.com/droodman/xtabond2) 和 Kripfganz 的 [`xtdpdgmm`](https://github.com/kripganz/xtdpdgmm)。它们提供更明确的 `gmm()` / `iv()` 工具分类、collapse、forward orthogonal deviations、Windmeijer 修正与 Difference-in-Hansen 分块检验。
+两个常用项目是 Roodman 的 [`xtabond2`](https://github.com/droodman/xtabond2) 和 Kripfganz 的 [`xtdpdgmm`](https://kripfganz.de/stata/xtdpdgmm.html)（官方发布页；该项目无 GitHub 仓库）。它们提供更明确的 `gmm()` / `iv()` 工具分类、collapse、forward orthogonal deviations、Windmeijer 修正与 Difference-in-Hansen 分块检验。
 
 ```stata
-* 社区包：按项目 README 安装；CI 默认只做可选包探测
+* 社区包：CI 默认只做可选包探测
 ssc install xtabond2, replace
-net install xtdpdgmm, from("https://kripfganz.de/stata/xtdpdgmm/") replace
+* xtdpdgmm 从作者官方发布页安装（.pkg 位于该目录）；该包亦登记在 SSC，可改用 ssc install xtdpdgmm
+net install xtdpdgmm, from("https://kripfganz.de/stata/") replace
 
 xtabond2 y L.y x1 x2, gmmstyle(L.y, laglimits(2 4) collapse) ///
     ivstyle(x1 x2) twostep robust small
@@ -72,7 +73,7 @@ estat abond
 estat overid
 ```
 
-不同版本的 `xtdpdgmm` 选项名可能有细微差异，运行前以 `help xtdpdgmm` 和仓库 README 为准；不要把未经本机验证的社区命令写成内置语法。
+不同版本的 `xtdpdgmm` 选项名可能有细微差异，运行前以 `help xtdpdgmm` 和作者官方文档为准；不要把未经本机验证的社区命令写成内置语法。
 
 ## 4. 必报检验与解释
 

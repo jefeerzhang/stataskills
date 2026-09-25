@@ -48,7 +48,7 @@ xtdpd y L.y x, dgmmiv(y, lagrange(2 4)) iv(x) twostep vce(robust)
 estat abond
 assert e(arm2) < .
 
-* GitHub 社区包：已安装时验证额外诊断；未安装时保持 optional sentinel。
+* 社区包：已安装时验证额外诊断；未安装时保持 optional sentinel。
 * sentinel 必须写成块形式：单行 `if !.. display ".."` 的日志回显以 `. if` 开头，
 * judge 的回显过滤（^[.].*display）虽已覆盖，但仓库其余 30+ 处均为块形式。
 cap which xtabond2
