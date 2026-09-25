@@ -47,8 +47,9 @@ jobs:
       - name: Test incident claims seam
         run: bash verify/test-claims.sh
 
-      # Prompt corpus adapters（#22）：双 adapter 对拍 + Dockerfile fixtures。
-      - name: Test prompt corpus adapters
+      # Prompt corpus module（#22 / #29 C4）：单一 canonical adapter + malformed fixtures
+      # + python 缺失路径 + 无 jq 分支反模式锁。
+      - name: Test prompt corpus module
         run: bash verify/test-prompt-corpus.sh
 
       # Cross-skill prompt execution plan（#28）。

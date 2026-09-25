@@ -34,6 +34,8 @@ TEST_PROMPTS_JSON="$REPO_ROOT/test-prompts.json"
 . "$VERIFY_DIR/lib/targets.sh"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/prompt_plan.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/judge.sh"
 
 # ---- 参数解析 ----
 MODE="docs"
@@ -89,11 +91,7 @@ json_unknown_skills() {
 }
 
 expected_skills() {
-  local skill_file
-  for skill_file in "$REPO_ROOT"/stata-*/SKILL.md; do
-    [ -f "$skill_file" ] || continue
-    basename "$(dirname "$skill_file")"
-  done | sort -u
+  targets_each_skill "$REPO_ROOT" | sort -u
 }
 
 required_route_branches() {
@@ -129,6 +127,10 @@ json_duplicate_route_branches() {
 route_branch_semantics_ok() {
   local branch="$1" expected_count count index action anchors anchor
   local -a actions
+  # 失败原因经此全局回传，caller 的 FAIL 行可定位到具体分支与锚点（#29 C5）。
+  # 锚点字面量**故意**不从 SKILL.md / test-prompts.json 派生：它是独立期望，
+  # 与被测 corpus 同源会让断言永真（同 #24 的教训）。
+  ROUTE_SEMANTICS_REASON=""
   case "$branch" in
     router-entry)
       expected_count=3
@@ -211,19 +213,27 @@ route_branch_semantics_ok() {
         '离开面板政策支柱后才检查横截面 selection|selection gate 也失败则 stop causal'
       )
       ;;
-    *) return 1 ;;
+    *)
+      ROUTE_SEMANTICS_REASON="未知分支（不在锁定表）"
+      return 1
+      ;;
   esac
 
   if ! count="$(json_branch_action_count "$branch")" || [ "$count" -ne "$expected_count" ]; then
+    ROUTE_SEMANTICS_REASON="expected_actions 数量=$count ≠ 锁定值 $expected_count"
     return 1
   fi
   for ((index=0; index<expected_count; index++)); do
     if ! action="$(json_branch_action "$branch" "$index")"; then
+      ROUTE_SEMANTICS_REASON="expected_actions[$index] 解析失败"
       return 2
     fi
     anchors="${actions[$index]}"
     while IFS= read -r anchor; do
-      grep -Fq "$anchor" <<< "$action" || return 1
+      if ! grep -Fq "$anchor" <<< "$action"; then
+        ROUTE_SEMANTICS_REASON="expected_actions[$index] 缺锚点「${anchor}」"
+        return 1
+      fi
     done < <(tr '|' '\n' <<< "$anchors")
   done
 }
@@ -323,7 +333,7 @@ run_docs_mode() {
       echo "PASS  route_branch=$branch · action 数量与逐项语义锚点"
       pass=$((pass+1))
     else
-      echo "FAIL  route_branch=$branch · action 数量/位置/语义与 router 契约不符或解析失败"
+      echo "FAIL  route_branch=$branch · ${ROUTE_SEMANTICS_REASON:-语义锚点与 router 契约不符}"
       fail=$((fail+1))
     fi
   done < <(required_route_branches)
@@ -383,22 +393,8 @@ run_docs_mode() {
 # 模式 B 的数据全部来自 test-prompts.json（单一来源，不再用平行数组）：
 #   - verify_keywords → 匹配 Stata log 中实际执行的命令行；注释与 which 探针不算覆盖
 #   - skill 字段取首个、去 "stata-" 前缀 → run-verify.sh 的目标名
-log_has_executed_command() {
-  local keyword="$1" log_file="$2"
-  awk -v keyword="$keyword" '
-    $1 == "." {
-      i = 2
-      while ($i ~ /^(capture|cap|quietly|quiet|qui|noisily|noi)$/) i++
-      if ($i == "*" || $i == "which") next
-      for (j = i; j <= NF; j++) {
-        token = $j
-        gsub(/^[,(]+|[,)]+$/, "", token)
-        if (token == keyword) found = 1
-      }
-    }
-    END { exit(found ? 0 : 1) }
-  ' "$log_file"
-}
+# 回显行的识别（`. ` 前缀 / capture 前缀 / 注释 / which 探针）由 judge.sh 的
+# judge_log_has_command 单一实现（#29 C5）；本文件不再自写 awk 复刻该规则。
 
 # #24：prompt harness 的 do-file / log 解析一律走 target plan（无内置
 # 普通入口或 DID-community delegate 特殊知识）。
@@ -422,13 +418,13 @@ self_test_log_matcher() {
   local probe
   probe="$(mktemp)"
   printf '%s\n' '. * ivreg2 只出现在注释' '. capture which ivreg2' > "$probe"
-  if log_has_executed_command ivreg2 "$probe"; then
+  if judge_log_has_command ivreg2 "$probe"; then
     rm -f "$probe"
     echo "FAIL  log matcher 把注释或 which 探针误判为执行证据"
     return 1
   fi
   printf '%s\n' '. ivreg2 y (x = z), robust' >> "$probe"
-  if ! log_has_executed_command ivreg2 "$probe"; then
+  if ! judge_log_has_command ivreg2 "$probe"; then
     rm -f "$probe"
     echo "FAIL  log matcher 未识别真实执行命令"
     return 1
@@ -583,7 +579,7 @@ prompt_plan_keywords_covered() {
     hit=0
     while IFS=$'\t' read -r s logpath; do
       [ -n "${logpath:-}" ] || continue
-      if [ -f "$logpath" ] && log_has_executed_command "$kw" "$logpath"; then
+      if [ -f "$logpath" ] && judge_log_has_command "$kw" "$logpath"; then
         hit=1
         break
       fi
@@ -599,7 +595,7 @@ prompt_plan_missing_keyword_report() {
   local kw="$1" plan_lines="$2" s logpath any=0
   while IFS=$'\t' read -r s logpath; do
     [ -n "${logpath:-}" ] || continue
-    if [ ! -f "$logpath" ] || ! log_has_executed_command "$kw" "$logpath"; then
+    if [ ! -f "$logpath" ] || ! judge_log_has_command "$kw" "$logpath"; then
       printf 'skill=%s log=%s\n' "$s" "$logpath"
       any=1
     fi
@@ -664,7 +660,7 @@ run_prompts_mode() {
       keyword_hit=0
       while IFS=$'\t' read -r sk verify_log; do
         [ -n "${verify_log:-}" ] || continue
-        if [ -f "$verify_log" ] && log_has_executed_command "$kw" "$verify_log"; then
+        if [ -f "$verify_log" ] && judge_log_has_command "$kw" "$verify_log"; then
           keyword_hit=1
           break
         fi

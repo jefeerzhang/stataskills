@@ -119,11 +119,11 @@ if [ -n "$TARGET_ARG" ]; then
   TARGETS=("verify-$TARGET_ARG")
 else
   TARGETS=()
-  for s in "$VERIFY_DIR"/../stata-*/SKILL.md; do
-    [ -e "$s" ] || continue
-    d="$(basename "$(dirname "$s")")"     # stata-<name>
+  # skill 发现经 targets_each_skill 单一实现（#29 C7），不再手写 glob。
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
     TARGETS+=("verify-${d#stata-}")
-  done
+  done < <(targets_each_skill)
 fi
 
 # ---- 全局：manifest 与实际 .dta 双向一致性（静态模式前置检查）----

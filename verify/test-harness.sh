@@ -173,3 +173,20 @@ if ! judge_raw_log zzprobe "$WORKDIR/sentinel_real.log" 0 2>&1 | grep -q "ftools
   exit 1
 fi
 echo "PASS  探针：真实输出的 sentinel 仍被正确识别"
+
+# 探针 9：judge_log_has_command —— 回显行规则（#29 C5 后该知识只在 judge.sh）
+cat > "$WORKDIR/cmd.log" <<'EOF'
+. * ivreg2 只出现在注释
+. capture which ivreg2
+. quietly ivreg2 y (x = z), robust
+end of do-file
+EOF
+if ! judge_log_has_command ivreg2 "$WORKDIR/cmd.log"; then
+  echo "FAIL  探针：judge_log_has_command 未识别真实执行的 ivreg2（跳过注释/which/capture 前缀）"
+  exit 1
+fi
+if judge_log_has_command coefplot "$WORKDIR/cmd.log"; then
+  echo "FAIL  探针：judge_log_has_command 把未出现的命令判为已执行"
+  exit 1
+fi
+echo "PASS  探针：judge_log_has_command 区分真实执行与注释/which 探针"

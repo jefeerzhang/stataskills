@@ -12,9 +12,8 @@ set -u
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$VERIFY_DIR/.." && pwd)"
 
-fail=0
-pass() { echo "PASS  $1"; }
-bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/report.sh"
 
 # shellcheck disable=SC1091
 if ! . "$VERIFY_DIR/lib/community.sh" 2>/dev/null; then
@@ -34,7 +33,7 @@ done
 # ---- 1. 漏检包必须在 registry（red-capable：缺则失败）----
 for pkg in center ivreg2 weakivtest; do
   if community_unique_pkgs | grep -qx "$pkg"; then
-    pass "registry 含漏检修复包：$pkg"
+    ok "registry 含漏检修复包：$pkg"
   else
     bad "registry 缺 $pkg（#26 要求先捕获再修复）"
   fi
@@ -42,11 +41,11 @@ done
 
 # ---- 2. class 交叉：center=optional @ coefplot；ivreg2/weakivtest=required @ regression ----
 c=$(community_class_for center verify-coefplot || true)
-[ "$c" = "optional" ] && pass "center @ coefplot → optional" || bad "center class=$c"
+[ "$c" = "optional" ] && ok "center @ coefplot → optional" || bad "center class=$c"
 c=$(community_class_for ivreg2 verify-regression || true)
-[ "$c" = "required" ] && pass "ivreg2 @ regression → required" || bad "ivreg2 class=$c"
+[ "$c" = "required" ] && ok "ivreg2 @ regression → required" || bad "ivreg2 class=$c"
 c=$(community_class_for weakivtest verify-regression || true)
-[ "$c" = "required" ] && pass "weakivtest @ regression → required" || bad "weakivtest class=$c"
+[ "$c" = "required" ] && ok "weakivtest @ regression → required" || bad "weakivtest class=$c"
 
 # ---- 3. fixture：missing probe ----
 WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/stataskills-community.XXXXXX")"
@@ -61,7 +60,7 @@ printf '%s\n' \
 # → 应报 missing_probe
 rep=$(community_check_dofile "$WORKDIR/verify-coefplot.do")
 case "$rep" in
-  *missing_probe:center*) pass "fixture：missing_probe 捕获 center 无探测" ;;
+  *missing_probe:center*) ok "fixture：missing_probe 捕获 center 无探测" ;;
   *) bad "fixture missing_probe 失败：[$rep]" ;;
 esac
 
@@ -76,7 +75,7 @@ printf '%s\n' \
   >"$WORKDIR/verify-regression.do"
 rep=$(community_check_dofile "$WORKDIR/verify-regression.do")
 case "$rep" in
-  *wrong_sentinel:ivreg2*) pass "fixture：wrong_sentinel 捕获 class 漂移" ;;
+  *wrong_sentinel:ivreg2*) ok "fixture：wrong_sentinel 捕获 class 漂移" ;;
   *) bad "fixture wrong_sentinel 失败：[$rep]" ;;
 esac
 
@@ -89,8 +88,21 @@ printf '%s\n' \
   >"$WORKDIR/verify-basics.do"
 rep=$(community_check_dofile "$WORKDIR/verify-basics.do")
 case "$rep" in
-  *ownership_drift:center*) pass "fixture：ownership_drift 捕获错主" ;;
+  *ownership_drift:center*) ok "fixture：ownership_drift 捕获错主" ;;
   *) bad "fixture ownership_drift 失败：[$rep]" ;;
+esac
+
+# ---- 5b. fixture：sentinel_shape（单行 if .. display，ADR-0007 禁止）----
+cat >"$WORKDIR/verify-regression-shape.do" <<'EOF'
+version 19.5
+cap which ivreg2
+if !`has_ivreg2' display "__COMMUNITY_PACKAGE_MISSING__ivreg2__"
+ivreg2 y (x = z)
+EOF
+rep=$(community_check_dofile "$WORKDIR/verify-regression-shape.do")
+case "$rep" in
+  *sentinel_shape:*) ok "fixture：sentinel_shape 捕获单行 if..display 形式（#29 C6）" ;;
+  *) bad "fixture sentinel_shape 失败：[$rep]" ;;
 esac
 
 # ---- 6. 生产 verify-*.do 全绿；judge 无第二份名单 ----
@@ -103,16 +115,16 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
     prod_bad=1
   fi
 done
-[ "$prod_bad" -eq 0 ] && pass "生产 verify-*.do community contract 全部干净"
+[ "$prod_bad" -eq 0 ] && ok "生产 verify-*.do community contract 全部干净"
 
 if grep -nE 'COMMUNITY_PKGS=|csdid.*jwdid.*did_imputation' "$VERIFY_DIR/lib/judge.sh" >/dev/null 2>&1; then
   bad "judge.sh 承载了第二份 package registry"
 else
-  pass "judge.sh 不承载 package registry（只解释 log sentinel）"
+  ok "judge.sh 不承载 package registry（只解释 log sentinel）"
 fi
 
 if grep -nE 'community_check_dofile|lib/community.sh' "$VERIFY_DIR/check-claims.sh" >/dev/null 2>&1; then
-  pass "check-claims 经 community contract seam"
+  ok "check-claims 经 community contract seam"
 else
   bad "check-claims 未接入 community.sh（#26）"
 fi

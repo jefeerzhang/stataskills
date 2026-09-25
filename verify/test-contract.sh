@@ -20,9 +20,8 @@ REPO_ROOT="$(cd "$VERIFY_DIR/.." && pwd)"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/report.sh" 2>/dev/null || true
 
-fail=0
-pass() { echo "PASS  $1"; }
-bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/report.sh"
 
 # shellcheck disable=SC1091
 if ! . "$VERIFY_DIR/lib/contract.sh" 2>/dev/null; then
@@ -70,7 +69,7 @@ if [ "${CONTRACT_SKILL:-}" = "stata-basics" ] && \
    [ "${CONTRACT_CHAPTER:-}" = "ch1" ] && \
    [ "${CONTRACT_DATA:-}" = "relate.dta;sim:10x2" ] && \
    [ "${CONTRACT_CHECKS:-}" = "use+describe" ]; then
-  pass "contract_parse 读取 4 字段 metadata"
+  ok "contract_parse 读取 4 字段 metadata"
 else
   bad "contract_parse metadata 错误：skill=${CONTRACT_SKILL:-} chapter=${CONTRACT_CHAPTER:-} data=${CONTRACT_DATA:-} checks=${CONTRACT_CHECKS:-}"
 fi
@@ -89,7 +88,7 @@ write_do "$WORKDIR/partial.do" \
 
 gaps=$(contract_exhaustive_gaps "$WORKDIR/partial.do")
 case "$gaps" in
-  *firstsurvey_chapter4*) pass "穷尽声明缺口列出未声明 literal read（firstsurvey_chapter4）" ;;
+  *firstsurvey_chapter4*) ok "穷尽声明缺口列出未声明 literal read（firstsurvey_chapter4）" ;;
   *) bad "穷尽声明缺口未捕获 partial fixture：gaps=[$gaps]" ;;
 esac
 
@@ -107,7 +106,7 @@ write_do "$WORKDIR/full.do" \
 
 gaps=$(contract_exhaustive_gaps "$WORKDIR/full.do")
 if [ -z "$gaps" ]; then
-  pass "穷尽声明完整时 gaps 为空"
+  ok "穷尽声明完整时 gaps 为空"
 else
   bad "完整声明仍有 gaps：[$gaps]"
 fi
@@ -116,7 +115,7 @@ fi
 # agis6
 eval "$(data_locate "relate.dta")"
 if [ "${DATA_KIND:-}" = "agis6" ] && [ "${DATA_LISTED:-}" = "1" ] && [ -n "${DATA_PATH:-}" ] && [ -f "${DATA_PATH}" ]; then
-  pass "data_locate agis6：relate.dta"
+  ok "data_locate agis6：relate.dta"
 else
   bad "data_locate agis6 失败：kind=${DATA_KIND:-} listed=${DATA_LISTED:-} path=${DATA_PATH:-}"
 fi
@@ -124,7 +123,7 @@ fi
 # external（synth：有 download_*.sh）
 eval "$(data_locate "data/synth/synth_smoking.dta")"
 if [ "${DATA_KIND:-}" = "external" ] && [ "${DATA_LISTED:-}" = "1" ]; then
-  pass "data_locate external：synth_smoking"
+  ok "data_locate external：synth_smoking"
 else
   bad "data_locate external 失败：kind=${DATA_KIND:-} listed=${DATA_LISTED:-}"
 fi
@@ -132,23 +131,23 @@ fi
 # generated（selection：有 build-*.do）
 eval "$(data_locate "selection/teaching-treatment.dta")"
 if [ "${DATA_KIND:-}" = "generated" ] && [ "${DATA_LISTED:-}" = "1" ]; then
-  pass "data_locate generated：teaching-treatment"
+  ok "data_locate generated：teaching-treatment"
 else
   bad "data_locate generated 失败：kind=${DATA_KIND:-} listed=${DATA_LISTED:-}"
 fi
 
 # sysuse / sim
 eval "$(data_locate "sysuse:auto")"
-[ "${DATA_KIND:-}" = "sysuse" ] && pass "data_locate sysuse" || bad "data_locate sysuse → ${DATA_KIND:-}"
+[ "${DATA_KIND:-}" = "sysuse" ] && ok "data_locate sysuse" || bad "data_locate sysuse → ${DATA_KIND:-}"
 eval "$(data_locate "sim:200x10")"
-[ "${DATA_KIND:-}" = "sim" ] && pass "data_locate sim" || bad "data_locate sim → ${DATA_KIND:-}"
+[ "${DATA_KIND:-}" = "sim" ] && ok "data_locate sim" || bad "data_locate sim → ${DATA_KIND:-}"
 
 # ---- 4. missing / unlisted ----
 eval "$(data_locate "no_such_dataset_xyz.dta")"
 if [ "${DATA_KIND:-}" = "missing" ] || { [ "${DATA_LISTED:-}" = "0" ] && [ ! -f "${DATA_PATH:-/nonexistent}" ]; }; then
   # prefer explicit missing kind
   if [ "${DATA_KIND:-}" = "missing" ]; then
-    pass "data_locate missing：不存在的 agis6 基名"
+    ok "data_locate missing：不存在的 agis6 基名"
   else
     bad "data_locate missing 应用 kind=missing，得 kind=${DATA_KIND:-}"
   fi
@@ -170,7 +169,7 @@ printf '# empty extra\n' >"$CONTRACT_REPO_ROOT/data/manifest-extra.txt"
 
 eval "$(data_locate "orphan_file.dta")"
 if [ "${DATA_KIND:-}" = "unlisted" ]; then
-  pass "data_locate unlisted：文件在 agis6 但未入 manifest"
+  ok "data_locate unlisted：文件在 agis6 但未入 manifest"
 else
   bad "data_locate unlisted 失败：kind=${DATA_KIND:-}"
 fi
@@ -180,7 +179,7 @@ printf 'dup_base\ndup_base\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
 : >"$CONTRACT_REPO_ROOT/data/agis6/dup_base.dta"
 eval "$(data_locate "dup_base.dta")"
 if [ "${DATA_KIND:-}" = "duplicate" ] || [ "${DATA_DUPLICATE:-}" = "1" ]; then
-  pass "data_locate duplicate basename：manifest 重复登记"
+  ok "data_locate duplicate basename：manifest 重复登记"
 else
   bad "data_locate duplicate 失败：kind=${DATA_KIND:-} dup=${DATA_DUPLICATE:-}"
 fi
@@ -190,7 +189,7 @@ printf 'crlf_ds\r\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
 : >"$CONTRACT_REPO_ROOT/data/agis6/crlf_ds.dta"
 eval "$(data_locate "crlf_ds.dta")"
 if [ "${DATA_KIND:-}" = "agis6" ] && [ "${DATA_LISTED:-}" = "1" ]; then
-  pass "data_locate CRLF manifest：剥离 \\r 后仍 listed"
+  ok "data_locate CRLF manifest：剥离 \\r 后仍 listed"
 else
   bad "data_locate CRLF 失败：kind=${DATA_KIND:-} listed=${DATA_LISTED:-}"
 fi
@@ -203,11 +202,11 @@ case " $decl " in
   *" relate.dta "*|*" relate "*) ;;
   *) bad "contract_data_declared 缺 relate：[$decl]"; decl=__bad__ ;;
 esac
-[ "$decl" != "__bad__" ] && pass "contract_data_declared 列出声明项"
+[ "$decl" != "__bad__" ] && ok "contract_data_declared 列出声明项"
 
 reads=$(contract_literal_repo_reads "$WORKDIR/partial.do" | tr '\n' ' ')
 case " $reads " in
-  *"firstsurvey_chapter4"*) pass "contract_literal_repo_reads 捕获 use 语句" ;;
+  *"firstsurvey_chapter4"*) ok "contract_literal_repo_reads 捕获 use 语句" ;;
   *) bad "contract_literal_repo_reads 失败：[$reads]" ;;
 esac
 
@@ -224,19 +223,19 @@ write_do "$WORKDIR/stale.do" \
 
 stale=$(contract_stale_declarations "$WORKDIR/stale.do")
 case "$stale" in
-  *firstsurvey_chapter4*) pass "stale declaration 列出未使用声明" ;;
+  *firstsurvey_chapter4*) ok "stale declaration 列出未使用声明" ;;
   *) bad "stale declaration 未捕获：[$stale]" ;;
 esac
 
 report=$(contract_data_report "$WORKDIR/partial.do")
 case "$report" in
-  *missing_declaration:firstsurvey_chapter4*) pass "report：missing_declaration" ;;
+  *missing_declaration:firstsurvey_chapter4*) ok "report：missing_declaration" ;;
   *) bad "report 缺 missing_declaration：[$report]" ;;
 esac
 
 report=$(contract_data_report "$WORKDIR/stale.do")
 case "$report" in
-  *stale_declaration:firstsurvey_chapter4*) pass "report：stale_declaration" ;;
+  *stale_declaration:firstsurvey_chapter4*) ok "report：stale_declaration" ;;
   *) bad "report 缺 stale_declaration：[$report]" ;;
 esac
 
@@ -257,7 +256,7 @@ write_do "$WORKDIR/missing-file.do" \
   'use ghost_xyz, clear'
 report=$(contract_data_report "$WORKDIR/missing-file.do")
 case "$report" in
-  *missing_file:ghost_xyz*) pass "report：missing_file" ;;
+  *missing_file:ghost_xyz*) ok "report：missing_file" ;;
   *) bad "report 缺 missing_file：[$report]" ;;
 esac
 
@@ -273,7 +272,7 @@ write_do "$WORKDIR/unlisted.do" \
   'use orphan_only, clear'
 report=$(contract_data_report "$WORKDIR/unlisted.do")
 case "$report" in
-  *unlisted_file:orphan_only*) pass "report：unlisted_file" ;;
+  *unlisted_file:orphan_only*) ok "report：unlisted_file" ;;
   *) bad "report 缺 unlisted_file：[$report]" ;;
 esac
 
@@ -290,7 +289,7 @@ write_do "$WORKDIR/dup.do" \
   'use dup_base, clear'
 report=$(contract_data_report "$WORKDIR/dup.do")
 case "$report" in
-  *ambiguous_basename:dup_base*) pass "report：ambiguous_basename" ;;
+  *ambiguous_basename:dup_base*) ok "report：ambiguous_basename" ;;
   *) bad "report 缺 ambiguous_basename：[$report]" ;;
 esac
 unset CONTRACT_REPO_ROOT
@@ -305,15 +304,15 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
     prod_bad=1
   fi
 done
-[ "$prod_bad" -eq 0 ] && pass "生产 verify-*.do 穷尽 data contract 全部干净"
+[ "$prod_bad" -eq 0 ] && ok "生产 verify-*.do 穷尽 data contract 全部干净"
 
 if grep -nE 'grep -oE .*\^use|awk.*print \$2' "$VERIFY_DIR/run-verify.sh" >/dev/null 2>&1; then
   bad "run-verify.sh 仍保留平行 use 路径解析（#25）"
 else
-  pass "run-verify.sh 已收缩到 contract_data_report"
+  ok "run-verify.sh 已收缩到 contract_data_report"
 fi
 if grep -nE 'contract_data_report' "$VERIFY_DIR/check-claims.sh" >/dev/null 2>&1; then
-  pass "check-claims.sh 经 contract_data_report 做穷尽校验"
+  ok "check-claims.sh 经 contract_data_report 做穷尽校验"
 else
   bad "check-claims.sh 未调用 contract_data_report（#25）"
 fi
@@ -329,44 +328,44 @@ printf 'orphan_extra\n' >"$CONTRACT_REPO_ROOT/data/manifest-extra.txt"
 
 mrep=$(contract_manifest_report)
 case "$mrep" in
-  *missing_file:agis6/ghost_ds.dta*) pass "manifest report：agis6 清单有但文件缺" ;;
+  *missing_file:agis6/ghost_ds.dta*) ok "manifest report：agis6 清单有但文件缺" ;;
   *) bad "manifest report 缺 agis6 missing：[$mrep]" ;;
 esac
 case "$mrep" in
-  *unlisted_file:agis6/orphan_only.dta*) pass "manifest report：agis6 文件有但清单缺" ;;
+  *unlisted_file:agis6/orphan_only.dta*) ok "manifest report：agis6 文件有但清单缺" ;;
   *) bad "manifest report 缺 agis6 unlisted：[$mrep]" ;;
 esac
 case "$mrep" in
-  *missing_file:extra/orphan_extra.dta*) pass "manifest report：extra 清单有但文件缺" ;;
+  *missing_file:extra/orphan_extra.dta*) ok "manifest report：extra 清单有但文件缺" ;;
   *) bad "manifest report 缺 extra missing：[$mrep]" ;;
 esac
 case "$mrep" in
-  *unlisted_file:extra/synth/synth_smoking.dta*) pass "manifest report：extra 文件有但清单缺（带 subdir）" ;;
+  *unlisted_file:extra/synth/synth_smoking.dta*) ok "manifest report：extra 文件有但清单缺（带 subdir）" ;;
   *) bad "manifest report 缺 extra unlisted：[$mrep]" ;;
 esac
 
 printf 'relate\nrelate\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
 mrep=$(contract_manifest_report)
 case "$mrep" in
-  *duplicate_entry:agis6/relate.dta*) pass "manifest report：清单重复登记" ;;
+  *duplicate_entry:agis6/relate.dta*) ok "manifest report：清单重复登记" ;;
   *) bad "manifest report 缺 duplicate：[$mrep]" ;;
 esac
 printf 'relate\nghost_ds\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
 
 if [ "$(contract_manifest_entry_count agis6)" = "2" ] && [ "$(contract_manifest_file_count agis6)" = "2" ]; then
-  pass "manifest 计数：agis6 entries/files"
+  ok "manifest 计数：agis6 entries/files"
 else
   bad "manifest 计数 agis6 错：entries=$(contract_manifest_entry_count agis6) files=$(contract_manifest_file_count agis6)"
 fi
 if [ "$(contract_manifest_entry_count extra)" = "1" ] && [ "$(contract_manifest_file_count extra)" = "1" ]; then
-  pass "manifest 计数：extra entries/files"
+  ok "manifest 计数：extra entries/files"
 else
   bad "manifest 计数 extra 错：entries=$(contract_manifest_entry_count extra) files=$(contract_manifest_file_count extra)"
 fi
 unset CONTRACT_REPO_ROOT
 
 if [ -z "$(contract_manifest_report)" ]; then
-  pass "生产仓库 contract_manifest_report 干净"
+  ok "生产仓库 contract_manifest_report 干净"
 else
   bad "生产仓库 manifest report 非空：$(contract_manifest_report | tr '\n' ' ')"
 fi
@@ -376,10 +375,10 @@ for caller in run-verify.sh check-claims.sh; do
   if grep -q -- '-maxdepth 2' "$VERIFY_DIR/$caller"; then
     bad "$caller 仍平行遍历数据树（#29 C3）"
   else
-    pass "$caller 无平行数据树遍历"
+    ok "$caller 无平行数据树遍历"
   fi
   if grep -q 'contract_manifest_report' "$VERIFY_DIR/$caller"; then
-    pass "$caller 经 contract_manifest_report 消费清单"
+    ok "$caller 经 contract_manifest_report 消费清单"
   else
     bad "$caller 未接 contract_manifest_report（#29 C3）"
   fi

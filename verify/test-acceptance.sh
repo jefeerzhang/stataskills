@@ -13,9 +13,8 @@ set -u
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$VERIFY_DIR/.." && pwd)"
 
-fail=0
-pass() { echo "PASS  $1"; }
-bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/report.sh"
 
 # ---- 1. 六个 locality 回归入口存在 ----
 for f in \
@@ -31,7 +30,7 @@ for f in \
   test-prompts.sh
 do
   if [ -f "$VERIFY_DIR/$f" ]; then
-    pass "回归入口存在：$f"
+    ok "回归入口存在：$f"
   else
     bad "缺回归入口：$f"
   fi
@@ -47,7 +46,7 @@ for f in \
   lib/judge.sh
 do
   if [ -f "$VERIFY_DIR/$f" ]; then
-    pass "deep module：$f"
+    ok "deep module：$f"
   else
     bad "缺 deep module：$f"
   fi
@@ -59,7 +58,7 @@ for f in run-verify.sh check-claims.sh test-prompts.sh; do
        "$VERIFY_DIR/$f" >/dev/null 2>&1; then
     bad "旧 registry 调用残留：$f"
   else
-    pass "无旧 registry 调用：$f"
+    ok "无旧 registry 调用：$f"
   fi
 done
 
@@ -67,11 +66,11 @@ done
 if grep -nE 'grep -oE .*\^use|awk.*print \$2' "$VERIFY_DIR/run-verify.sh" >/dev/null 2>&1; then
   bad "run-verify 仍有平行 use parser"
 else
-  pass "run-verify 无平行 use parser"
+  ok "run-verify 无平行 use parser"
 fi
 if grep -nE 'contract_data_report' "$VERIFY_DIR/run-verify.sh" >/dev/null 2>&1 \
    && grep -nE 'contract_data_report' "$VERIFY_DIR/check-claims.sh" >/dev/null 2>&1; then
-  pass "data readiness 经 contract_data_report"
+  ok "data readiness 经 contract_data_report"
 else
   bad "data readiness 未统一走 contract_data_report"
 fi
@@ -80,7 +79,7 @@ if grep -q 'contract_manifest_report' "$VERIFY_DIR/run-verify.sh" \
    && grep -q 'contract_manifest_report' "$VERIFY_DIR/check-claims.sh" \
    && ! grep -q -- '-maxdepth 2' "$VERIFY_DIR/run-verify.sh" \
    && ! grep -q -- '-maxdepth 2' "$VERIFY_DIR/check-claims.sh"; then
-  pass "manifest 解析经 contract_manifest_report（无平行数据树遍历，#29 C3）"
+  ok "manifest 解析经 contract_manifest_report（无平行数据树遍历，#29 C3）"
 else
   bad "manifest 解析未统一走 contract_manifest_report（#29 C3）"
 fi
@@ -89,20 +88,26 @@ fi
 if grep -nE 'COMMUNITY_PKGS=' "$VERIFY_DIR/lib/judge.sh" >/dev/null 2>&1; then
   bad "judge.sh 承载 package registry"
 else
-  pass "judge.sh 无 package registry"
+  ok "judge.sh 无 package registry"
 fi
 if grep -nE 'community_check_dofile' "$VERIFY_DIR/check-claims.sh" >/dev/null 2>&1; then
-  pass "community contract 经 community_check_dofile"
+  ok "community contract 经 community_check_dofile"
 else
   bad "claims 未接 community contract"
 fi
 
-# ---- 6. 反模式：test-prompts mode 不分支 jq/python ----
-# 允许 prompt_corpus.sh 内部选 adapter；禁止 test-prompts.sh 直接分支
+# ---- 6. 反模式：mode 层不分支 adapter；corpus 模块无 jq 分支 ----
+# #29 C4 后 prompt_corpus.sh 只有单一 canonical adapter（python）；此处锁
+# 两层：test-prompts.sh 不得做 mode-level 分支，corpus 模块不得再有 jq 分支。
 if grep -nE 'command -v jq|PROMPT_CORPUS_FORCE_ADAPTER|python3? -c' "$VERIFY_DIR/test-prompts.sh" >/dev/null 2>&1; then
   bad "test-prompts.sh 仍有 mode-level adapter 分支"
 else
-  pass "test-prompts.sh 无 mode-level adapter 分支"
+  ok "test-prompts.sh 无 mode-level adapter 分支"
+fi
+if grep -vE '^[[:space:]]*#' "$VERIFY_DIR/lib/prompt_corpus.sh" | grep -qE '\bjq\b'; then
+  bad "prompt_corpus.sh 仍含 jq 分支（#29 C4 要求单一 canonical adapter）"
+else
+  ok "prompt_corpus.sh 无 jq 分支（单一 canonical adapter）"
 fi
 
 # ---- 7. ADR 语义锚点仍在（不重开）----
@@ -111,61 +116,77 @@ ADR5="$REPO_ROOT/docs/adr/0005-keep-raw-verify-logs.md"
 ADR7="$REPO_ROOT/docs/adr/0007-untrack-verify-raw-logs.md"
 ADR6="$REPO_ROOT/docs/adr/0006-identification-four-pillars.md"
 if [ -f "$ADR3" ] && grep -E -- '--community|OPTIONAL_MISSING|COMMUNITY_PACKAGE_MISSING' "$ADR3" >/dev/null 2>&1; then
-  pass "ADR-0003 联网/package 模式锚点仍在"
+  ok "ADR-0003 联网/package 模式锚点仍在"
 else
   bad "ADR-0003 语义锚点缺失"
 fi
 if [ -f "$ADR5" ] && grep -E -- 'Superseded' "$ADR5" >/dev/null 2>&1 \
    && grep -E -- 'ADR-0007' "$ADR5" >/dev/null 2>&1; then
-  pass "ADR-0005 已显式标注 Superseded → ADR-0007"
+  ok "ADR-0005 已显式标注 Superseded → ADR-0007"
 else
   bad "ADR-0005 取代关系未记录（应标 Superseded 并指向 ADR-0007）"
 fi
 if [ -f "$ADR7" ] && grep -E -- 'verify/\*\.log|取消跟踪|untrack' "$ADR7" >/dev/null 2>&1 \
    && grep -E -- 'VERIFY_MARKERS_REQUIRED' "$ADR7" >/dev/null 2>&1; then
-  pass "ADR-0007 raw log 退库 + 声明式 marker 契约锚点在位"
+  ok "ADR-0007 raw log 退库 + 声明式 marker 契约锚点在位"
 else
   bad "ADR-0007 语义锚点缺失"
 fi
 # 反回归锁：log 不得重新回到 git 索引（否则 ADR-0007 被无声推翻）
 if grep -qE '^verify/\*\.log$' "$REPO_ROOT/.gitignore" 2>/dev/null; then
-  pass ".gitignore 覆盖 verify/*.log"
+  ok ".gitignore 覆盖 verify/*.log"
 else
   bad ".gitignore 缺少 verify/*.log 规则"
 fi
 if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   tracked_logs="$(git -C "$REPO_ROOT" ls-files 'verify/*.log' 2>/dev/null | wc -l | tr -d ' ')"
   if [ "$tracked_logs" = "0" ]; then
-    pass "git 索引中无 verify/*.log（工作区副本不受影响）"
+    ok "git 索引中无 verify/*.log（工作区副本不受影响）"
   else
     bad "有 $tracked_logs 份 verify/*.log 仍在 git 索引中（违反 ADR-0007）"
   fi
 fi
 if [ -f "$ADR6" ] && grep -E -- 'estimand|识别|pillar|RCT|RDD' "$ADR6" >/dev/null 2>&1; then
-  pass "ADR-0006 识别路由/estimand 锚点仍在"
+  ok "ADR-0006 识别路由/estimand 锚点仍在"
 else
   bad "ADR-0006 语义锚点缺失"
 fi
 
 # ---- 8. DID ownership / plan / prompt plan / 事故锁 / 委托名单可观察锁 ----
 if grep -qE 'DID method ownership|did_imputation' "$VERIFY_DIR/claims/did-community.sh" 2>/dev/null; then
-  pass "claims/did-community.sh 含 DID method ownership 断言"
+  ok "claims/did-community.sh 含 DID method ownership 断言"
 else
   bad "claims/did-community.sh 缺 DID ownership 断言（#29 C1）"
 fi
 if grep -q 'claims_dir=.*VERIFY_DIR/claims' "$VERIFY_DIR/check-claims.sh" \
    && [ -f "$VERIFY_DIR/test-claims.sh" ]; then
-  pass "事故锁 seam：check-claims 发现式聚合 + test-claims 回归入口（#29 C1）"
+  ok "事故锁 seam：check-claims 发现式聚合 + test-claims 回归入口（#29 C1）"
 else
   bad "事故锁 seam 不完整（#29 C1）"
 fi
 if grep -qE 'for d in verify-dynamic-panel|expect_d=' "$VERIFY_DIR/check-claims.sh"; then
   bad "check-claims 仍手抄委托名单（#29 C2）"
 else
-  pass "check-claims 委托名单经 plan 派生（#29 C2）"
+  ok "check-claims 委托名单经 plan 派生（#29 C2）"
 fi
+# #29 C7：skill 发现只经 targets_each_skill；测试文件复用 report.sh 报告协议
+for f in run-verify.sh check-claims.sh test-prompts.sh; do
+  if grep -q 'targets_each_skill' "$VERIFY_DIR/$f"; then
+    ok "$f 经 targets_each_skill 发现 skill"
+  else
+    bad "$f 未接 targets_each_skill（#29 C7）"
+  fi
+done
+for f in test-targets.sh test-contract.sh test-prompt-plan.sh test-community.sh \
+         test-acceptance.sh test-claims.sh test-prompt-corpus.sh; do
+  if grep -qE '^pass\(\) *\{' "$VERIFY_DIR/$f"; then
+    bad "$f 仍自定义 pass() 协议（应用 report.sh 的 ok/bad）"
+  else
+    ok "$f 复用 report.sh 报告协议"
+  fi
+done
 if grep -nE 'prompt_plan_each_target|self_test_prompt_plan' "$VERIFY_DIR/test-prompts.sh" >/dev/null 2>&1; then
-  pass "prompts 含跨 skill plan 自测"
+  ok "prompts 含跨 skill plan 自测"
 else
   bad "prompts 缺跨 skill plan 自测"
 fi

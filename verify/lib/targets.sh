@@ -149,3 +149,17 @@ targets_plan_is_delegate() {
   done < <(targets_plan_each_delegate)
   return 1
 }
+
+# targets_each_skill [root]：每行一个 skill 目录名（stata-<name>），glob 顺序。
+# 「什么算一个 skill」的单一实现：`stata-*/SKILL.md` 存在即 skill（#29 C7）。
+# 不传 root 时按本模块位置推仓库根；caller 通常传自己的 REPO_ROOT。
+targets_each_skill() {
+  local root="${1:-}" s
+  if [ -z "$root" ]; then
+    root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  fi
+  for s in "$root"/stata-*/SKILL.md; do
+    [ -f "$s" ] || continue
+    basename "$(dirname "$s")"
+  done
+}

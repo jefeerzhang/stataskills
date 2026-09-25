@@ -56,15 +56,15 @@ count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
 }
 
 # ---- facts：文件系统真相；skill 的唯一来源是实际 SKILL.md ----
+# 「什么算一个 skill」只经 targets_each_skill（#29 C7），不再各 caller 手写 glob。
 SKILL_FILES=()
 TARGET_ENTRIES=()
-for skill_file in "$REPO_ROOT"/stata-*/SKILL.md; do
-  [ -f "$skill_file" ] || continue
-  SKILL_FILES+=("$skill_file")
-  skill_name="$(basename "$(dirname "$skill_file")")"
+while IFS= read -r skill_name; do
+  [ -n "$skill_name" ] || continue
+  SKILL_FILES+=("$REPO_ROOT/$skill_name/SKILL.md")
   TARGET_ENTRIES+=("verify-${skill_name#stata-}")
-done
-ACTUAL_SKILLS="$(for skill_file in "${SKILL_FILES[@]}"; do basename "$(dirname "$skill_file")"; done | sort -u)"
+done < <(targets_each_skill "$REPO_ROOT")
+ACTUAL_SKILLS="$(targets_each_skill "$REPO_ROOT" | sort -u)"
 N_SKILLS=${#SKILL_FILES[@]}
 N_TARGETS=${#TARGET_ENTRIES[@]}
 N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # 原始 verify-*.do 计数（含委托脚本），仅供 facts 展示

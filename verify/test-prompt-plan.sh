@@ -15,9 +15,8 @@ VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/prompt_plan.sh"
 
-fail=0
-pass() { echo "PASS  $1"; }
-bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/report.sh"
 
 for fn in prompt_plan_normalize_skills prompt_plan_each_skill \
           prompt_plan_each_target prompt_plan_each_log_path; do
@@ -32,29 +31,29 @@ expect=$(printf '%s\n' \
   $'regression\tverify-regression\tverify-regression' \
   $'regression\tverify-dynamic-panel\tverify-dynamic-panel')
 [ "$plan" = "$expect" ] \
-  && pass "单 skill plan" || bad "单 skill：[$plan]"
+  && ok "单 skill plan" || bad "单 skill：[$plan]"
 
 plan=$(prompt_plan_each_target "stata-basics + stata-descriptives")
 expect=$(printf '%s\n' $'basics\tverify-basics\tverify-basics' $'descriptives\tverify-descriptives\tverify-descriptives')
-[ "$plan" = "$expect" ] && pass "跨 skill plan" || bad "跨 skill：[$plan]"
+[ "$plan" = "$expect" ] && ok "跨 skill plan" || bad "跨 skill：[$plan]"
 
 plan=$(prompt_plan_each_target "stata-dce")
 expect=$(printf '%s\n' $'dce\tverify-dce\tverify-dce')
-[ "$plan" = "$expect" ] && pass "DCE 单 skill plan" || bad "DCE：[$plan]"
+[ "$plan" = "$expect" ] && ok "DCE 单 skill plan" || bad "DCE：[$plan]"
 
 plan=$(prompt_plan_each_target "stata-regression + stata-basics + stata-regression")
 expect=$(printf '%s\n' \
   $'regression\tverify-regression\tverify-regression' \
   $'regression\tverify-dynamic-panel\tverify-dynamic-panel' \
   $'basics\tverify-basics\tverify-basics')
-[ "$plan" = "$expect" ] && pass "共享 target 去重保序" || bad "去重：[$plan]"
+[ "$plan" = "$expect" ] && ok "共享 target 去重保序" || bad "去重：[$plan]"
 
 plan=$(prompt_plan_each_target "stata-did-community")
 expect=$(printf '%s\n' \
   $'did-community\tverify-synth-sdid\tverify-synth-sdid' \
   $'did-community\tverify-power\tverify-power' \
   $'did-community\tverify-trop\tverify-trop')
-[ "$plan" = "$expect" ] && pass "multi-delegate plan" || bad "delegate：[$plan]"
+[ "$plan" = "$expect" ] && ok "multi-delegate plan" || bad "delegate：[$plan]"
 
 skills=$(prompt_plan_each_skill "stata-a + stata-b + stata-a" | paste -sd' ' -)
 plan=$(prompt_plan_each_target "stata-count + stata-fractional + stata-limited-dependent + stata-count")
@@ -62,8 +61,8 @@ expect=$(printf '%s\n' \
   $'count\tverify-count\tverify-count' \
   $'fractional\tverify-fractional\tverify-fractional' \
   $'limited-dependent\tverify-limited-dependent\tverify-limited-dependent')
-[ "$plan" = "$expect" ] && pass "结果模型跨 skill 去重 plan" || bad "结果模型：[$plan]"
-[ "$skills" = "a b" ] && pass "skill 去重保序" || bad "skills=[$skills]"
+[ "$plan" = "$expect" ] && ok "结果模型跨 skill 去重 plan" || bad "结果模型：[$plan]"
+[ "$skills" = "a b" ] && ok "skill 去重保序" || bad "skills=[$skills]"
 
 echo ""
 if [ "$fail" -eq 0 ]; then

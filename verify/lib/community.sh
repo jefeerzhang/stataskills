@@ -138,7 +138,8 @@ _community_sentinel_class() {
 
 # community_check_dofile <dofile>
 # 每行 KIND:detail；干净则无输出。
-# KIND ∈ missing_probe|late_probe|undeclared_call|wrong_sentinel|ownership_drift
+# KIND ∈ missing_probe|late_probe|undeclared_call|wrong_sentinel|ownership_drift|
+#        sentinel_shape
 community_check_dofile() {
   local dofile="$1"
   local owner pkg o c call_ln probe_ln expect_class sent_class owners
@@ -188,4 +189,13 @@ EOF
       fi
     fi
   done < <(community_unique_pkgs)
+
+  # 3) sentinel 形状（ADR-0007 / #29 C6）：只允许块形式
+  #    `if !`has_x' {` + 下一行 display。单行 `if !`has_x' display "SENTINEL"`
+  #    的回显行以 `. if` 开头，曾骗过 judge 的回显过滤（ADR-0007 记录的事故）。
+  local shape_ln
+  shape_ln="$(grep -nE '^[[:space:]]*(if|else)[^;]*display[^;]*__COMMUNITY_PACKAGE_(OPTIONAL_)?MISSING__' "$dofile" | head -1 | cut -d: -f1)"
+  if [ -n "$shape_ln" ]; then
+    printf 'sentinel_shape:%s line=%s\n' "$owner" "$shape_ln"
+  fi
 }

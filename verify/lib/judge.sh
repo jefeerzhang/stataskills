@@ -24,6 +24,8 @@
 #       source "$VERIFY_DIR/lib/judge.sh"
 #   judge_raw_log <entry> <raw_log_path> <community_mode(0|1)>
 #   返回 0 = PASS，1 = FAIL；对每个判定打印 ok/bad 行。
+#   judge_log_has_command <keyword> <log_file>
+#   返回 0 = 日志里真实执行过该命令（注释/which 探针不算）；1 = 没有。
 # ============================================================
 
 judge_raw_log() {
@@ -84,4 +86,26 @@ judge_raw_log() {
     bad "${name}（${fail_detail}）→ 见 ${log}"
     return 1
   fi
+}
+
+# judge_log_has_command <keyword> <log_file>
+# 日志中是否存在「真实执行」过 keyword 的命令行：行以 `. ` 回显开头、
+# 跳过 capture/cap/quietly/noisily 等前缀、跳过 `*` 注释与 `which` 探针。
+# 这是「Stata 批处理日志行长什么样」的单一实现（#29 C5）——caller 不得再
+# 自写 awk 复刻回显规则（回归见 test-harness.sh 的 judge_log_has_command 探针）。
+judge_log_has_command() {
+  local keyword="$1" log_file="$2"
+  awk -v keyword="$keyword" '
+    $1 == "." {
+      i = 2
+      while ($i ~ /^(capture|cap|quietly|quiet|qui|noisily|noi)$/) i++
+      if ($i == "*" || $i == "which") next
+      for (j = i; j <= NF; j++) {
+        token = $j
+        gsub(/^[,(]+|[,)]+$/, "", token)
+        if (token == keyword) found = 1
+      }
+    }
+    END { exit(found ? 0 : 1) }
+  ' "$log_file"
 }
