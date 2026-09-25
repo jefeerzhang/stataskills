@@ -37,13 +37,31 @@ _contract_repo() {
   fi
 }
 
+# contract_block <dofile>：打印 VERIFY CONTRACT 块原文；无块则空。
+# 块边界是契约格式的唯一来源——caller 不得再内联同一 sed 范围（#29 C3）。
+contract_block() {
+  local dofile="$1"
+  head -20 "$dofile" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p'
+}
+
+# contract_missing_fields <dofile>：空格分隔的缺失字段名（skill/chapter/data/checks）。
+# 只判「字段行是否出现」；字段值为空由 caller 经 contract_parse 结果判（语义不同）。
+contract_missing_fields() {
+  local dofile="$1" block f miss=""
+  block="$(contract_block "$dofile")"
+  for f in skill chapter data checks; do
+    printf '%s\n' "$block" | grep -q "^\* $f:" || miss="${miss:+$miss }$f"
+  done
+  printf '%s\n' "$miss"
+}
+
 # contract_parse <dofile>
 # 向 stdout 打印可 eval 的 KEY=value：
 #   CONTRACT_SKILL / CONTRACT_CHAPTER / CONTRACT_DATA / CONTRACT_CHECKS
 contract_parse() {
   local dofile="$1"
   local block skill chapter data checks
-  block=$(head -20 "$dofile" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p')
+  block="$(contract_block "$dofile")"
   skill=$(echo "$block" | sed -n 's/^\* skill:[[:space:]]*//p' | head -1 | tr -d '[:space:]')
   chapter=$(echo "$block" | sed -n 's/^\* chapter:[[:space:]]*//p' | head -1 | tr -d '[:space:]')
   data=$(echo "$block" | sed -n 's/^\* data:[[:space:]]*//p' | head -1 | tr -d '[:space:]')
@@ -193,21 +211,31 @@ contract_stale_declarations() {
   printf '%s\n' "$stale"
 }
 
-# manifest 行计数：去 CR、去行尾空白、跳过空行与 # 注释（含缩进注释）。
-# 刻意用纯 bash 内联而不 fork sed/grep：本函数对每个 data token 都会被调用，
-# Windows Git Bash 上每次 fork 的成本会被 manifest 规模放大。
-_contract_manifest_count() {
-  local file="$1" base="$2" n=0 line trimmed
-  [ -f "$file" ] || { printf '0\n'; return 0; }
+# _contract_manifest_lines <file>：逐行输出清单登记项。
+# 唯一实现「去 CR、剥前后空白、跳过空行与 # 注释」这一规则；清单解析的
+# caller（count / report / 计数 API）全部经此，不再各自 fork grep（#29 C3）。
+_contract_manifest_lines() {
+  local file="$1" line trimmed
+  [ -f "$file" ] || return 0
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%$'\r'}"
-    line="${line%"${line##*[![:space:]]}"}"
     trimmed="${line#"${line%%[![:space:]]*}"}"
+    trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
     case "$trimmed" in
       ''|'#'*) continue ;;
     esac
-    [ "$line" = "$base" ] && n=$((n + 1))
+    printf '%s\n' "$trimmed"
   done <"$file"
+}
+
+# manifest 行计数：某基名在清单中登记的条数。
+# 经 _contract_manifest_lines 单一规则；对本函数的高频调用保留纯 bash 内联
+# 循环，只多一次进程替换 fork（远低于每行 fork sed/grep 的成本）。
+_contract_manifest_count() {
+  local file="$1" base="$2" n=0 line
+  while IFS= read -r line || [ -n "$line" ]; do
+    [ "$line" = "$base" ] && n=$((n + 1))
+  done < <(_contract_manifest_lines "$file")
   printf '%s\n' "$n"
 }
 
@@ -390,4 +418,111 @@ contract_data_report() {
   done <"$union_file"
 
   rm -f "$decl_file" "$lit_file" "$seen_file" "$union_file"
+}
+
+# ============================================================
+# manifest ↔ 数据面（#29 C3）：两份清单与 .dta 的双向一致性只在此实现。
+# run-verify.sh --static 与 check-claims.sh 都只经此 seam 消费，不再各自
+# grep 清单或 find 数据树。
+# ============================================================
+
+# _contract_agis6_dta_files <root>：data/agis6/*.dta，每行 "<base>.dta"
+_contract_agis6_dta_files() {
+  local root="$1" f
+  for f in "$root"/data/agis6/*.dta; do
+    [ -f "$f" ] || continue
+    printf '%s\n' "$(basename "$f")"
+  done
+}
+
+# _contract_extra_dta_files <root>：data/<subdir>/*.dta（排除 agis6），
+# 每行 "<subdir>/<base>.dta"
+_contract_extra_dta_files() {
+  local root="$1" f
+  [ -d "$root/data" ] || return 0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    printf '%s\n' "${f#"$root/data/"}"
+  done < <(find "$root/data" -maxdepth 2 -name '*.dta' -not -path '*/agis6/*' 2>/dev/null)
+}
+
+# contract_manifest_report [root]
+# 每行 KIND:TOKEN —— KIND ∈ missing_file|unlisted_file|duplicate_entry。
+# TOKEN 带面前缀：agis6/<base>.dta 或 extra/<base>.dta；extra 面的
+# unlisted 保留 extra/<subdir>/<base>.dta 以便定位。干净则无输出。
+contract_manifest_report() {
+  local root="${1:-}"
+  local man man_x
+  local entry f base cnt file_cnt seen_a seen_x
+  [ -n "$root" ] || root="$(_contract_repo)"
+  man="$root/data/manifest.txt"
+  man_x="$root/data/manifest-extra.txt"
+
+  # ---- agis6 面 ----
+  seen_a="$(mktemp "${TMPDIR:-/tmp}/contract-man-a.XXXXXX")"
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    cnt="$(_contract_manifest_count "$man" "$entry")"
+    if [ "$cnt" -gt 1 ]; then
+      printf 'duplicate_entry:agis6/%s.dta\n' "$entry"
+    elif [ ! -f "$root/data/agis6/${entry}.dta" ]; then
+      printf 'missing_file:agis6/%s.dta\n' "$entry"
+    fi
+    printf '%s\n' "$entry" >>"$seen_a"
+  done < <(_contract_manifest_lines "$man")
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    base="${f%.dta}"
+    grep -qxF "$base" "$seen_a" 2>/dev/null || printf 'unlisted_file:agis6/%s\n' "$f"
+  done < <(_contract_agis6_dta_files "$root")
+  rm -f "$seen_a"
+
+  # ---- extra 面（manifest-extra 平铺基名，按 basename 匹配 data/<subdir>/）----
+  seen_x="$(mktemp "${TMPDIR:-/tmp}/contract-man-x.XXXXXX")"
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    cnt="$(_contract_manifest_count "$man_x" "$entry")"
+    file_cnt=0
+    while IFS= read -r f; do
+      [ -n "$f" ] || continue
+      [ "$(basename "$f")" = "${entry}.dta" ] && file_cnt=$((file_cnt + 1))
+    done < <(_contract_extra_dta_files "$root")
+    if [ "$cnt" -gt 1 ] || [ "$file_cnt" -gt 1 ]; then
+      printf 'duplicate_entry:extra/%s.dta\n' "$entry"
+    elif [ "$file_cnt" -eq 0 ]; then
+      printf 'missing_file:extra/%s.dta\n' "$entry"
+    fi
+    printf '%s\n' "$entry" >>"$seen_x"
+  done < <(_contract_manifest_lines "$man_x")
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    base="$(basename "$f")"
+    base="${base%.dta}"
+    grep -qxF "$base" "$seen_x" 2>/dev/null || printf 'unlisted_file:extra/%s\n' "$f"
+  done < <(_contract_extra_dta_files "$root")
+  rm -f "$seen_x"
+}
+
+# contract_manifest_entry_count <agis6|extra>：清单登记条数
+contract_manifest_entry_count() {
+  local scope="$1" root n=0 line
+  root="$(_contract_repo)"
+  case "$scope" in
+    agis6) while IFS= read -r line; do n=$((n + 1)); done < <(_contract_manifest_lines "$root/data/manifest.txt") ;;
+    extra) while IFS= read -r line; do n=$((n + 1)); done < <(_contract_manifest_lines "$root/data/manifest-extra.txt") ;;
+    *) printf 'contract_manifest_entry_count: 未知 scope %s\n' "$scope" >&2; return 1 ;;
+  esac
+  printf '%s\n' "$n"
+}
+
+# contract_manifest_file_count <agis6|extra>：对应数据面 .dta 文件数
+contract_manifest_file_count() {
+  local scope="$1" root n=0 line
+  root="$(_contract_repo)"
+  case "$scope" in
+    agis6) while IFS= read -r line; do n=$((n + 1)); done < <(_contract_agis6_dta_files "$root") ;;
+    extra) while IFS= read -r line; do n=$((n + 1)); done < <(_contract_extra_dta_files "$root") ;;
+    *) printf 'contract_manifest_file_count: 未知 scope %s\n' "$scope" >&2; return 1 ;;
+  esac
+  printf '%s\n' "$n"
 }

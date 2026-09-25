@@ -21,6 +21,7 @@ bad()  { echo "FAIL  $1"; fail=$((fail + 1)); }
 for f in \
   test-targets.sh \
   test-contract.sh \
+  test-claims.sh \
   test-community.sh \
   test-prompt-corpus.sh \
   test-prompt-plan.sh \
@@ -73,6 +74,15 @@ if grep -nE 'contract_data_report' "$VERIFY_DIR/run-verify.sh" >/dev/null 2>&1 \
   pass "data readiness 经 contract_data_report"
 else
   bad "data readiness 未统一走 contract_data_report"
+fi
+# #29 C3：manifest 双向一致性只经 contract_manifest_report；caller 无平行数据树遍历
+if grep -q 'contract_manifest_report' "$VERIFY_DIR/run-verify.sh" \
+   && grep -q 'contract_manifest_report' "$VERIFY_DIR/check-claims.sh" \
+   && ! grep -q -- '-maxdepth 2' "$VERIFY_DIR/run-verify.sh" \
+   && ! grep -q -- '-maxdepth 2' "$VERIFY_DIR/check-claims.sh"; then
+  pass "manifest 解析经 contract_manifest_report（无平行数据树遍历，#29 C3）"
+else
+  bad "manifest 解析未统一走 contract_manifest_report（#29 C3）"
 fi
 
 # ---- 5. 反模式：judge 无第二份 package 名单 ----
@@ -137,11 +147,22 @@ else
   bad "ADR-0006 语义锚点缺失"
 fi
 
-# ---- 8. DID ownership / plan / prompt plan 可观察锁 ----
-if grep -nE 'DID method ownership|did_imputation' "$VERIFY_DIR/check-claims.sh" >/dev/null 2>&1; then
-  pass "claims 含 DID method ownership 断言"
+# ---- 8. DID ownership / plan / prompt plan / 事故锁 / 委托名单可观察锁 ----
+if grep -qE 'DID method ownership|did_imputation' "$VERIFY_DIR/claims/did-community.sh" 2>/dev/null; then
+  pass "claims/did-community.sh 含 DID method ownership 断言"
 else
-  bad "claims 缺 DID ownership 断言"
+  bad "claims/did-community.sh 缺 DID ownership 断言（#29 C1）"
+fi
+if grep -q 'claims_dir=.*VERIFY_DIR/claims' "$VERIFY_DIR/check-claims.sh" \
+   && [ -f "$VERIFY_DIR/test-claims.sh" ]; then
+  pass "事故锁 seam：check-claims 发现式聚合 + test-claims 回归入口（#29 C1）"
+else
+  bad "事故锁 seam 不完整（#29 C1）"
+fi
+if grep -qE 'for d in verify-dynamic-panel|expect_d=' "$VERIFY_DIR/check-claims.sh"; then
+  bad "check-claims 仍手抄委托名单（#29 C2）"
+else
+  pass "check-claims 委托名单经 plan 派生（#29 C2）"
 fi
 if grep -nE 'prompt_plan_each_target|self_test_prompt_plan' "$VERIFY_DIR/test-prompts.sh" >/dev/null 2>&1; then
   pass "prompts 含跨 skill plan 自测"

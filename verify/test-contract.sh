@@ -318,6 +318,73 @@ else
   bad "check-claims.sh 未调用 contract_data_report（#25）"
 fi
 
+# ---- 10. manifest seam（#29 C3）：报告 + 计数，caller 无平行解析 ----
+export CONTRACT_REPO_ROOT="$WORKDIR/man"
+mkdir -p "$CONTRACT_REPO_ROOT/data/agis6" "$CONTRACT_REPO_ROOT/data/synth"
+printf 'relate\nghost_ds\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
+printf 'orphan_extra\n' >"$CONTRACT_REPO_ROOT/data/manifest-extra.txt"
+: >"$CONTRACT_REPO_ROOT/data/agis6/relate.dta"
+: >"$CONTRACT_REPO_ROOT/data/agis6/orphan_only.dta"
+: >"$CONTRACT_REPO_ROOT/data/synth/synth_smoking.dta"
+
+mrep=$(contract_manifest_report)
+case "$mrep" in
+  *missing_file:agis6/ghost_ds.dta*) pass "manifest report：agis6 清单有但文件缺" ;;
+  *) bad "manifest report 缺 agis6 missing：[$mrep]" ;;
+esac
+case "$mrep" in
+  *unlisted_file:agis6/orphan_only.dta*) pass "manifest report：agis6 文件有但清单缺" ;;
+  *) bad "manifest report 缺 agis6 unlisted：[$mrep]" ;;
+esac
+case "$mrep" in
+  *missing_file:extra/orphan_extra.dta*) pass "manifest report：extra 清单有但文件缺" ;;
+  *) bad "manifest report 缺 extra missing：[$mrep]" ;;
+esac
+case "$mrep" in
+  *unlisted_file:extra/synth/synth_smoking.dta*) pass "manifest report：extra 文件有但清单缺（带 subdir）" ;;
+  *) bad "manifest report 缺 extra unlisted：[$mrep]" ;;
+esac
+
+printf 'relate\nrelate\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
+mrep=$(contract_manifest_report)
+case "$mrep" in
+  *duplicate_entry:agis6/relate.dta*) pass "manifest report：清单重复登记" ;;
+  *) bad "manifest report 缺 duplicate：[$mrep]" ;;
+esac
+printf 'relate\nghost_ds\n' >"$CONTRACT_REPO_ROOT/data/manifest.txt"
+
+if [ "$(contract_manifest_entry_count agis6)" = "2" ] && [ "$(contract_manifest_file_count agis6)" = "2" ]; then
+  pass "manifest 计数：agis6 entries/files"
+else
+  bad "manifest 计数 agis6 错：entries=$(contract_manifest_entry_count agis6) files=$(contract_manifest_file_count agis6)"
+fi
+if [ "$(contract_manifest_entry_count extra)" = "1" ] && [ "$(contract_manifest_file_count extra)" = "1" ]; then
+  pass "manifest 计数：extra entries/files"
+else
+  bad "manifest 计数 extra 错：entries=$(contract_manifest_entry_count extra) files=$(contract_manifest_file_count extra)"
+fi
+unset CONTRACT_REPO_ROOT
+
+if [ -z "$(contract_manifest_report)" ]; then
+  pass "生产仓库 contract_manifest_report 干净"
+else
+  bad "生产仓库 manifest report 非空：$(contract_manifest_report | tr '\n' ' ')"
+fi
+
+# 反模式锁：caller 不得平行遍历数据树或自行 grep 清单
+for caller in run-verify.sh check-claims.sh; do
+  if grep -q -- '-maxdepth 2' "$VERIFY_DIR/$caller"; then
+    bad "$caller 仍平行遍历数据树（#29 C3）"
+  else
+    pass "$caller 无平行数据树遍历"
+  fi
+  if grep -q 'contract_manifest_report' "$VERIFY_DIR/$caller"; then
+    pass "$caller 经 contract_manifest_report 消费清单"
+  else
+    bad "$caller 未接 contract_manifest_report（#29 C3）"
+  fi
+done
+
 echo ""
 if [ "$fail" -eq 0 ]; then
   echo "结果：全部通过"

@@ -27,9 +27,10 @@
 #   12. README hero 的 skill / target 声明及 skills.sh badge 集合与动态 skill 集合一致
 #   13. 每个 verify-*.do 的 VERIFY CONTRACT、skill 字段和 data 路径有效
 #   14. verify-*.do 社区包 contract（#26）：登记表 × 前置 probe × sentinel 分类 × ownership
-#   15. did-community 内部计数一致：frontmatter description 的「N 个方法」必须等于
-#       正文每一处「N 个社区包」（扩包时正文禁令漏改的历史漂移，见 CHANGELOG）
-#   24. ADR-0004 与 target plan 三委托 / ownership 交叉验证（#27）
+#   15. 事故锁（#29 C1）：发现并聚合 verify/claims/*.sh——单 skill / 单文档的历史
+#       事故锁与它守护的文档同地演进，不再杂居本文件
+#   16. ADR-0004 与 target plan 委托 / ownership 交叉验证（#27 / #29 C2）；
+#       委托名单只从 plan 派生，不手抄第二份
 #
 # facts（供人工比对，不自动断言）：各 skill 陷阱条目数、verify↔demo debt、
 # verify-*.do assert 覆盖率。README/CITATION 的自由散文不做泛数字扫描。
@@ -43,6 +44,8 @@ REPO_ROOT="$(cd "$VERIFY_DIR/.." && pwd)"
 . "$VERIFY_DIR/lib/report.sh"
 # shellcheck disable=SC1091
 . "$VERIFY_DIR/lib/targets.sh"
+# shellcheck disable=SC1091
+. "$VERIFY_DIR/lib/contract.sh"
 
 count() {  # count <glob...>：数匹配文件数（无匹配返回 0）
   local n=0 f
@@ -66,8 +69,8 @@ N_SKILLS=${#SKILL_FILES[@]}
 N_TARGETS=${#TARGET_ENTRIES[@]}
 N_VERIFY=$(count "$REPO_ROOT"/verify/verify-*.do)   # 原始 verify-*.do 计数（含委托脚本），仅供 facts 展示
 N_ADR=$(count "$REPO_ROOT"/docs/adr/*.md)
-N_DTA=$(count "$REPO_ROOT"/data/agis6/*.dta)
-N_MANIFEST=$(grep -cE '^[^#[:space:]]' "$REPO_ROOT/data/manifest.txt")
+N_DTA=$(contract_manifest_file_count agis6)
+N_MANIFEST=$(contract_manifest_entry_count agis6)
 N_DEMO_DO=$(count "$REPO_ROOT"/demo/dofiles/*.do)
 N_DEMO_LOG=$(count "$REPO_ROOT"/demo/logs/*.log)
 N_DEMO_PNG=$(count "$REPO_ROOT"/demo/output/*.png)
@@ -120,7 +123,8 @@ else
   bad "docs/run-stata.md 写「${doc_n:-无} 份」但实际有 ${N_SKILLS} 个 skill"
 fi
 
-# ---- 3. .dta 数量与 manifest 条数一致（双向一致性由 run-verify --static 深查）----
+# ---- 3. .dta 数量与 manifest 条数一致（双向一致性经 contract_manifest_report，
+#     由 run-verify --static 深查）----
 if [ "$N_DTA" -eq "$N_MANIFEST" ]; then
   ok "data/agis6/*.dta（${N_DTA}）与 manifest 条数（${N_MANIFEST}）一致"
 else
@@ -128,34 +132,22 @@ else
 fi
 
 # ---- 4. 扩展清单 manifest-extra.txt 与 data/*/ 下 .dta 双向一致性 ----
+# 计数与漂移都经 contract.sh 的 manifest seam（#29 C3）；本文件不再 grep 清单
+# 或 find 数据树。extra 面漂移含 missing_file / unlisted_file / duplicate_entry。
 MANIFEST_EXTRA="$REPO_ROOT/data/manifest-extra.txt"
 if [ -f "$MANIFEST_EXTRA" ]; then
-  # 统计 manifest-extra 中的条目数（排除注释和空行）
-  N_MANIFEST_EXTRA=$(grep -cE '^[^#[:space:]]' "$MANIFEST_EXTRA")
-  # 统计 data/*/ 下（排除 agis6）的 .dta 文件数
-  N_EXTRA_DTA=$(find "$REPO_ROOT/data" -maxdepth 2 -name "*.dta" -not -path "*/agis6/*" 2>/dev/null | wc -l | tr -d ' ')
+  N_MANIFEST_EXTRA=$(contract_manifest_entry_count extra)
+  N_EXTRA_DTA=$(contract_manifest_file_count extra)
   if [ "$N_MANIFEST_EXTRA" -eq "$N_EXTRA_DTA" ]; then
     ok "manifest-extra 条数（${N_MANIFEST_EXTRA}）与 data/*/.dta 数（${N_EXTRA_DTA}）一致"
   else
     bad "manifest-extra 条数（${N_MANIFEST_EXTRA}）≠ data/*/.dta 数（${N_EXTRA_DTA}）"
   fi
-  # 反向：每个 manifest-extra 条目必须在 data/*/ 下存在对应 .dta
-  extra_missing=""
-  while IFS= read -r ds; do
-    ds="${ds%$'\r'}"
-    case "$ds" in \#*|"") continue ;; esac
-    found=0
-    while IFS= read -r f; do
-      [ -f "$f" ] && found=1 && break
-    done < <(find "$REPO_ROOT/data" -maxdepth 2 -name "${ds}.dta" -not -path "*/agis6/*" 2>/dev/null)
-    if [ "$found" -eq 0 ]; then
-      extra_missing="${extra_missing} ${ds}.dta"
-    fi
-  done < <(cat "$MANIFEST_EXTRA")
-  if [ -n "$extra_missing" ]; then
-    bad "manifest-extra 登记但文件缺失：${extra_missing}"
+  extra_drift="$(contract_manifest_report | grep -E '^(missing_file|unlisted_file|duplicate_entry):extra/' | tr '\n' ' ')"
+  if [ -n "$extra_drift" ]; then
+    bad "manifest-extra 漂移：${extra_drift}"
   else
-    ok "manifest-extra 每个条目均有对应 .dta 文件"
+    ok "manifest-extra 每个条目均有对应 .dta 文件（无 missing/unlisted/duplicate）"
   fi
 else
   ok "manifest-extra.txt 不存在（跳过扩展清单验证）"
@@ -400,10 +392,10 @@ fi
 
 # ---- 13. verify-*.do I/O 契约：每个脚本必须有机器可读声明 ----
 # 借鉴 luban 报告 P1 短板：原 do-file 自包含但无机器可读「这个脚本验证什么」声明。
-# 契约格式：VERIFY CONTRACT 块由 contract.sh 解析；#25 穷尽 data contract
+# 契约格式：VERIFY CONTRACT 块由 contract.sh 解析（块边界 contract_block、
+# 字段缺失 contract_missing_fields）；#25 穷尽 data contract
 # （missing/stale declaration + missing/unlisted/ambiguous file）只经 contract_data_report。
-# shellcheck disable=SC1091
-. "$VERIFY_DIR/lib/contract.sh"
+# 本文件不再内联 sed 提取契约块或手抄字段名单（#29 C3）。
 verify_drift=""
 verify_total=0
 verify_missing_contract=""
@@ -415,8 +407,8 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
   [ -f "$vdo" ] || continue
   verify_total=$((verify_total + 1))
   vname=$(basename "$vdo" .do)
-  contract_block=$(head -20 "$vdo" | sed -n '/^\* ==== VERIFY CONTRACT ====$/,/^\* ============================$/p')
-  if [ -z "$contract_block" ]; then
+  cblock="$(contract_block "$vdo")"
+  if [ -z "$cblock" ]; then
     verify_missing_contract="${verify_missing_contract} ${vname};"
     continue
   fi
@@ -443,19 +435,16 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
       verify_bad_data="${verify_bad_data} ${vname};"
     fi
   fi
-  field_count=0
-  for fk in skill chapter data checks; do
-    if echo "$contract_block" | grep -q "^\* $fk:"; then field_count=$((field_count+1)); fi
-  done
-  if [ "$field_count" -ne 4 ]; then
-    verify_bad_format="${verify_bad_format} ${vname}(${field_count}/4 字段);"
+  missing_fields="$(contract_missing_fields "$vdo")"
+  if [ -n "$missing_fields" ]; then
+    verify_bad_format="${verify_bad_format} ${vname}(缺字段:${missing_fields});"
   fi
 done
 [ -n "$verify_missing_contract" ] && verify_drift="${verify_drift} 无 VERIFY 契约:${verify_missing_contract}"
 [ -n "$verify_bad_skill" ] && verify_drift="${verify_drift} skill 字段无对应目录:${verify_bad_skill}"
 [ -n "$verify_bad_data" ] && verify_drift="${verify_drift} data 字段文件侧问题:${verify_bad_data}"
 [ -n "$verify_bad_exhaustive" ] && verify_drift="${verify_drift} 穷尽 data contract:${verify_bad_exhaustive}"
-[ -n "$verify_bad_format" ] && verify_drift="${verify_drift} 字段数 != 4:${verify_bad_format}"
+[ -n "$verify_bad_format" ] && verify_drift="${verify_drift} 字段行缺失或为空:${verify_bad_format}"
 if [ -n "$verify_drift" ]; then
   bad "verify-*.do 契约缺失或错误（共 ${verify_total} 个脚本）${verify_drift}"
 else
@@ -480,165 +469,31 @@ else
   ok "verify-*.do 社区包 contract 完整（probe + sentinel 分类 + ownership，#26）"
 fi
 
-# ---- 15. did-community 内部计数一致性：description 声明的方法数与正文所有「N 个社区包」一致 ----
-# 背景：PR-A 把 description 从 9 改到 10 个方法，正文三处禁令「9 个社区包」漏改。
-DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
-if [ -f "$DC_SKILL" ]; then
-  desc_n=$(sed -n '1,/^---$/p' "$DC_SKILL" | grep '^description:' | grep -oE '[0-9]+ 个方法' | head -1 | grep -oE '^[0-9]+' || true)
-  if [ -z "${desc_n:-}" ]; then
-    bad "stata-did-community description 缺「N 个方法」计数声明"
-  else
-    body_drift=""
-    while IFS= read -r m; do
-      [ -n "$m" ] && [ "$m" -ne "$desc_n" ] && body_drift="${body_drift} 正文写 ${m} 个社区包;"
-    done < <(grep -oE '[0-9]+ 个社区包' "$DC_SKILL" | grep -oE '^[0-9]+' | sort -u)
-    if [ -n "$body_drift" ]; then
-      bad "stata-did-community 计数漂移：description 为 ${desc_n} 个方法，但${body_drift}"
+# ---- 15. 事故锁（incident claims）：按 owner 分居，发现式聚合 ----
+# #29 C1：单 skill / 单文档的历史事故锁不再杂居在本文件里。每个 owner 一个
+# 可独立运行、可独立回归的 claims 文件（verify/claims/*.sh），本检查器只负责
+# 发现并聚合退出码；新增事故锁 = 加一个文件，不改本文件。红/绿 fixture 见
+# verify/test-claims.sh（经 CLAIMS_REPO_ROOT 覆盖仓库根）。
+claims_dir="$VERIFY_DIR/claims"
+if [ -d "$claims_dir" ]; then
+  claims_n=0
+  for cf in "$claims_dir"/*.sh; do
+    [ -f "$cf" ] || continue
+    claims_n=$((claims_n + 1))
+    cf_name="$(basename "$cf")"
+    if claims_out="$(bash "$cf" 2>&1)"; then
+      ok "事故锁通过：claims/${cf_name}"
     else
-      ok "stata-did-community 计数一致（description 与正文均 ${desc_n}）"
+      bad "事故锁失败：claims/${cf_name}（bash verify/claims/${cf_name} 可见详情）"
+      printf '%s\n' "$claims_out" | sed 's/^/      /'
     fi
-  fi
-fi
-
-# ---- 16. did-community references 索引表登记 trop + power 模板（CONTRIBUTING 同步规矩）----
-# 决策树/能力表已链到 trop.md / power-analysis-template.do，但「详细方法参考」表漏行
-# 会让 Agent 只靠索引时找不到入口。
-DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
-DC_REF_INDEX_MISS=""
-if [ -f "$DC_SKILL" ]; then
-  # 只在「详细方法参考」表到下一 ## 之间查链接（避免误命中决策树正文）
-  idx_block=$(awk '/^## 详细方法参考/{p=1} p && /^## / && !/^## 详细方法参考/{exit} p' "$DC_SKILL")
-  echo "$idx_block" | grep -q 'references/trop\.md' || DC_REF_INDEX_MISS="${DC_REF_INDEX_MISS} trop.md;"
-  echo "$idx_block" | grep -q 'power-analysis-template\.do' || DC_REF_INDEX_MISS="${DC_REF_INDEX_MISS} power-analysis-template.do;"
-  if [ -n "$DC_REF_INDEX_MISS" ]; then
-    bad "stata-did-community 详细方法参考表缺登记：${DC_REF_INDEX_MISS}"
-  else
-    ok "stata-did-community 详细方法参考表已登记 trop.md 与 power-analysis-template.do"
-  fi
-fi
-
-# ---- 17. power-analysis-template.do ATT 扫描不得用浮点插值作 Stata 变量名 ----
-# `gen rejected_`att'` 在 att=0.05 时展开为 rejected_0.05，点号非法，扫描段无法跑通。
-POWER_TMPL="$REPO_ROOT/stata-did-community/references/power-analysis-template.do"
-if [ -f "$POWER_TMPL" ]; then
-  # shellcheck disable=SC2016  # 反引号是 Stata 宏字面量，不是命令替换
-  if grep -nE 'rejected_`att'\''' "$POWER_TMPL" >/dev/null 2>&1 || grep -nE 'rejected_`att`' "$POWER_TMPL" >/dev/null 2>&1; then
-    bad "power-analysis-template.do 用 rejected_\`att' 作变量名（浮点插值含点号，Stata 非法）"
-  else
-    ok "power-analysis-template.do ATT 扫描未使用浮点插值变量名"
-  fi
-fi
-
-# ---- 18. CHANGELOG [Unreleased] Added 不得保留已否决/错误的 PR-A/D 措辞 ----
-# #15 明确不加「特征对照矩阵 TROP 列」；TROP = Triply Robust（非 Targeted Robust OP）；
-# #1 AC 为 method(dr)/method(ipw)，不是 method(dripw)。
-# Fixed 小节允许按原文记录已经修复的错误，否则修复台账本身会触发禁词误报。
-CL="$REPO_ROOT/CHANGELOG.md"
-if [ -f "$CL" ]; then
-  cl_unreleased_added=$(awk '
-    /^## \[Unreleased\]/{unreleased=1; next}
-    unreleased && /^## \[/{exit}
-    unreleased && /^### Added/{added=1; next}
-    added && /^### /{exit}
-    added
-  ' "$CL")
-  cl_bad=""
-  echo "$cl_unreleased_added" | grep -q 'method(dripw)' && cl_bad="${cl_bad} method(dripw);"
-  echo "$cl_unreleased_added" | grep -q 'Targeted Robust OP' && cl_bad="${cl_bad} Targeted Robust OP;"
-  echo "$cl_unreleased_added" | grep -q '特征对照矩阵 TROP 列' && cl_bad="${cl_bad} 特征对照矩阵 TROP 列;"
-  if [ -n "$cl_bad" ]; then
-    bad "CHANGELOG [Unreleased] Added 含已否决/错误措辞：${cl_bad}"
-  else
-    ok "CHANGELOG [Unreleased] Added 无 dripw / Targeted Robust OP / 矩阵 TROP 列漂移"
-  fi
-fi
-
-# ---- 19. PR-A 关键词耐久锁（#5）：SA-IW / twostage / Roth 不得从文档 silently 消失 ----
-CSJ="$REPO_ROOT/stata-did-community/references/csdid-jwdid-imputation.md"
-WF8="$REPO_ROOT/stata-did-community/references/workflow-8step.md"
-pra_miss=""
-if [ -f "$CSJ" ]; then
-  grep -q 'SA-IW' "$CSJ" || pra_miss="${pra_miss} csdid-jwdid-imputation.md 缺 SA-IW;"
-  grep -q 'method(twostage)' "$CSJ" || pra_miss="${pra_miss} csdid-jwdid-imputation.md 缺 method(twostage);"
+  done
+  [ "$claims_n" -gt 0 ] || bad "verify/claims/ 下无事故锁文件（至少应有一个）"
 else
-  pra_miss="${pra_miss} csdid-jwdid-imputation.md 缺失;"
-fi
-if [ -f "$WF8" ]; then
-  grep -q 'Roth 2022' "$WF8" || pra_miss="${pra_miss} workflow-8step.md 缺 Roth 2022;"
-else
-  pra_miss="${pra_miss} workflow-8step.md 缺失;"
-fi
-if [ -n "$pra_miss" ]; then
-  bad "PR-A 关键词锁失败：${pra_miss}"
-else
-  ok "PR-A 关键词锁：SA-IW + method(twostage) + Roth 2022 均在位"
+  bad "缺 verify/claims/ 目录（事故锁须有独立归属，不得回流本文件）"
 fi
 
-# ---- 20. TROP 陷阱只在主 SKILL.md（ADR-0001 / 陷阱四件套单一来源）----
-# trop.md 头部自述「陷阱统一收录在主 SKILL.md」；references 不得另开「关键陷阱」节。
-TROP_MD="$REPO_ROOT/stata-did-community/references/trop.md"
-DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
-trop_layer=""
-if [ -f "$TROP_MD" ]; then
-  if grep -qE '^## 关键陷阱' "$TROP_MD"; then
-    trop_layer="${trop_layer} trop.md 仍有「## 关键陷阱」节;"
-  fi
-fi
-if [ -f "$DC_SKILL" ]; then
-  # 主文件关键陷阱速查须含至少一条可识别的 TROP 陷阱（四件套格式由既有陷阱标题断言覆盖）
-  trap_block=$(awk '/^## 关键陷阱速查/{p=1} p && /^## / && !/^## 关键陷阱速查/{exit} p' "$DC_SKILL")
-  # shellcheck disable=SC2016  # 反引号是 Markdown 字面分隔符，不是命令替换
-  echo "$trap_block" | grep -qiE 'TROP|`trop`' || trop_layer="${trop_layer} SKILL.md 关键陷阱速查无 TROP 条目;"
-fi
-if [ -n "$trop_layer" ]; then
-  bad "TROP 陷阱分层违规：${trop_layer}"
-else
-  ok "TROP 陷阱仅在主 SKILL.md（trop.md 无独立关键陷阱节）"
-fi
-
-# ---- 21. workflow-8step 不得引用 orphan SHA 3cae231 ----
-# filter-branch / rebase 后该短 SHA 不再是 HEAD 祖先；留在文档会误导溯源。
-WF8="$REPO_ROOT/stata-did-community/references/workflow-8step.md"
-if [ -f "$WF8" ]; then
-  if grep -qE '\b3cae231\b' "$WF8"; then
-    bad "workflow-8step.md 仍引用 orphan SHA 3cae231"
-  else
-    ok "workflow-8step.md 未引用 orphan SHA 3cae231"
-  fi
-fi
-
-# ---- 22. DID method ownership（#19 / #18）：索引声明的方法详情必须在目标 reference ----
-# 复现当前缺陷：主索引把 did_imputation 指向 csdid-jwdid-imputation.md，
-# 但「### did_imputation 详解」实际落在 sdid.md——删除 sdid 会误删插补法能力。
-CSJ_REF="$REPO_ROOT/stata-did-community/references/csdid-jwdid-imputation.md"
-SDID_REF="$REPO_ROOT/stata-did-community/references/sdid.md"
-own_drift=""
-if [ -f "$CSJ_REF" ]; then
-  if ! grep -qE '^###[[:space:]]+did_imputation' "$CSJ_REF"; then
-    own_drift="${own_drift} csdid-jwdid-imputation.md 缺「### did_imputation」详解节;"
-  fi
-else
-  own_drift="${own_drift} csdid-jwdid-imputation.md 缺失;"
-fi
-if [ -f "$SDID_REF" ] && grep -qE '^###[[:space:]]+did_imputation' "$SDID_REF"; then
-  own_drift="${own_drift} sdid.md 仍承载 did_imputation 详解（索引所有权应仅保留 sdid）;"
-fi
-# 索引内容列声明 did_imputation 时，链接目标必须是错时 DID reference
-DC_SKILL="$REPO_ROOT/stata-did-community/SKILL.md"
-if [ -f "$DC_SKILL" ]; then
-  idx_block=$(awk '/^## 详细方法参考/{p=1} p && /^## / && !/^## 详细方法参考/{exit} p' "$DC_SKILL")
-  idx_row=$(echo "$idx_block" | grep '`did_imputation`' | head -1 || true)
-  if [ -n "$idx_row" ] && ! echo "$idx_row" | grep -q 'csdid-jwdid-imputation\.md'; then
-    own_drift="${own_drift} 详细方法参考表中 did_imputation 未链到 csdid-jwdid-imputation.md;"
-  fi
-fi
-if [ -n "$own_drift" ]; then
-  bad "DID method ownership 漂移：${own_drift}"
-else
-  ok "DID method ownership：did_imputation 详解仅在索引目标 csdid-jwdid-imputation.md"
-fi
-
-# ---- 23. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
+# ---- 16. assert 覆盖率 fact（非断言，供人工比对；与 stataskills "facts 不自动断言" 政策一致） ----
 # 借鉴 luban 报告 P3：每个 verify-*.do 应有 assert 断言验证关键不变量；
 # 部分脚本只依赖「跑完不报错」，部分含数值 assert；此处动态 print 事实，不 FAIL——
 # 是否补 assert 由 verify 脚本维护者决定（教学型 verify 偏向 end-of-do exit 0）。
@@ -653,23 +508,22 @@ for vdo in "$REPO_ROOT"/verify/verify-*.do; do
 done
 ok "verify-*.do assert 覆盖率 fact：${assert_with}/${assert_total} 脚本含 assert（教学型 verify 依赖 end-of-do exit 0；扩展为 P3 候选）"
 
-# ---- 24. ADR-0004 与 target plan 委托交叉验证（#27）----
+# ---- 17. ADR-0004 与 target plan 委托交叉验证（#27 / #29 C2）----
+# 委托名单的单一来源是 target plan（targets.sh 的 override 表）；本断言不再
+# 手抄第二份名单（旧版在 :664 与 :671 各写一份），改为按 plan 派生逐项与
+# ADR-0004 文本互查。测试 fixture 保留独立字面量（见 test-targets.sh）。
 ADR4="$REPO_ROOT/docs/adr/0004-verification-target-registry.md"
-# shellcheck disable=SC1091
-. "$VERIFY_DIR/lib/targets.sh"
 adr4_drift=""
 if [ ! -f "$ADR4" ]; then
   adr4_drift="缺 ADR-0004 文件;"
 else
-  for d in verify-dynamic-panel verify-synth-sdid verify-power verify-trop verify-sensitivity; do
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
     grep -q "$d" "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 ${d};"
-  done
+  done < <(targets_plan_each_delegate)
   grep -q 'targets_plan_owner' "$ADR4" || adr4_drift="${adr4_drift} ADR 缺 targets_plan_owner;"
   grep -qE 'targets_run_dofile|targets_delegates' "$ADR4" && adr4_drift="${adr4_drift} ADR 仍描述已删旧 API;"
 fi
-plan_d=$(targets_plan_delegate_bases)
-expect_d="verify-dynamic-panel verify-synth-sdid verify-power verify-trop verify-sensitivity"
-[ "$plan_d" = "$expect_d" ] || adr4_drift="${adr4_drift} plan delegates=[$plan_d];"
 owner=$(targets_plan_owner verify-did-community)
 [ "$owner" = "did-community" ] || adr4_drift="${adr4_drift} owner=$owner;"
 if [ -n "$adr4_drift" ]; then

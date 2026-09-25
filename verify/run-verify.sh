@@ -113,13 +113,7 @@ if [ "$STATIC_ONLY" -eq 0 ]; then
 fi
 
 DATA_DIR="$(cd "$VERIFY_DIR/../data/agis6" && pwd)"
-MANIFEST="$VERIFY_DIR/../data/manifest.txt"
-MANIFEST_EXTRA="$VERIFY_DIR/../data/manifest-extra.txt"
-DATA_EXTRA_DIR="$(cd "$VERIFY_DIR/../data" && pwd)"
 
-# ---- extra 子目录枚举（每个 data/<name>-extra/ 子目录一个，名称=目录名，
-# 例如 data/synth/ -> manifest-extra 中的"路径前缀"synth/）。当前 manifest-extra
-# 实现是平铺（基名不分子目录），但允许脚本 use "../<subdir>/<file>" 写法 ----
 # ---- 目标：全部或指定一个（按 skill 枚举入口；委托关系由 lib/targets.sh 解析）----
 if [ -n "$TARGET_ARG" ]; then
   TARGETS=("verify-$TARGET_ARG")
@@ -133,47 +127,11 @@ else
 fi
 
 # ---- 全局：manifest 与实际 .dta 双向一致性（静态模式前置检查）----
+# 两份清单（manifest.txt / manifest-extra.txt）与数据面的双向检查只经
+# contract.sh 的 contract_manifest_report（#29 C3）；此处不再平行 grep 清单
+# 或 find 数据树，格式规则（CRLF / 注释 / 子目录）由 seam 单点演进。
 if [ "$STATIC_ONLY" -eq 1 ]; then
-  manifest_drift=""
-
-  # ---- AGIS6 清单（data/agis6/ 下 .dta 文件）----
-  # shellcheck disable=SC2013  # manifest 每行一个基名，无空格，词分割即行分割
-  for ds in $(grep -vE '^#|^[[:space:]]*$' "$MANIFEST"); do
-    ds="${ds%$'\r'}"
-    [ -f "$DATA_DIR/$ds.dta" ] || manifest_drift="${manifest_drift} agis6 清单有但文件缺: ${ds}.dta;"
-  done
-  for f in "$DATA_DIR"/*.dta; do
-    [ -f "$f" ] || continue
-    ds="$(basename "$f" .dta)"
-    grep -qE "^${ds}[[:space:]]*$" "$MANIFEST" || manifest_drift="${manifest_drift} agis6 文件有但清单缺: ${ds}.dta;"
-  done
-
-  # ---- 项目扩展清单（data/<subdir>/<file>.dta；路径在 do-file 里写 "../<subdir>/<file>"）----
-  # 解析 do-file 中所有 `use "../<subdir>/<file>"` 形式（manifest-extra 登记基名，
-  # do-file 里用 subdir 前缀），但纯静态模式（在 CI）我们只校验"清单登记的每个基名
-  # 在 data/ 树下能找到对应 .dta 文件"
-  if [ -f "$MANIFEST_EXTRA" ]; then
-    while IFS= read -r ds; do
-      ds="${ds%$'\r'}"
-      # 跳过注释/空行
-      case "$ds" in \#*|"") continue ;; esac
-      # 在 data/<任意子目录>/ 下搜
-      found=0
-      while IFS= read -r f; do
-        [ -f "$f" ] && found=1 && break
-      done < <(find "$DATA_EXTRA_DIR" -maxdepth 2 -name "${ds}.dta" -not -path "*/agis6/*" 2>/dev/null)
-      if [ "$found" -eq 0 ]; then
-        manifest_drift="${manifest_drift} extra 清单有但文件缺: ${ds}.dta（应在 data/<subdir>/ 下）;"
-      fi
-    done < <(grep -vE '^#|^[[:space:]]*$' "$MANIFEST_EXTRA")
-
-    # 反向：data/<子目录>/ 下所有 .dta 必须登记
-    while IFS= read -r f; do
-      ds="$(basename "$f" .dta)"
-      grep -qE "^${ds}[[:space:]]*$" "$MANIFEST_EXTRA" || manifest_drift="${manifest_drift} extra 文件有但清单缺: ${ds}.dta;"
-    done < <(find "$DATA_EXTRA_DIR" -maxdepth 2 -name "*.dta" -not -path "*/agis6/*" 2>/dev/null)
-  fi
-
+  manifest_drift="$(contract_manifest_report | tr '\n' ' ')"
   if [ -n "$manifest_drift" ]; then
     bad "manifest 一致性（${manifest_drift}）"
   else
