@@ -536,6 +536,16 @@ Treated later vs earlier      1.916   weight 0.093
 
 ---
 
+## 5.10 `xtswitchdid` 功能点讲稿（`10_*.do`）
+
+在 `switching_features.dta` 上按课堂节奏讲：`switchgroup(in/out)`、`controlgroup(never)`、`path()`、`supergroup`、`raw`、`commonswitchers`、`delta(2)`。
+
+**讲稿：** [`REPORT-10-xtswitchdid-features.md`](REPORT-10-xtswitchdid-features.md)
+
+**产物**：`logs/10_xtswitchdid_features.log` + `output/10_baseline_event.png`
+
+---
+
 ## 6. 结论与佐证价值
 
 1. **可执行**： 6 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。

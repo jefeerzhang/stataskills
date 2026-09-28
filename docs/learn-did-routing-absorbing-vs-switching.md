@@ -181,5 +181,6 @@ do "demo/dofiles/09_xtswitchdid_vs_xthdidregress.do"
 ```
 
 数据说明：`data/did-routing/README.md`（已登记 `data/manifest-extra.txt`）。  
+功能点讲稿：[`demo/REPORT-10-xtswitchdid-features.md`](../demo/REPORT-10-xtswitchdid-features.md)。  
 详签：`stata-did/SKILL.md` 第 6 / 6b 节；`stata-did/references/xtswitchdid.md`。  
 更大方法地图：`docs/learn-did-frontier.md`。

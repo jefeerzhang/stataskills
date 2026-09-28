@@ -1,25 +1,30 @@
 # `data/did-routing/` — project-generated teaching panels
 
-两个面板用于对比 **`xthdidregress`（吸收型错时）** 与 **`xtswitchdid`（可逆/多值）**。  
+教学面板，用于 **`xthdidregress`（吸收型错时）** 与 **`xtswitchdid`（可逆/多值及其选项）**。  
 不是 AGIS6；由本仓库脚本生成。
 
 ## 资产
 
-| 基名 | 观测 | 设计 | 真值 | 推荐命令 |
+| 基名 | 观测 | 设计 | 真值 | 用途 |
 |---|---|---|---|---|
-| `absorbing_staggered` | 4800（400×12） | 二元、吸收、错时开通 | 开通后 ATT≈2 + 0.15×暴露期 | `xthdidregress aipw` |
-| `switching_multivalued` | 5000（250×20） | dose∈{0,1,2}，可升降撤销 | 每单位 dose ≈ −0.8 | `xtswitchdid` |
+| `absorbing_staggered` | 4800（400×12） | 二元、吸收、错时 | ATT≈2+0.15×暴露 | 路由：默认 `xthdidregress aipw` |
+| `switching_multivalued` | 5000（250×20） | dose 0/1/2，含撤销 | 每单位 ≈ −0.8 | 路由：默认 `xtswitchdid` + 反面编码 |
+| `switching_features` | 4480（280×16） | 多路径 + 省嵌套 + 2020 缺失 | 每单位 ≈ −0.7 | 功能点：in/out/path/supergroup/raw/… |
 
 ## Provenance
 
-- **Source:** `data/did-routing/build_did_routing.do`
-- **Stata:** 19.5；**seed:** `20260928`
-- **Rebuild（仓库根目录）:**
-  ```bat
-  "C:\Program Files\StataNow19\StataMP-64.exe" /e do "data/did-routing/build_did_routing.do"
-  ```
-- **Analysis demo:** `demo/dofiles/09_xtswitchdid_vs_xthdidregress.do`（先 `use` 本目录 `.dta`，再估计）
-- **License:** 项目内合成数据，适用仓库许可证
+| 文件 | Build | Seed | Demo / 报告 |
+|---|---|---|---|
+| `absorbing_staggered` / `switching_multivalued` | `build_did_routing.do` | 20260928 | `09_*.do` · REPORT-09 |
+| Features | `build_switching_features.do` | 20260929 | `10_*.do` · 讲稿 REPORT-10 |
+
+
+```bat
+"C:\Program Files\StataNow19\StataMP-64.exe" /e do "data/did-routing/build_did_routing.do"
+"C:\Program Files\StataNow19\StataMP-64.exe" /e do "data/did-routing/build_switching_features.do"
+```
+
+**License:** 项目内合成数据，适用仓库许可证。
 
 ## Schema
 
@@ -29,10 +34,7 @@
 id year cohort treat y
 ```
 
-- `cohort`: 0=从未处理；1=2014 起吸收处理；2=2017 起吸收处理  
-- `treat`: 当期是否已开通（吸收）
-
-数值不变量（build 断言）：`N=4800`；`treat==1` 观测数 `1040`；`mean(treat)=0.21666667`。
+不变量：`N=4800`；`treat==1` 为 1040；`mean(treat)=0.21666667`。
 
 ### `switching_multivalued.dta`
 
@@ -40,15 +42,34 @@ id year cohort treat y
 id year dose x1 y treat_bin treat_abs
 ```
 
-- `dose`: 真处理（0/1/2，可逆）  
-- `treat_bin`: **错误编码**——当期 `dose>0` 二值化（可逆时触发 `xthdidregress` r(498)）  
-- `treat_abs`: **错误编码**——`sum(dose>0)>0`，即**首次处理后永久置 1**（掩盖撤销与剂量变化；**不是**偷看未来）
+- `treat_bin`：错误编码（当期 `dose>0`）  
+- `treat_abs`：错误编码（粘性 ever-treated，掩盖撤销；**不是**偷看未来）  
 
-数值不变量：`N=5000`；`dose==0 & treat_abs==1` 恰好 **352**；首次处理前 `treat_abs==1` 为 **0**。  
-一类县撤销落在首次处理后第 **7** 个暴露期（2018），主估计应用 `neffects(7)`（或更长）才能在 `estat paths` 中看到 `… 2 2 2 0`。
+不变量：`dose==0 & treat_abs==1` = 352；首次处理前误标 = 0。  
+撤销在暴露期 7 → 主估计用 `neffects(7)`。
+
+### `switching_features.dta`
+
+```text
+id year province typ dose x1 y
+```
+
+| typ | 含义 |
+|---|---|
+| 0 | never @ 0 |
+| 1 | 0→1→2 停留（switch-in） |
+| 2 | 0→2→0（升后撤回） |
+| 3 | 初始=1 →2（初始非零） |
+| 4 | never @ 1 |
+| 5 | 初始=2 →1→0（switch-out） |
+| 6 | never @ 2 |
+
+不变量：`N=4480`；2020 年 `y` 缺失 280 条。
 
 ## DGP（摘要）
 
 **A：** `y = 10 + 0.3*(year-2010) + u + 1{treated}*(2 + 0.15*exposure) + ε`  
 
-**B：** `y = 10 - 0.8*dose + 0.2*x1 + ε`；一类县路径含 1→2→0 的 switch-out。
+**B：** `y = 10 - 0.8*dose + 0.2*x1 + ε`  
+
+**Features：** `y = 10 - 0.7*dose + 0.2*x1 + 0.15*province + u + ε`（2020 缺失）

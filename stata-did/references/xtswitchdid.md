@@ -115,6 +115,9 @@ xtswitchdid (injdays lwinpct schedule) (safety), group(team) ///
 
 **默认**：离散可逆或多值切换 → `xtswitchdid`。连续剂量或 HAD → 社区包。
 
+**功能点讲稿（in/out、path、supergroup、raw、commonswitchers、delta）：**  
+[`demo/REPORT-10-xtswitchdid-features.md`](../../demo/REPORT-10-xtswitchdid-features.md) · `demo/dofiles/10_xtswitchdid_features.do`。
+
 ---
 
 ## 事后命令速查

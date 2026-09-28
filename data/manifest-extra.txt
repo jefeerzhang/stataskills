@@ -25,6 +25,7 @@
 #
 absorbing_staggered
 laborsub
+switching_features
 switching_multivalued
 synth_smoking
 teaching-treatment
