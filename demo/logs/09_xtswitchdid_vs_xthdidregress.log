@@ -1,0 +1,678 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  c:/Users/jefeer/Downloads/stataskills/demo/logs/09_xtswitchdid_vs_
+> xthdidregress.log
+  log type:  text
+ opened on:  28 Sep 2026, 11:19:35
+
+. 
+. display as text _n "======== 场景 A：加载 absorbing_staggered.dta → xthdidreg
+> ress ========"
+
+======== 场景 A：加载 absorbing_staggered.dta → xthdidregress ========
+
+. use "`datadir'/absorbing_staggered.dta", clear
+
+. describe
+
+Contains data from c:/Users/jefeer/Downloads/stataskills/data/did-routing/absor
+> bing_staggered.dta
+ Observations:         4,800                  
+    Variables:             5                  28 Sep 2026 11:13
+-------------------------------------------------------------------------------
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+-------------------------------------------------------------------------------
+id              int     %12.0g                County id
+year            int     %8.0g                 Year
+cohort          byte    %8.0g                 Adoption cohort: 0 never, 1 from
+                                                2014, 2 from 2017
+treat           byte    %8.0g                 Absorbing treatment indicator
+y               double  %10.0g                Outcome (true post ATT ~ 2 +
+                                                0.15*exposure)
+-------------------------------------------------------------------------------
+Sorted by: id
+
+. tab cohort
+
+   Adoption |
+  cohort: 0 |
+   never, 1 |
+ from 2014, |
+2 from 2017 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      2,880       60.00       60.00
+          1 |        960       20.00       80.00
+          2 |        960       20.00      100.00
+------------+-----------------------------------
+      Total |      4,800      100.00
+
+. tab year treat, row
+
++----------------+
+| Key            |
+|----------------|
+|   frequency    |
+| row percentage |
++----------------+
+
+           |  Absorbing treatment
+           |       indicator
+      Year |         0          1 |     Total
+-----------+----------------------+----------
+      2010 |       400          0 |       400 
+           |    100.00       0.00 |    100.00 
+-----------+----------------------+----------
+      2011 |       400          0 |       400 
+           |    100.00       0.00 |    100.00 
+-----------+----------------------+----------
+      2012 |       400          0 |       400 
+           |    100.00       0.00 |    100.00 
+-----------+----------------------+----------
+      2013 |       400          0 |       400 
+           |    100.00       0.00 |    100.00 
+-----------+----------------------+----------
+      2014 |       320         80 |       400 
+           |     80.00      20.00 |    100.00 
+-----------+----------------------+----------
+      2015 |       320         80 |       400 
+           |     80.00      20.00 |    100.00 
+-----------+----------------------+----------
+      2016 |       320         80 |       400 
+           |     80.00      20.00 |    100.00 
+-----------+----------------------+----------
+      2017 |       240        160 |       400 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+      2018 |       240        160 |       400 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+      2019 |       240        160 |       400 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+      2020 |       240        160 |       400 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+      2021 |       240        160 |       400 
+           |     60.00      40.00 |    100.00 
+-----------+----------------------+----------
+     Total |     3,760      1,040 |     4,800 
+           |     78.33      21.67 |    100.00 
+
+. xtset id year
+
+Panel variable: id (strongly balanced)
+ Time variable: year, 2010 to 2021
+         Delta: 1 unit
+
+. 
+. display as text _n "--- A1 正确：xthdidregress aipw ---"
+
+--- A1 正确：xthdidregress aipw ---
+
+. xthdidregress aipw (y) (treat), group(id)
+note: variable _did_cohort, containing cohort indicators formed by treatment
+      variable treat and group variable id, was added to the dataset using
+      the estimation sample.
+
+Computing ATET for each cohort and time:
+Cohort 2014 (11): ..........10. done
+Cohort 2017 (11): ..........10. done
+
+Treatment and time information
+
+Time variable: year
+Time interval: 2010 to 2021
+Control:       _did_cohort = 0
+Treatment:     _did_cohort > 0
+-------------------------------
+                  | _did_cohort
+------------------+------------
+Number of cohorts |           3
+------------------+------------
+Number of obs     |
+    Never treated |        2880
+             2014 |         960
+             2017 |         960
+-------------------------------
+
+Heterogeneous-treatment-effects regression            Number of obs    = 4,800
+                                                      Number of panels =   400
+Estimator:       Augmented IPW
+Panel variable:  id
+Treatment level: id
+Control group:   Never treated
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+Cohort       |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+2014         |
+        year |
+       2011  |     .07653   .1835846     0.42   0.677    -.2832892    .4363491
+       2012  |   .3503693   .1843908     1.90   0.057    -.0110301    .7117687
+       2013  |  -.2056262   .1770355    -1.16   0.245    -.5526094    .1413569
+       2014  |   1.814949   .1820123     9.97   0.000     1.458212    2.171687
+       2015  |   2.079422   .1873698    11.10   0.000     1.712184     2.44666
+       2016  |   2.182485   .1707627    12.78   0.000     1.847796    2.517173
+       2017  |   2.198053    .174589    12.59   0.000     1.855864    2.540241
+       2018  |   2.466322   .1973723    12.50   0.000      2.07948    2.853165
+       2019  |   2.443755   .1799967    13.58   0.000     2.090968    2.796542
+       2020  |    2.96439   .1801987    16.45   0.000     2.611207    3.317573
+       2021  |   2.932279   .1882215    15.58   0.000     2.563371    3.301186
+-------------+----------------------------------------------------------------
+2017         |
+        year |
+       2011  |   .0980579   .1817152     0.54   0.589    -.2580973    .4542132
+       2012  |  -.1590245   .1788931    -0.89   0.374    -.5096485    .1915995
+       2013  |   .1955374   .1826747     1.07   0.284    -.1624984    .5535732
+       2014  |  -.3507482   .2044296    -1.72   0.086    -.7514229    .0499265
+       2015  |   .0776802   .1781675     0.44   0.663    -.2715217     .426882
+       2016  |    .112858   .1822763     0.62   0.536    -.2443971     .470113
+       2017  |   1.817436   .1889601     9.62   0.000     1.447081    2.187791
+       2018  |   2.064558   .1830577    11.28   0.000     1.705772    2.423345
+       2019  |   2.266717   .1766657    12.83   0.000     1.920459    2.612976
+       2020  |    2.58407   .1803255    14.33   0.000     2.230639    2.937502
+       2021  |   2.521551   .1897203    13.29   0.000     2.149706    2.893396
+------------------------------------------------------------------------------
+Note: Base time for pretreatment ATETs is the previous period.
+
+. estat aggregation, overall
+
+Overall ATET                                             Number of obs = 4,800
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       treat |
+   (1 vs 0)  |   2.333537   .1058263    22.05   0.000     2.126122    2.540953
+------------------------------------------------------------------------------
+Note: Aggregation weights vary across times and cohorts.
+
+. estat aggregation, dynamic
+
+Duration of exposure ATET                                Number of obs = 4,800
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+    Exposure |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          -6 |   .0980579   .1817152     0.54   0.589    -.2580973    .4542132
+          -5 |  -.1590245   .1788931    -0.89   0.374    -.5096485    .1915995
+          -4 |   .1955374   .1826747     1.07   0.284    -.1624984    .5535732
+          -3 |  -.1371091   .1386885    -0.99   0.323    -.4089336    .1347154
+          -2 |   .2140247   .1285254     1.67   0.096    -.0378804    .4659299
+          -1 |  -.0463841   .1277329    -0.36   0.717     -.296736    .2039677
+           0 |   1.816192   .1317525    13.78   0.000     1.557962    2.074423
+           1 |    2.07199   .1323801    15.65   0.000      1.81253     2.33145
+           2 |   2.224601   .1140198    19.51   0.000     2.001126    2.448076
+           3 |   2.391061   .1268267    18.85   0.000     2.142486    2.639637
+           4 |   2.493936   .1373253    18.16   0.000     2.224784    2.763089
+           5 |   2.443755   .1799967    13.58   0.000     2.090968    2.796542
+           6 |    2.96439   .1801987    16.45   0.000     2.611207    3.317573
+           7 |   2.932279   .1882215    15.58   0.000     2.563371    3.301186
+------------------------------------------------------------------------------
+Note: Base time for pretreatment ATETs is the previous period.
+Note: Exposure is the number of periods since the first treatment time.
+Note: Aggregation weights vary across times and cohorts.
+
+. estat aggregation, dynamic graph
+
+Duration of exposure ATET                                Number of obs = 4,800
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+    Exposure |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          -6 |   .0980579   .1817152     0.54   0.589    -.2580973    .4542132
+          -5 |  -.1590245   .1788931    -0.89   0.374    -.5096485    .1915995
+          -4 |   .1955374   .1826747     1.07   0.284    -.1624984    .5535732
+          -3 |  -.1371091   .1386885    -0.99   0.323    -.4089336    .1347154
+          -2 |   .2140247   .1285254     1.67   0.096    -.0378804    .4659299
+          -1 |  -.0463841   .1277329    -0.36   0.717     -.296736    .2039677
+           0 |   1.816192   .1317525    13.78   0.000     1.557962    2.074423
+           1 |    2.07199   .1323801    15.65   0.000      1.81253     2.33145
+           2 |   2.224601   .1140198    19.51   0.000     2.001126    2.448076
+           3 |   2.391061   .1268267    18.85   0.000     2.142486    2.639637
+           4 |   2.493936   .1373253    18.16   0.000     2.224784    2.763089
+           5 |   2.443755   .1799967    13.58   0.000     2.090968    2.796542
+           6 |    2.96439   .1801987    16.45   0.000     2.611207    3.317573
+           7 |   2.932279   .1882215    15.58   0.000     2.563371    3.301186
+------------------------------------------------------------------------------
+Note: Base time for pretreatment ATETs is the previous period.
+Note: Exposure is the number of periods since the first treatment time.
+Note: Aggregation weights vary across times and cohorts.
+
+. graph export "`outdir'/09_absorbing_xthdid_dynamic.png", width(2000) replace
+(file
+    c:/Users/jefeer/Downloads/stataskills/demo/output/09_absorbing_xthdid_dyn
+    > amic.png not found)
+file
+    c:/Users/jefeer/Downloads/stataskills/demo/output/09_absorbing_xthdid_dyn
+    > amic.png saved as PNG format
+
+. estat ptrends
+
+Parallel-trends test (pretreatment time period)
+H0: Treatment effects in all the pretreatment periods are zero
+
+    chi2(9) =  12.85
+Prob > chi2 = 0.1697
+
+. 
+. display as text _n "--- A2 对照：同一吸收数据上 xtswitchdid（可跑，非默认）--
+> -"
+
+--- A2 对照：同一吸收数据上 xtswitchdid（可跑，非默认）---
+
+. xtswitchdid (y) (treat), group(id) neffects(4)
+
+Treatment and time information
+
+Panel variable:  id
+Time variable:   year
+Time interval:   2010 thru 2021
+
+Treatment level: id
+Control:         treat maintaining baseline
+Treatment:       treat changing from baseline
+
+------------------------------------------------------------------------------
+Initial      |
+treatment    |      Groups          Obs   Switch out    Switch in    Absorbing
+-------------+----------------------------------------------------------------
+           0 |         400        4,800                         1          Yes
+------------------------------------------------------------------------------
+
+DID with switching treatments                         Number of obs    = 4,800
+                                                      Number of panels =   400
+                                                      Number of groups =   400
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+             |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    Exposure |
+          1  |   1.860036   .1326051    14.03   0.000     1.600135    2.119937
+          2  |   1.053062   .0654663    16.09   0.000     .9247503    1.181373
+          3  |   .7482091   .0406585    18.40   0.000     .6685198    .8278983
+          4  |   .5977654   .0316389    18.89   0.000     .5357543    .6597764
+------------------------------------------------------------------------------
+
+. estat total
+
+Average total effect per unit of treatment            Number of obs    = 4,800
+                                                      Number of panels =   400
+                                                      Number of groups =   400
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |     Effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       treat |   2.150462   .1069369    20.11   0.000      1.94087    2.360055
+------------------------------------------------------------------------------
+
+. estat ptrends
+
+Placebo estimates                                     Number of obs    = 4,800
+                                                      Number of panels =   400
+                                                      Number of groups =   400
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+     Placebo |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          -4 |  -.0088318   .0459278    -0.19   0.848    -.0988486    .0811849
+          -3 |    -.00457   .0443069    -0.10   0.918      -.09141      .08227
+          -2 |  -.0815382   .0627843    -1.30   0.194    -.2045933    .0415168
+          -1 |   .0708263   .1256372     0.56   0.573     -.175418    .3170707
+------------------------------------------------------------------------------
+
+Test of parallel-trends and no-anticipation assumptions
+H0: Placebos are zero for all exposures
+
+    chi2(4) =   3.62
+Prob > chi2 = 0.4599
+
+. 
+. display as text _n "======== 场景 B：加载 switching_multivalued.dta → xtswitc
+> hdid ========"
+
+======== 场景 B：加载 switching_multivalued.dta → xtswitchdid ========
+
+. use "`datadir'/switching_multivalued.dta", clear
+
+. describe
+
+Contains data from c:/Users/jefeer/Downloads/stataskills/data/did-routing/switc
+> hing_multivalued.dta
+ Observations:         5,000                  
+    Variables:             7                  28 Sep 2026 11:13
+-------------------------------------------------------------------------------
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+-------------------------------------------------------------------------------
+id              int     %12.0g                County id
+year            int     %8.0g                 Year
+dose            byte    %8.0g                 Multivalued switching treatment
+                                                0/1/2
+x1              double  %10.0g                Covariate
+y               double  %10.0g                Outcome (true effect -0.8 per
+                                                dose unit)
+treat_bin       byte    %8.0g                 WRONG coding: dose>0
+                                                contemporaneous
+treat_abs       byte    %8.0g                 WRONG coding: ever-treated
+                                                (look-ahead)
+-------------------------------------------------------------------------------
+Sorted by: id  year
+
+. tab dose
+
+Multivalued |
+  switching |
+  treatment |
+      0/1/2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |      3,794       75.88       75.88
+          1 |        707       14.14       90.02
+          2 |        499        9.98      100.00
+------------+-----------------------------------
+      Total |      5,000      100.00
+
+. xtset id year
+
+Panel variable: id (strongly balanced)
+ Time variable: year, 2006 to 2025
+         Delta: 1 unit
+
+. 
+. display as text _n "--- B1 正确：xtswitchdid ---"
+
+--- B1 正确：xtswitchdid ---
+
+. xtswitchdid (y x1) (dose), group(id) neffects(3)
+
+Treatment and time information
+
+Panel variable:  id
+Time variable:   year
+Time interval:   2006 thru 2025
+
+Treatment level: id
+Control:         dose maintaining baseline
+Treatment:       dose changing from baseline
+
+------------------------------------------------------------------------------
+Initial      |
+treatment    |      Groups          Obs   Switch out    Switch in    Absorbing
+-------------+----------------------------------------------------------------
+           0 |         250        5,000                       1 2           No
+------------------------------------------------------------------------------
+
+DID with switching treatments                         Number of obs    = 5,000
+                                                      Number of panels =   250
+                                                      Number of groups =   250
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+             |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    Exposure |
+          1  |  -.7378682   .1343671    -5.49   0.000    -1.001223   -.4745136
+          2  |  -.4960935   .0646427    -7.67   0.000    -.6227908   -.3693962
+          3  |  -.2832775   .0417347    -6.79   0.000     -.365076   -.2014791
+------------------------------------------------------------------------------
+Note: Effects computed using covariates.
+
+. estat ptrends
+
+Placebo estimates                                     Number of obs    = 5,000
+                                                      Number of panels =   250
+                                                      Number of groups =   250
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+     Placebo |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          -3 |  -.0564563   .0424482    -1.33   0.184    -.1396533    .0267408
+          -2 |  -.0762839   .0583794    -1.31   0.191    -.1907054    .0381375
+          -1 |   .0257737   .1129123     0.23   0.819    -.1955304    .2470778
+------------------------------------------------------------------------------
+
+Test of parallel-trends and no-anticipation assumptions
+H0: Placebos are zero for all exposures
+
+    chi2(3) =   3.93
+Prob > chi2 = 0.2686
+
+. estat paths
+note: pathlen() not specified; using path length 3.
+note: variable _did_paths, which encodes a unique value for each treatment
+      path, was added to the dataset.
+
+Distribution of treatment paths
+
+Path length: 3, not counting initial treatment
+Treatment:   id changing initial treatment level
+
+      Paths |      Freq.     Percent        Cum.
+------------+-----------------------------------
+    0 1 1 1 |         96       78.05       78.05
+    0 1 1 2 |          5        4.07       82.11
+    0 2 2 2 |         22       17.89      100.00
+------------+-----------------------------------
+      Total |        123      100.00
+
+. estat total
+
+Average total effect per unit of treatment            Number of obs    = 5,000
+                                                      Number of panels =   250
+                                                      Number of groups =   250
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |     Effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        dose |  -.8534094   .1063584    -8.02   0.000    -1.061868   -.6449506
+------------------------------------------------------------------------------
+
+. estat eventplot
+
+. graph export "`outdir'/09_switching_xtswitchdid_event.png", width(2000) repla
+> ce
+(file
+    c:/Users/jefeer/Downloads/stataskills/demo/output/09_switching_xtswitchdi
+    > d_event.png not found)
+file
+    c:/Users/jefeer/Downloads/stataskills/demo/output/09_switching_xtswitchdi
+    > d_event.png saved as PNG format
+
+. 
+. display as text _n "--- B2 反面：treat_bin（dose>0）→ xthdidregress ---"
+
+--- B2 反面：treat_bin（dose>0）→ xthdidregress ---
+
+. capture noisily xthdidregress aipw (y) (treat_bin), group(id)
+note: variable _did_cohort, containing cohort indicators formed by treatment
+      variable treat_bin and group variable id, was added to the dataset
+      using the estimation sample.
+invalid treatment
+    The treatment is assumed to be staggered. Once a unit is treated, it
+    should remain treated.
+
+. display as text "xthdidregress on treat_bin _rc = " _rc
+xthdidregress on treat_bin _rc = 498
+
+. if _rc == 498 {
+.     display as text "预期 r(498)：可逆处理不能硬套吸收型 staggered 命令"
+预期 r(498)：可逆处理不能硬套吸收型 staggered 命令
+. }
+
+. 
+. display as text _n "--- B3 反面：treat_abs（ever-treated 偷看未来）---"
+
+--- B3 反面：treat_abs（ever-treated 偷看未来）---
+
+. capture noisily xthdidregress aipw (y) (treat_abs), group(id)
+note: variable _did_cohort, containing cohort indicators formed by treatment
+      variable treat_abs and group variable id, was added to the dataset
+      using the estimation sample.
+
+Computing ATET for each cohort and time:
+Cohort 2012 (19): ..........10......... done
+Cohort 2014 (19): ..........10......... done
+Cohort 2016 (19): ..........10......... done
+
+Treatment and time information
+
+Time variable: year
+Time interval: 2006 to 2025
+Control:       _did_cohort = 0
+Treatment:     _did_cohort > 0
+-------------------------------
+                  | _did_cohort
+------------------+------------
+Number of cohorts |           4
+------------------+------------
+Number of obs     |
+    Never treated |        2540
+             2012 |        1260
+             2014 |         760
+             2016 |         440
+-------------------------------
+
+Heterogeneous-treatment-effects regression            Number of obs    = 5,000
+                                                      Number of panels =   250
+Estimator:       Augmented IPW
+Panel variable:  id
+Treatment level: id
+Control group:   Never treated
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+Cohort       |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+2012         |
+        year |
+       2007  |  -.3696983   .2033674    -1.82   0.069    -.7682911    .0288946
+       2008  |  -.0987328   .2190526    -0.45   0.652    -.5280679    .3306024
+       2009  |   .0307029   .2144933     0.14   0.886    -.3896963    .4511021
+       2010  |   .6293877   .2172259     2.90   0.004     .2036327    1.055143
+       2011  |  -.1398386   .2210838    -0.63   0.527    -.5731549    .2934778
+       2012  |  -.7382354   .2298645    -3.21   0.001    -1.188762   -.2877094
+       2013  |  -1.119798   .2194753    -5.10   0.000    -1.549962   -.6896346
+       2014  |  -1.000514   .2214167    -4.52   0.000    -1.434483   -.5665449
+       2015  |  -1.591113   .2078633    -7.65   0.000    -1.998518   -1.183709
+       2016  |  -1.583191   .2024403    -7.82   0.000    -1.979966   -1.186415
+       2017  |  -1.523183   .2112659    -7.21   0.000    -1.937257    -1.10911
+       2018  |  -.4405774   .2207424    -2.00   0.046    -.8732246   -.0079302
+       2019  |  -.6042256   .2234287    -2.70   0.007    -1.042138   -.1663133
+       2020  |   -.782904   .2431061    -3.22   0.001    -1.259383   -.3064247
+       2021  |  -.4723667   .2149699    -2.20   0.028    -.8936999   -.0510335
+       2022  |   -.740319   .2324927    -3.18   0.001    -1.195996   -.2846417
+       2023  |  -.5973193   .2246208    -2.66   0.008    -1.037568   -.1570707
+       2024  |  -.4319046    .256324    -1.68   0.092    -.9342904    .0704812
+       2025  |  -.5658111   .2450591    -2.31   0.021    -1.046118   -.0855042
+-------------+----------------------------------------------------------------
+2014         |
+        year |
+       2007  |  -.1180773   .2523328    -0.47   0.640    -.6126405     .376486
+       2008  |    .151583   .2586019     0.59   0.558    -.3552674    .6584334
+       2009  |  -.2751408   .2455905    -1.12   0.263    -.7564894    .2062078
+       2010  |   .4941146   .2994444     1.65   0.099    -.0927856    1.081015
+       2011  |  -.1628524    .254531    -0.64   0.522    -.6617239    .3360191
+       2012  |    .048168   .2826465     0.17   0.865    -.5058089    .6021449
+       2013  |   .1290969   .2396424     0.54   0.590    -.3405935    .5987874
+       2014  |  -.9246776   .2818982    -3.28   0.001    -1.477188   -.3721673
+       2015  |   -.880974   .2794184    -3.15   0.002    -1.428624    -.333324
+       2016  |  -.9686823    .260969    -3.71   0.000    -1.480172   -.4571924
+       2017  |   -1.17029   .2479731    -4.72   0.000    -1.656308   -.6842716
+       2018  |  -.9345443   .2875289    -3.25   0.001     -1.49809    -.370998
+       2019  |  -1.218695   .2580172    -4.72   0.000      -1.7244   -.7129909
+       2020  |  -1.047388   .2796342    -3.75   0.000    -1.595461   -.4993146
+       2021  |  -1.156502   .2449399    -4.72   0.000    -1.636575   -.6764287
+       2022  |  -1.202021   .2801502    -4.29   0.000    -1.751105   -.6529364
+       2023  |  -1.018777   .2673938    -3.81   0.000    -1.542859   -.4946944
+       2024  |  -1.256273    .269474    -4.66   0.000    -1.784432   -.7281138
+       2025  |  -1.049746   .2477772    -4.24   0.000     -1.53538   -.5641111
+-------------+----------------------------------------------------------------
+2016         |
+        year |
+       2007  |  -.3334391   .3052572    -1.09   0.275    -.9317322    .2648539
+       2008  |   .1785996   .2091239     0.85   0.393    -.2312757    .5884749
+       2009  |  -.0117912   .2469831    -0.05   0.962    -.4958692    .4722868
+       2010  |    .639105   .3669632     1.74   0.082    -.0801296     1.35834
+       2011  |  -.3864422   .3204761    -1.21   0.228    -1.014564    .2416794
+       2012  |  -.0495392   .3113019    -0.16   0.874    -.6596797    .5606013
+       2013  |  -.0063976    .310223    -0.02   0.984    -.6144235    .6016283
+       2014  |  -.1154515   .3382881    -0.34   0.733    -.7784839    .5475809
+       2015  |  -.2385668   .2780818    -0.86   0.391    -.7835971    .3064635
+       2016  |  -1.280618   .3528976    -3.63   0.000    -1.972285   -.5889516
+       2017  |  -1.716539   .3576695    -4.80   0.000    -2.417559    -1.01552
+       2018  |  -1.239989   .3342028    -3.71   0.000    -1.895014   -.5849636
+       2019  |  -1.575853   .3404116    -4.63   0.000    -2.243047   -.9086584
+       2020  |  -1.324142    .421571    -3.14   0.002    -2.150406    -.497878
+       2021  |  -1.687468   .3199465    -5.27   0.000    -2.314552   -1.060385
+       2022  |  -1.583397    .293806    -5.39   0.000    -2.159246   -1.007548
+       2023  |  -1.328866   .3784932    -3.51   0.000    -2.070699   -.5870329
+       2024  |  -1.724931   .3381148    -5.10   0.000    -2.387624   -1.062238
+       2025  |  -1.204297   .2669842    -4.51   0.000    -1.727577   -.6810176
+------------------------------------------------------------------------------
+Note: Base time for pretreatment ATETs is the previous period.
+
+. display as text "xthdidregress on treat_abs _rc = " _rc
+xthdidregress on treat_abs _rc = 0
+
+. if _rc == 0 {
+.     estat aggregation, overall
+
+Overall ATET                                             Number of obs = 5,000
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |       ATET   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   treat_abs |
+   (1 vs 0)  |  -1.012967   .1159657    -8.74   0.000    -1.240255    -.785678
+------------------------------------------------------------------------------
+Note: Aggregation weights vary across times and cohorts.
+.     display as text "警告：能出数不等于识别对——treat_abs 偷看未来"
+警告：能出数不等于识别对——treat_abs 偷看未来
+. }
+
+. 
+. display as text _n "======== 路由小结 ========"
+
+======== 路由小结 ========
+
+. display as text "1) 二元吸收错时 → use absorbing_staggered.dta + xthdidregres
+> s aipw"
+1) 二元吸收错时 → use absorbing_staggered.dta + xthdidregress aipw
+
+. display as text "2) 多值可逆 → use switching_multivalued.dta + xtswitchdid"
+2) 多值可逆 → use switching_multivalued.dta + xtswitchdid
+
+. display as text "DONE_ROUTING_DEMO"
+DONE_ROUTING_DEMO
+
+. 
+. log close
+      name:  <unnamed>
+       log:  c:/Users/jefeer/Downloads/stataskills/demo/logs/09_xtswitchdid_vs_
+> xthdidregress.log
+  log type:  text
+ closed on:  28 Sep 2026, 11:19:44
+-------------------------------------------------------------------------------

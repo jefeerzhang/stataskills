@@ -23,7 +23,9 @@
 #     运行脚本中的构建断言和验证 harness，核对 README/schema/数值不变量，再在本清单
 #     登记基名。
 #
+absorbing_staggered
 laborsub
+switching_multivalued
 synth_smoking
 teaching-treatment
 tutoring

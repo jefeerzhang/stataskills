@@ -520,6 +520,22 @@ Treated later vs earlier      1.916   weight 0.093
 
 ---
 
+## 5.9 `xtswitchdid` vs `xthdidregress` 路由模拟（`09_*.do`）
+
+**目标**：用磁盘上两份教学面板，对照吸收型错时与可逆多值处理，给出可复现的命令路由证据。
+
+| 数据 | 正确命令 | 关键数字 |
+|---|---|---|
+| `data/did-routing/absorbing_staggered.dta` | `xthdidregress aipw` | overall ATET **2.33** |
+| `data/did-routing/switching_multivalued.dta` | `xtswitchdid` | total **−0.85**；`treat_bin`→**r(498)** |
+
+**完整报告（表、图、反面教材、复现步骤）：** [`REPORT-09-xtswitchdid-routing.md`](REPORT-09-xtswitchdid-routing.md)  
+**路由速查：** [`docs/learn-did-routing-absorbing-vs-switching.md`](../docs/learn-did-routing-absorbing-vs-switching.md)
+
+**产物**：`logs/09_xtswitchdid_vs_xthdidregress.log` + `output/09_absorbing_xthdid_dynamic.png` + `output/09_switching_xtswitchdid_event.png`
+
+---
+
 ## 6. 结论与佐证价值
 
 1. **可执行**： 6 个 skill 的命令在本机 StataNow 19.5 全部可直接运行，无需改动（仅替换路径写法）。
@@ -550,9 +566,12 @@ $STATA -b do dofiles/05_stata-advanced-extra.do   # 05 依赖 ../data/agis6/（�
 $STATA -b do dofiles/06_stata-coefplot.do
 $STATA -b do dofiles/07_stata-did.do              # DID demo（本地模拟数据，不依赖外部 .dta）
 $STATA -b do dofiles/08_did_method_selection.do   # DID 方法选择 demo（5 个场景，部分需社区包）
+# 从仓库根目录：
+$STATA -b do dofiles/09_xtswitchdid_vs_xthdidregress.do
+# （09 依赖 data/did-routing/*.dta；先 do data/did-routing/build_did_routing.do）
 ```
 
-> 注：05 拆自 advanced（多层模型 + IRT，依赖 `data/agis6/`）；06 是 coefplot demo；07 是 DID demo（本地模拟数据，不依赖外部 `.dta`）；08 是 DID 方法选择 demo（测试方法自动选择能力，场景 3-5 需安装社区包 jwdid/did_imputation/synth）。
+> 注：05 拆自 advanced（多层模型 + IRT，依赖 `data/agis6/`）；06 是 coefplot demo；07 是 DID demo（本地模拟数据，不依赖外部 `.dta`）；08 是 DID 方法选择 demo（测试方法自动选择能力，场景 3-5 需安装社区包 jwdid/did_imputation/synth）；09 是吸收 vs 可逆路由模拟（依赖 `data/did-routing/`，详见 `REPORT-09-xtswitchdid-routing.md`）。
 
 ## 附录 B ：数据说明
 

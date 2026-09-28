@@ -50,6 +50,7 @@
 | 你想学的内容 | 文件 |
 |---|---|
 | 内置 DID / DDD / wild bootstrap / bdecomp / **xtswitchdid** | `stata-did/SKILL.md` + `stata-did/references/xtswitchdid.md` |
+| **吸收 vs 可逆 模拟路由**（`xthdidregress` ↔ `xtswitchdid`） | [`docs/learn-did-routing-absorbing-vs-switching.md`](learn-did-routing-absorbing-vs-switching.md) · 完整报告 [`demo/REPORT-09-xtswitchdid-routing.md`](../demo/REPORT-09-xtswitchdid-routing.md) · `demo/dofiles/09_xtswitchdid_vs_xthdidregress.do` |
 | 方法选择决策树 + 特征矩阵 + 陷阱 | `stata-did-community/SKILL.md` |
 | CS / jwdid / BJS 三件套 | `stata-did-community/references/csdid-jwdid-imputation.md` |
 | 合成控制 / 合成 DID | `references/synth.md`、`references/sdid.md` |
