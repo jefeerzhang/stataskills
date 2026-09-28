@@ -3,7 +3,7 @@
        log:  c:/Users/jefeer/Downloads/stataskills/demo/logs/09_xtswitchdid_vs_
 > xthdidregress.log
   log type:  text
- opened on:  28 Sep 2026, 11:19:35
+ opened on:  28 Sep 2026, 11:54:05
 
 . 
 . display as text _n "======== 场景 A：加载 absorbing_staggered.dta → xthdidreg
@@ -18,7 +18,7 @@
 Contains data from c:/Users/jefeer/Downloads/stataskills/data/did-routing/absor
 > bing_staggered.dta
  Observations:         4,800                  
-    Variables:             5                  28 Sep 2026 11:13
+    Variables:             5                  28 Sep 2026 11:53
 -------------------------------------------------------------------------------
 Variable      Storage   Display    Value
     name         type    format    label      Variable label
@@ -249,9 +249,6 @@ Note: Exposure is the number of periods since the first treatment time.
 Note: Aggregation weights vary across times and cohorts.
 
 . graph export "`outdir'/09_absorbing_xthdid_dynamic.png", width(2000) replace
-(file
-    c:/Users/jefeer/Downloads/stataskills/demo/output/09_absorbing_xthdid_dyn
-    > amic.png not found)
 file
     c:/Users/jefeer/Downloads/stataskills/demo/output/09_absorbing_xthdid_dyn
     > amic.png saved as PNG format
@@ -265,10 +262,9 @@ H0: Treatment effects in all the pretreatment periods are zero
 Prob > chi2 = 0.1697
 
 . 
-. display as text _n "--- A2 对照：同一吸收数据上 xtswitchdid（可跑，非默认）--
-> -"
+. display as text _n "--- A2 对照：同数据 xtswitchdid（短窗 neffects=4）---"
 
---- A2 对照：同一吸收数据上 xtswitchdid（可跑，非默认）---
+--- A2 对照：同数据 xtswitchdid（短窗 neffects=4）---
 
 . xtswitchdid (y) (treat), group(id) neffects(4)
 
@@ -319,6 +315,65 @@ Average total effect per unit of treatment            Number of obs    = 4,800
        treat |   2.150462   .1069369    20.11   0.000      1.94087    2.360055
 ------------------------------------------------------------------------------
 
+. 
+. display as text _n "--- A3 对照：同数据 xtswitchdid（长窗 neffects=8，覆盖最
+> 长暴露）---"
+
+--- A3 对照：同数据 xtswitchdid（长窗 neffects=8，覆盖最长暴露）---
+
+. xtswitchdid (y) (treat), group(id) neffects(8)
+
+Treatment and time information
+
+Panel variable:  id
+Time variable:   year
+Time interval:   2010 thru 2021
+
+Treatment level: id
+Control:         treat maintaining baseline
+Treatment:       treat changing from baseline
+
+------------------------------------------------------------------------------
+Initial      |
+treatment    |      Groups          Obs   Switch out    Switch in    Absorbing
+-------------+----------------------------------------------------------------
+           0 |         400        4,800                         1          Yes
+------------------------------------------------------------------------------
+
+DID with switching treatments                         Number of obs    = 4,800
+                                                      Number of panels =   400
+                                                      Number of groups =   400
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+             |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    Exposure |
+          1  |   1.860036   .1326051    14.03   0.000     1.600135    2.119937
+          2  |   1.053062   .0654663    16.09   0.000     .9247503    1.181373
+          3  |   .7482091   .0406585    18.40   0.000     .6685198    .8278983
+          4  |   .5977654   .0316389    18.89   0.000     .5357543    .6597764
+          5  |   .4987873   .0276093    18.07   0.000     .4446741    .5529005
+          6  |   .4072925   .0301561    13.51   0.000     .3481877    .4663973
+          7  |   .4234843   .0258756    16.37   0.000     .3727691    .4741995
+          8  |   .3665348   .0236516    15.50   0.000     .3201786     .412891
+------------------------------------------------------------------------------
+
+. estat total
+
+Average total effect per unit of treatment            Number of obs    = 4,800
+                                                      Number of panels =   400
+                                                      Number of groups =   400
+
+                                   (Std. err. adjusted for 400 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |     Effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       treat |   2.348615    .106697    22.01   0.000     2.139493    2.557737
+------------------------------------------------------------------------------
+
 . estat ptrends
 
 Placebo estimates                                     Number of obs    = 4,800
@@ -330,6 +385,7 @@ Placebo estimates                                     Number of obs    = 4,800
              | Normalized    Robust
      Placebo |     effect   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
+          -5 |   .0247394   .0368956     0.67   0.503    -.0475746    .0970535
           -4 |  -.0088318   .0459278    -0.19   0.848    -.0988486    .0811849
           -3 |    -.00457   .0443069    -0.10   0.918      -.09141      .08227
           -2 |  -.0815382   .0627843    -1.30   0.194    -.2045933    .0415168
@@ -339,8 +395,8 @@ Placebo estimates                                     Number of obs    = 4,800
 Test of parallel-trends and no-anticipation assumptions
 H0: Placebos are zero for all exposures
 
-    chi2(4) =   3.62
-Prob > chi2 = 0.4599
+    chi2(5) =   4.96
+Prob > chi2 = 0.4209
 
 . 
 . display as text _n "======== 场景 B：加载 switching_multivalued.dta → xtswitc
@@ -355,7 +411,7 @@ Prob > chi2 = 0.4599
 Contains data from c:/Users/jefeer/Downloads/stataskills/data/did-routing/switc
 > hing_multivalued.dta
  Observations:         5,000                  
-    Variables:             7                  28 Sep 2026 11:13
+    Variables:             7                  28 Sep 2026 11:53
 -------------------------------------------------------------------------------
 Variable      Storage   Display    Value
     name         type    format    label      Variable label
@@ -369,8 +425,8 @@ y               double  %10.0g                Outcome (true effect -0.8 per
                                                 dose unit)
 treat_bin       byte    %8.0g                 WRONG coding: dose>0
                                                 contemporaneous
-treat_abs       byte    %8.0g                 WRONG coding: ever-treated
-                                                (look-ahead)
+treat_abs       byte    %8.0g                 WRONG coding: sticky ever-treated
+                                                (masks switch-out)
 -------------------------------------------------------------------------------
 Sorted by: id  year
 
@@ -387,6 +443,29 @@ Multivalued |
 ------------+-----------------------------------
       Total |      5,000      100.00
 
+. * 诊断 treat_abs：不是偷看未来，而是首次处理后永久置 1
+. bysort id (year): gen int fyr = cond(sum(dose>0)==1 & dose>0, year, .)
+(4,877 missing values generated)
+
+. bysort id: egen int first_treat_year = min(fyr)
+(2,540 missing values generated)
+
+. quietly count if treat_abs==1 & year < first_treat_year
+
+. display as text "treat_abs pretreat_marked_1 N=" r(N)
+treat_abs pretreat_marked_1 N=0
+
+. assert r(N) == 0
+
+. quietly count if dose==0 & treat_abs==1
+
+. display as text "treat_abs after_switchout_still_1 N=" r(N)
+treat_abs after_switchout_still_1 N=352
+
+. assert r(N) == 352
+
+. drop fyr first_treat_year
+
 . xtset id year
 
 Panel variable: id (strongly balanced)
@@ -394,9 +473,122 @@ Panel variable: id (strongly balanced)
          Delta: 1 unit
 
 . 
-. display as text _n "--- B1 正确：xtswitchdid ---"
+. display as text _n "--- B1 正确：xtswitchdid neffects(7) 覆盖一类县 2018 撤销
+>  ---"
 
---- B1 正确：xtswitchdid ---
+--- B1 正确：xtswitchdid neffects(7) 覆盖一类县 2018 撤销 ---
+
+. xtswitchdid (y x1) (dose), group(id) neffects(7)
+
+Treatment and time information
+
+Panel variable:  id
+Time variable:   year
+Time interval:   2006 thru 2025
+
+Treatment level: id
+Control:         dose maintaining baseline
+Treatment:       dose changing from baseline
+
+------------------------------------------------------------------------------
+Initial      |
+treatment    |      Groups          Obs   Switch out    Switch in    Absorbing
+-------------+----------------------------------------------------------------
+           0 |         250        5,000                       1 2           No
+------------------------------------------------------------------------------
+
+DID with switching treatments                         Number of obs    = 5,000
+                                                      Number of panels =   250
+                                                      Number of groups =   250
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+             |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+    Exposure |
+          1  |  -.7378682   .1343671    -5.49   0.000    -1.001223   -.4745136
+          2  |  -.4960935   .0646427    -7.67   0.000    -.6227908   -.3693962
+          3  |  -.2832775   .0417347    -6.79   0.000     -.365076   -.2014791
+          4  |  -.2685002   .0273371    -9.82   0.000      -.32208   -.2149205
+          5  |   -.201652   .0225454    -8.94   0.000    -.2458402   -.1574639
+          6  |  -.1701738   .0165591   -10.28   0.000    -.2026291   -.1377185
+          7  |  -.0927717   .0154833    -5.99   0.000    -.1231184   -.0624251
+------------------------------------------------------------------------------
+Note: Effects computed using covariates.
+
+. estat ptrends
+
+Placebo estimates                                     Number of obs    = 5,000
+                                                      Number of panels =   250
+                                                      Number of groups =   250
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             | Normalized    Robust
+     Placebo |     effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          -7 |  -.0070665   .0210493    -0.34   0.737    -.0483222    .0341893
+          -6 |  -.0139923   .0239783    -0.58   0.560     -.060989    .0330044
+          -5 |   .0046819   .0200664     0.23   0.816    -.0346475    .0440113
+          -4 |  -.0452067   .0286497    -1.58   0.115    -.1013591    .0109456
+          -3 |  -.0564563   .0424482    -1.33   0.184    -.1396533    .0267408
+          -2 |  -.0762839   .0583794    -1.31   0.191    -.1907054    .0381375
+          -1 |   .0257737   .1129123     0.23   0.819    -.1955304    .2470778
+------------------------------------------------------------------------------
+
+Test of parallel-trends and no-anticipation assumptions
+H0: Placebos are zero for all exposures
+
+    chi2(7) =   7.69
+Prob > chi2 = 0.3604
+
+. estat paths, pathlen(7)
+note: variable _did_paths, which encodes a unique value for each treatment
+      path, was added to the dataset.
+
+Distribution of treatment paths
+
+Path length: 7, not counting initial treatment
+Treatment:   id changing initial treatment level
+
+          Paths |      Freq.     Percent        Cum.
+----------------+-----------------------------------
+0 1 1 1 1 1 1 1 |         43       34.96       34.96
+0 1 1 1 1 2 2 2 |          2        1.63       36.59
+0 1 1 1 2 2 2 0 |         44       35.77       72.36
+0 1 1 1 2 2 2 2 |          7        5.69       78.05
+0 1 1 2 2 2 2 2 |          5        4.07       82.11
+0 2 2 2 2 2 2 2 |         22       17.89      100.00
+----------------+-----------------------------------
+          Total |        123      100.00
+
+. estat total
+
+Average total effect per unit of treatment            Number of obs    = 5,000
+                                                      Number of panels =   250
+                                                      Number of groups =   250
+
+                                   (Std. err. adjusted for 250 clusters in id)
+------------------------------------------------------------------------------
+             |               Robust
+           y |     Effect   std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        dose |  -.8638346   .0836161   -10.33   0.000    -1.027719   -.6999502
+------------------------------------------------------------------------------
+
+. estat eventplot
+
+. graph export "`outdir'/09_switching_xtswitchdid_event.png", width(2000) repla
+> ce
+file
+    c:/Users/jefeer/Downloads/stataskills/demo/output/09_switching_xtswitchdi
+    > d_event.png saved as PNG format
+
+. 
+. display as text _n "--- B1b 短窗对照：neffects(3) 看不到 1→2→0 ---"
+
+--- B1b 短窗对照：neffects(3) 看不到 1→2→0 ---
 
 . xtswitchdid (y x1) (dose), group(id) neffects(3)
 
@@ -433,30 +625,7 @@ DID with switching treatments                         Number of obs    = 5,000
 ------------------------------------------------------------------------------
 Note: Effects computed using covariates.
 
-. estat ptrends
-
-Placebo estimates                                     Number of obs    = 5,000
-                                                      Number of panels =   250
-                                                      Number of groups =   250
-
-                                   (Std. err. adjusted for 250 clusters in id)
-------------------------------------------------------------------------------
-             | Normalized    Robust
-     Placebo |     effect   std. err.      z    P>|z|     [95% conf. interval]
--------------+----------------------------------------------------------------
-          -3 |  -.0564563   .0424482    -1.33   0.184    -.1396533    .0267408
-          -2 |  -.0762839   .0583794    -1.31   0.191    -.1907054    .0381375
-          -1 |   .0257737   .1129123     0.23   0.819    -.1955304    .2470778
-------------------------------------------------------------------------------
-
-Test of parallel-trends and no-anticipation assumptions
-H0: Placebos are zero for all exposures
-
-    chi2(3) =   3.93
-Prob > chi2 = 0.2686
-
-. estat paths
-note: pathlen() not specified; using path length 3.
+. estat paths, pathlen(3)
 note: variable _did_paths, which encodes a unique value for each treatment
       path, was added to the dataset.
 
@@ -487,17 +656,6 @@ Average total effect per unit of treatment            Number of obs    = 5,000
         dose |  -.8534094   .1063584    -8.02   0.000    -1.061868   -.6449506
 ------------------------------------------------------------------------------
 
-. estat eventplot
-
-. graph export "`outdir'/09_switching_xtswitchdid_event.png", width(2000) repla
-> ce
-(file
-    c:/Users/jefeer/Downloads/stataskills/demo/output/09_switching_xtswitchdi
-    > d_event.png not found)
-file
-    c:/Users/jefeer/Downloads/stataskills/demo/output/09_switching_xtswitchdi
-    > d_event.png saved as PNG format
-
 . 
 . display as text _n "--- B2 反面：treat_bin（dose>0）→ xthdidregress ---"
 
@@ -520,9 +678,10 @@ xthdidregress on treat_bin _rc = 498
 . }
 
 . 
-. display as text _n "--- B3 反面：treat_abs（ever-treated 偷看未来）---"
+. display as text _n "--- B3 反面：treat_abs（首次处理后永久置 1，掩盖撤销）---
+> "
 
---- B3 反面：treat_abs（ever-treated 偷看未来）---
+--- B3 反面：treat_abs（首次处理后永久置 1，掩盖撤销）---
 
 . capture noisily xthdidregress aipw (y) (treat_abs), group(id)
 note: variable _did_cohort, containing cohort indicators formed by treatment
@@ -649,8 +808,8 @@ Overall ATET                                             Number of obs = 5,000
    (1 vs 0)  |  -1.012967   .1159657    -8.74   0.000    -1.240255    -.785678
 ------------------------------------------------------------------------------
 Note: Aggregation weights vary across times and cohorts.
-.     display as text "警告：能出数不等于识别对——treat_abs 偷看未来"
-警告：能出数不等于识别对——treat_abs 偷看未来
+.     display as text "警告：能出数不等于识别对——treat_abs 掩盖撤销与剂量变化"
+警告：能出数不等于识别对——treat_abs 掩盖撤销与剂量变化
 . }
 
 . 
@@ -662,8 +821,10 @@ Note: Aggregation weights vary across times and cohorts.
 > s aipw"
 1) 二元吸收错时 → use absorbing_staggered.dta + xthdidregress aipw
 
-. display as text "2) 多值可逆 → use switching_multivalued.dta + xtswitchdid"
-2) 多值可逆 → use switching_multivalued.dta + xtswitchdid
+. display as text "2) 多值可逆 → use switching_multivalued.dta + xtswitchdid（n
+> effects 须盖住撤销期）"
+2) 多值可逆 → use switching_multivalued.dta + xtswitchdid（neffects 须盖住撤销
+> 期）
 
 . display as text "DONE_ROUTING_DEMO"
 DONE_ROUTING_DEMO
@@ -674,5 +835,5 @@ DONE_ROUTING_DEMO
        log:  c:/Users/jefeer/Downloads/stataskills/demo/logs/09_xtswitchdid_vs_
 > xthdidregress.log
   log type:  text
- closed on:  28 Sep 2026, 11:19:44
+ closed on:  28 Sep 2026, 11:54:18
 -------------------------------------------------------------------------------

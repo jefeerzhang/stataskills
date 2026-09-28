@@ -526,8 +526,8 @@ Treated later vs earlier      1.916   weight 0.093
 
 | 数据 | 正确命令 | 关键数字 |
 |---|---|---|
-| `data/did-routing/absorbing_staggered.dta` | `xthdidregress aipw` | overall ATET **2.33** |
-| `data/did-routing/switching_multivalued.dta` | `xtswitchdid` | total **−0.85**；`treat_bin`→**r(498)** |
+| `data/did-routing/absorbing_staggered.dta` | `xthdidregress aipw` | overall ATET **2.33**；`xtswitchdid neffects(8)` total≈**2.35** |
+| `data/did-routing/switching_multivalued.dta` | `xtswitchdid, neffects(7)` | total **−0.86**；paths 含撤销 `…2 2 2 0`；`treat_bin`→**r(498)**；`treat_abs` 掩盖撤销（非偷看未来） |
 
 **完整报告（表、图、反面教材、复现步骤）：** [`REPORT-09-xtswitchdid-routing.md`](REPORT-09-xtswitchdid-routing.md)  
 **路由速查：** [`docs/learn-did-routing-absorbing-vs-switching.md`](../docs/learn-did-routing-absorbing-vs-switching.md)

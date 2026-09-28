@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>吸收型 vs 可逆多值 DID 路由 · 方法论课</title>
+<style>
+:root{
+  --ikb:#002FA7;
+  --ink:#0a0a0a;
+  --paper:#fff;
+  --rule:#d8d8d8;
+  --wash:#f4f4f2;
+  --mute:#6b6b6b;
+  --bad:#C8102E;
+  --sans:"Inter","Helvetica Neue",Helvetica,Arial,"PingFang SC","Microsoft YaHei","Source Han Sans SC",sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Cascadia Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--paper);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+.slide{
+  display:none;height:100vh;padding:clamp(36px,4.5vh,76px) clamp(32px,4.5vw,120px) clamp(58px,7vh,100px);
+  flex-direction:column;justify-content:center;
+  max-width:1760px;margin:0 auto;
+}
+.slide.active{display:flex}
+
+/* ---- type ---- */
+.kicker{
+  font-size:clamp(12px,1.05vw,18px);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ikb);font-weight:600;margin-bottom:clamp(10px,1.4vh,20px);
+}
+h1{font-size:clamp(42px,5.6vw,96px);line-height:1.06;letter-spacing:-.025em;font-weight:700}
+h2{font-size:clamp(30px,3.9vw,64px);line-height:1.14;letter-spacing:-.015em;font-weight:700;margin-bottom:clamp(20px,2.8vh,44px)}
+h3{font-size:clamp(16px,1.45vw,24px);letter-spacing:.02em;font-weight:700;margin-bottom:clamp(8px,1vh,14px)}
+p{font-size:clamp(16px,1.5vw,25px);line-height:1.55;color:#1c1c1c}
+.lede{font-size:clamp(19px,2.05vw,34px);line-height:1.42;color:#1c1c1c}
+.dim{color:var(--mute)}
+.small{font-size:clamp(13px,1.2vw,19px);line-height:1.5;color:var(--mute)}
+.mono{font-family:var(--mono)}
+ul.plain{list-style:none;display:flex;flex-direction:column;gap:clamp(6px,1.05vh,14px)}
+ul.plain li{font-size:clamp(15px,1.4vw,24px);line-height:1.45;padding-left:clamp(14px,1.3vw,22px);position:relative}
+ul.plain li::before{content:"";position:absolute;left:0;top:.55em;width:clamp(6px,.6vw,10px);height:2px;background:var(--ikb)}
+
+/* ---- accent rule ---- */
+.rule{height:4px;background:var(--ikb);width:clamp(56px,5vw,104px);margin-bottom:clamp(14px,2vh,28px)}
+.rule.long{width:100%;height:1px;background:var(--rule);margin:clamp(16px,2.4vh,36px) 0}
+
+/* ---- layout ---- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,3.2vw,64px)}
+.cols-12{display:grid;grid-template-columns:1fr 1.35fr;gap:clamp(30px,3.4vw,68px)}
+.cols-21{display:grid;grid-template-columns:1.35fr 1fr;gap:clamp(30px,3.4vw,68px)}
+.stack{display:flex;flex-direction:column;gap:clamp(14px,2vh,28px)}
+
+/* ---- table ---- */
+table{width:100%;border-collapse:collapse;font-size:clamp(14px,1.3vw,22px)}
+th,td{text-align:left;padding:clamp(9px,1.35vh,18px) clamp(12px,1.1vw,22px);border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{background:var(--ikb);color:#fff;font-weight:600;letter-spacing:.02em;border-bottom:none;font-size:clamp(13px,1.15vw,19px)}
+tbody tr:last-child td{border-bottom:1px solid var(--ikb)}
+td.num{font-family:var(--mono);white-space:nowrap}
+.hi{color:var(--ikb);font-weight:700}
+.bad{color:var(--bad);font-weight:700}
+
+/* ---- stat ---- */
+.stat{border-top:4px solid var(--ikb);padding-top:clamp(10px,1.4vh,18px)}
+.stat .v{font-size:clamp(38px,4.6vw,80px);font-weight:700;letter-spacing:-.03em;line-height:1}
+.stat .v small{font-size:.42em;font-weight:600;color:var(--mute);letter-spacing:0}
+.stat .k{font-size:clamp(13px,1.2vw,19px);color:var(--mute);margin-top:8px;line-height:1.45}
+.stat.bad{border-top-color:var(--bad)}
+.stat.bad .v{color:var(--bad)}
+
+/* ---- code ---- */
+pre{
+  background:var(--ink);color:#e8e8e8;font-family:var(--mono);
+  font-size:clamp(13px,1.18vw,20px);line-height:1.55;padding:clamp(14px,2vh,26px) clamp(16px,1.6vw,28px);overflow-x:auto;
+  border-left:4px solid var(--ikb);white-space:pre;
+}
+pre .cm{color:#8a8a8a}
+pre .err{color:#ff8a9a}
+
+/* ---- chip ---- */
+.chip{
+  display:inline-block;font-size:clamp(12px,1.05vw,18px);font-weight:700;letter-spacing:.06em;
+  padding:4px 12px;border:1px solid var(--ikb);color:var(--ikb);white-space:nowrap;
+}
+.chip.solid{background:var(--ikb);color:#fff}
+.chip.wrong{border-color:var(--bad);color:var(--bad)}
+.chip.wrong.solid{background:var(--bad);color:#fff}
+.chip.neutral{border-color:var(--rule);color:var(--mute)}
+
+/* ---- panel ---- */
+.panel{background:var(--wash);padding:clamp(16px,2.2vh,30px) clamp(18px,1.8vw,32px);border-left:4px solid var(--ikb)}
+.panel.wrong{background:#fdf3f4;border-left-color:var(--bad)}
+.panel.bare{background:transparent;border-left:1px solid var(--rule)}
+
+/* ---- figure slot: uniform height --- */
+.fig{border:1px solid var(--rule);background:#fff;padding:12px}
+.fig img{display:block;width:100%;height:clamp(220px,37vh,470px);object-fit:contain}
+.fig figcaption{font-size:clamp(12px,1.1vw,18px);color:var(--mute);margin-top:10px;line-height:1.45}
+
+/* ---- route list ---- */
+ol.route{list-style:none;counter-reset:r;display:flex;flex-direction:column;gap:clamp(14px,2.2vh,30px)}
+ol.route li{counter-increment:r;display:grid;grid-template-columns:clamp(34px,3vw,52px) 1fr;gap:clamp(14px,1.4vw,26px);align-items:start;font-size:clamp(16px,1.5vw,26px);line-height:1.42}
+ol.route li::before{
+  content:counter(r);font-family:var(--mono);font-size:clamp(13px,1.1vw,19px);font-weight:700;
+  color:#fff;background:var(--ikb);width:clamp(26px,2.4vw,40px);height:clamp(26px,2.4vw,40px);
+  display:flex;align-items:center;justify-content:center;
+}
+.checks{list-style:none;display:flex;flex-direction:column;gap:clamp(7px,1.15vh,16px)}
+.checks li{display:grid;grid-template-columns:clamp(15px,1.4vw,22px) 1fr;gap:clamp(12px,1.2vw,20px);font-size:clamp(15px,1.42vw,24px);line-height:1.34}
+.checks li::before{content:"";width:clamp(13px,1.2vw,19px);height:clamp(13px,1.2vw,19px);border:2px solid var(--ikb);margin-top:5px}
+
+/* ---- hud ---- */
+.hud{
+  position:fixed;left:0;right:0;bottom:0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:clamp(8px,1.2vh,14px) clamp(18px,2.4vw,40px);border-top:1px solid var(--rule);background:var(--paper);
+  font-size:clamp(11px,0.95vw,15px);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);
+}
+.hud b{color:var(--ikb);font-family:var(--mono);letter-spacing:0}
+.hint{color:#b4b4b4}
+@media (max-width:860px){
+  .slide{padding:32px 22px 56px}
+  .cols,.cols-12,.cols-21{grid-template-columns:1fr;gap:22px}
+  .fig img{height:190px}
+  .hint{display:none}
+}
+@media print{
+  body{overflow:visible}
+  .hud{display:none}
+  .slide{display:flex !important;height:auto;min-height:auto;page-break-after:always;padding:28px 0}
+}
+</style>
+</head>
+<body>
+
+<!-- 1 -->
+<section class="slide active" data-kicker="方法论课 · DID 命令路由">
+  <div class="kicker">Stata · 因果识别 · 路由</div>
+  <h1>同一个 y，为什么不能总用同一条命令？</h1>
+  <div style="height:clamp(10px,1.6vh,22px)"></div>
+  <p class="lede" style="max-width:1300px">
+    两个政策问题都用面板数据，被解释变量都叫 <span class="mono">y</span>。<br>
+    第一个能用 <span class="mono">xthdidregress</span> 估，第二个用同一条命令会直接报错。<br>
+    差别不在数据有多少，而在<span class="hi">处理变量本身怎么变</span>。
+  </p>
+  <div class="rule long"></div>
+  <div class="cols">
+    <div>
+      <h3>这节课的顺序</h3>
+      <ul class="plain">
+        <li>先看两个政策，弄清它们哪里不一样</li>
+        <li>再看把两者弄混会出什么事，有两种混法</li>
+        <li>最后是命令、参数和数字</li>
+      </ul>
+    </div>
+    <div>
+      <h3>复现基线</h3>
+      <p class="small">StataNow 19.5 MP（revision ≥ 2026-07-29，含 <span class="mono">xtswitchdid</span>）<br>
+      seed <span class="mono">20260928</span> · Windows 10 · 全部数字取自 <span class="mono">demo/logs/09_*.log</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-kicker="两个具体的政策">
+  <div class="kicker">先看两个具体的政策</div>
+  <h2>两个县，两种处理</h2>
+  <table>
+    <thead>
+      <tr><th style="width:clamp(90px,7.5vw,150px)"></th><th>政策甲：给县通高速公路</th><th>政策乙：给县评信用等级</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><b>取值</b></td><td>通了 / 没通（<span class="mono">0/1</span>）</td><td>三档：<span class="mono">0 / 1 / 2</span></td></tr>
+      <tr><td><b>会不会变回去</b></td><td><span class="hi">不会</span>。路修好了不会拆，通了就一直通</td><td><span class="bad">会</span>。可以升档，也可以掉回来</td></tr>
+      <tr><td><b>具体例子</b></td><td>甲县 2014 年通车，此后一直通</td><td>乙县 2015 年是 2 档，<b>2018 年掉回 0</b>，2020 年又到 1 档</td></tr>
+      <tr><td><b>你想知道什么</b></td><td>通车让这个县的 GDP 涨了多少</td><td>每升一档，银行贷款成本降多少</td></tr>
+    </tbody>
+  </table>
+  <div class="rule long"></div>
+  <div class="cols">
+    <div class="panel">
+      <p class="small">两个问题都能用面板数据估。但能用的命令不是同一条，
+      差别出在乙县 2018 年那次「掉回 0」。</p>
+    </div>
+    <div class="panel bare">
+      <p class="small"><b>说明：</b>报告用的是模拟数据，变量就叫 <span class="mono">y</span> 和 <span class="mono">treat</span>。
+      「通高速 / 信用等级」是教学类比。这个类比不是随手编的：报告场景 A 的处理年份正是 2014 和 2017 两批，
+      场景 B 的 <span class="mono">dose</span> 正是 <span class="mono">{0,1,2}</span>，其中有县先升到 2 档、再撤销回 0。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-kicker="核心直觉">
+  <div class="kicker">核心直觉</div>
+  <h2>「处理前」到底指哪一年？</h2>
+  <div class="cols">
+    <div class="stack">
+      <div class="panel">
+        <h3>甲县（通高速）</h3>
+        <p class="small mono">2010 2011 2012 2013 │ 2014 2015 … 2021</p>
+        <p class="small mono dim"> 0&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;…&nbsp;&nbsp;1</p>
+        <div style="height:clamp(8px,1.2vh,14px)"></div>
+        <p>「通车前」= 2010–2013。只有这一个答案。</p>
+        <p class="small" style="margin-top:8px">对照县从来没通车，一直停在未处理状态。
+        处理前后的分界只有一条，所以能直接算 <span class="mono">ATET</span>。</p>
+      </div>
+      <div class="stat">
+        <div class="v">唯一</div>
+        <div class="k">处理一旦开始就不再变，处理前只有一个年份</div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="panel wrong">
+        <h3>乙县（信用等级）</h3>
+        <p class="small mono">2014 2015 2016 2017 │ 2018 2019 │ 2020 2021</p>
+        <p class="small mono dim"> 2&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;1</p>
+        <div style="height:clamp(8px,1.2vh,14px)"></div>
+        <p>「升级前」是哪一年？2014？2017？还是 2019？</p>
+        <p class="small" style="margin-top:8px">也很难找到一直没评过级的县来做对照，因为大多数县都在动。
+        处理前不唯一，只能按每个县走过的<span class="hi">路径</span>拆开看。</p>
+      </div>
+      <div class="stat bad">
+        <div class="v">不唯一</div>
+        <div class="k">处理可以撤回，处理前不是一个确定的年份</div>
+      </div>
+    </div>
+  </div>
+  <div class="rule long"></div>
+  <p class="small">第 6 页和第 7 页那两种错法，都出在这一个差别上。</p>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-kicker="政策甲的做法">
+  <div class="kicker">政策甲 · 吸收型错时</div>
+  <h2>通高速的数据，用 <span class="mono">xthdidregress</span></h2>
+  <div class="cols-21">
+    <div class="stack">
+      <ul class="plain">
+        <li>400 个县 × 12 年（2010–2021），<span class="mono">N=4800</span></li>
+        <li>2880 个县从未通车；960 个县 2014 年通车；960 个县 2017 年通车</li>
+        <li>各县通车年份不同，但<span class="hi">通了之后不会再变回去</span></li>
+      </ul>
+      <pre><span class="cm">* 数据：data/did-routing/absorbing_staggered.dta</span>
+use "data/did-routing/absorbing_staggered.dta", clear
+xtset id year
+xthdidregress aipw (y) (treat), group(id)
+estat aggregation, overall
+estat aggregation, dynamic
+estat ptrends</pre>
+      <table>
+        <thead><tr><th>量</th><th>估计</th><th>se</th></tr></thead>
+        <tbody>
+          <tr><td>Overall ATET</td><td class="num hi">2.334</td><td class="num">0.106</td></tr>
+          <tr><td>Exposure = 0（通车当年）</td><td class="num">1.816</td><td class="num">0.132</td></tr>
+          <tr><td>Exposure = 1</td><td class="num">2.072</td><td class="num">0.132</td></tr>
+          <tr><td>Exposure = 2</td><td class="num">2.225</td><td class="num">0.114</td></tr>
+          <tr><td class="mono">estat ptrends</td><td class="num">χ²(9)=12.85</td><td class="num">p=0.170</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stack">
+      <figure class="fig">
+        <img src="../output/09_absorbing_xthdid_dynamic.png" alt="吸收型 xthdidregress 动态 ATET">
+        <figcaption>通车当年效应 1.82，之后逐年升到 2.23。</figcaption>
+      </figure>
+      <div class="panel bare">
+        <p class="small"><span class="mono">estat ptrends</span> 给出 p=0.170，没有拒绝「通车前两组趋势相同」。
+        没被拒绝不等于假设成立，对照是否合适还要看具体制度背景。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-kicker="政策乙的做法">
+  <div class="kicker">政策乙 · 多值可逆</div>
+  <h2>信用等级这件事，用 <span class="mono">xtswitchdid</span></h2>
+  <div class="cols-21">
+    <div class="stack">
+      <ul class="plain">
+        <li>250 个县 × 20 年（2006–2025），<span class="mono">N=5000</span></li>
+        <li>等级 <span class="mono">dose</span> ∈ {0,1,2}，样本里有县升档之后又掉回来</li>
+        <li>没有一直停在 0 档的县做参照，所以改问：<span class="hi">每升高一档，效果有多大</span></li>
+      </ul>
+      <pre><span class="cm">* 一类县 2018 才撤销（首次处理后第 7 暴露期）→ neffects(7)</span>
+use "data/did-routing/switching_multivalued.dta", clear
+xtset id year
+xtswitchdid (y x1) (dose), group(id) neffects(7)
+estat ptrends
+estat paths, pathlen(7)
+estat total</pre>
+      <table>
+        <thead><tr><th>量</th><th>估计</th><th>se</th></tr></thead>
+        <tbody>
+          <tr><td>Exposure 1（归一化）</td><td class="num hi">−0.738</td><td class="num">0.134</td></tr>
+          <tr><td>Exposure 2（归一化）</td><td class="num">−0.496</td><td class="num">0.065</td></tr>
+          <tr><td>Exposure 3（归一化）</td><td class="num">−0.283</td><td class="num">0.042</td></tr>
+          <tr><td class="mono">estat total</td><td class="num hi">−0.864</td><td class="num">0.084</td></tr>
+          <tr><td class="mono">estat ptrends</td><td class="num">安慰剂未拒</td><td class="num">≠已证明</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stack">
+      <figure class="fig">
+        <img src="../output/09_switching_xtswitchdid_event.png" alt="可逆多值 xtswitchdid eventplot">
+        <figcaption>暴露期系数按累计剂量增量归一化。后期数值变小是分母变大，不等于当期效应衰减。看「每单位剂量」的总效应用 estat total。</figcaption>
+      </figure>
+      <div class="panel bare">
+        <p class="small">命令的 Header 写 <span class="mono">Absorbing = No</span>，它自己认出这不是吸收型数据。</p>
+        <p class="small" style="margin-top:8px">真值是当期每升一档约 −0.8，<span class="mono">estat total</span> = −0.864（窗口已含撤销段）。
+        Exposure 2/3 的 −0.50、−0.28 不能直接和 −0.8 比。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-kicker="错法一">
+  <div class="kicker">错法一 · 把乙当甲</div>
+  <h2>把「评过级没有」压成 0/1，命令报错了</h2>
+  <div class="cols-12">
+    <div class="stack">
+      <h3>你会这么想</h3>
+      <p class="small">乙县 2018 年掉回了 0 档。如果只关心「评过级没有」，可以把它压成 0/1：</p>
+      <pre><span class="cm">* 只要等级大于 0，就算「被处理过」</span>
+gen byte treat_bin = (dose &gt; 0)
+xthdidregress aipw (y) (treat_bin), group(id)</pre>
+      <h3>Stata 的回答</h3>
+      <pre><span class="err">invalid treatment</span>
+The treatment is assumed to be staggered. Once a unit is treated,
+it should remain treated.
+<span class="err">r(498)</span></pre>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <h3>命令在说什么</h3>
+        <p class="small">乙县 2015 年是已处理，2018 年又变成未处理。
+        命令据此判断数据违反了「一旦处理就永久处理」这个前提，于是拒绝往下估。</p>
+      </div>
+      <div class="panel bare">
+        <h3>这是好事</h3>
+        <p class="small">它没有硬算出结果，而是直接停下。这样你会马上发现命令选错了。</p>
+      </div>
+      <div class="panel wrong">
+        <h3>正确反应</h3>
+        <p class="small">要换的是命令族，不是选项。
+        <span class="mono">xtdidregress / xthdidregress</span> 这一族按设计就不支持可逆路径，
+        加 <span class="mono">if</span> 或 <span class="mono">option</span> 都没用。
+        可逆数据要用 <span class="mono">xtswitchdid</span>，见第 5 页。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-kicker="错法二">
+  <div class="kicker">错法二 · 更危险的那一个</div>
+  <h2>这次不报错，但你掩盖了撤销</h2>
+  <div class="cols-12">
+    <div class="stack">
+      <h3>你会这么想</h3>
+      <p class="small">乙县升过级又掉回 0。那我干脆标记「这个县曾经被处理过」，
+      首次处理后整段时间线都算处理组：</p>
+      <pre><span class="cm">* treat_abs = 截至当期曾 dose>0 → 首次处理后永久置 1（掩盖撤销）</span>
+<span class="cm">* bysort id (year): gen treat_abs = sum(dose>0) > 0</span>
+xthdidregress aipw (y) (treat_abs), group(id)
+estat aggregation, overall</pre>
+      <table>
+        <tbody>
+          <tr><td style="width:clamp(120px,10vw,200px)">返回码</td><td><span class="chip solid">_rc = 0</span> 正常结束，没有任何警告</td></tr>
+          <tr><td>Overall ATET</td><td class="num bad">−1.013</td></tr>
+          <tr><td>se</td><td class="num">0.116</td></tr>
+          <tr><td>首次处理前误标 1</td><td class="num">0（不是偷看未来）</td></tr>
+          <tr><td>撤销后仍标 1</td><td class="num bad">352</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stack">
+      <div class="panel wrong">
+        <h3>问题在哪</h3>
+        <p class="small"><span class="mono">treat_abs</span> 是「截至当期曾经处理过」：首次处理之前不会被标 1，这份数据里误标 0 个观测。
+        错在后面——乙县 2018 年已经掉回 0，变量却还是 1，撤销和剂量升降都被抹掉了。
+        估出来的 −1.013 不是当期每单位 dose 的效应。</p>
+      </div>
+      <div class="stat bad">
+        <div class="v">−1.013</div>
+        <div class="k">命令正常出数，估的却是另一个对象。错因是变量把撤销抹平了。</div>
+      </div>
+      <div class="panel bare">
+        <h3>和第 6 页对照着看</h3>
+        <p class="small">第 6 页的命令报错，你会立刻去改。
+        这一页的命令不报错，如果不去核对变量的实际含义，很容易把 −1.013 直接写进论文。<br>
+        判断命令有没有选对，不能只看它是否报错。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-kicker="数据里的证据">
+  <div class="kicker">证据 · 数据里的路径</div>
+  <h2><span class="mono">estat paths</span> 列出每个县的等级路径</h2>
+  <div class="cols">
+    <div class="stack">
+      <h3>等级分布 <span class="small mono">dose</span></h3>
+      <table>
+        <thead><tr><th>档位</th><th>县数</th><th>占比</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0（未评级）</td><td class="num">3794</td><td class="num">75.9%</td></tr>
+          <tr><td class="mono">1</td><td class="num">707</td><td class="num">14.1%</td></tr>
+          <tr><td class="mono">2</td><td class="num">499</td><td class="num">10.0%</td></tr>
+        </tbody>
+      </table>
+      <p class="small">这一列看不出问题，只能看到各档有多少条观测。差别在右边。</p>
+    </div>
+    <div class="stack">
+      <h3>路径分布 <span class="small mono">estat paths · pathlen(7)</span></h3>
+      <table>
+        <thead><tr><th>路径</th><th>县数</th><th>占比</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0 1 1 1 1 1 1 1</td><td class="num">43</td><td class="num">34.96</td></tr>
+          <tr><td class="mono">0 1 1 1 2 2 2 <span class="hi">0</span></td><td class="num hi">44</td><td class="num">35.77</td></tr>
+          <tr><td class="mono">0 2 2 2 2 2 2 2</td><td class="num">22</td><td class="num">17.89</td></tr>
+          <tr><td class="mono">其他（升档未撤等）</td><td class="num">14</td><td class="num">11.38</td></tr>
+        </tbody>
+      </table>
+      <div class="panel">
+        <p class="small">中间那行以 0 收尾：升到 2 档之后又撤销回 0，是一类县 2018 年发生的。
+        <span class="mono">neffects(3)</span> 和默认的短 <span class="mono">pathlen</span> 都看不到这条路径。<br>
+        吸收型框架只有「通了没有」两种状态，写不进去这种撤销。这也是必须用
+        <span class="mono">xtswitchdid</span>、并且要把窗口拉长到盖住撤销期的原因。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-kicker="反过来试">
+  <div class="kicker">反过来 · 甲的数据用乙的命令</div>
+  <h2>能跑通、也不报错，就说明命令选对了吗</h2>
+  <div class="cols">
+    <div class="stack">
+      <pre>xtswitchdid (y) (treat), group(id) neffects(4)
+estat total                              <span class="cm">// ≈ 2.150</span>
+
+xtswitchdid (y) (treat), group(id) neffects(8)
+estat total                              <span class="cm">// ≈ 2.349 ≈ AIPW 2.334</span></pre>
+      <div class="stat">
+        <div class="v">2.349</div>
+        <div class="k">neffects(8) 的 estat total；短窗 neffects(4) 只有 2.150</div>
+      </div>
+      <table>
+        <tbody>
+          <tr><td style="width:clamp(120px,10vw,200px)">Header</td><td><span class="chip solid">Absorbing = Yes</span> 命令自己认出来了</td></tr>
+          <tr><td>报告的量</td><td><b>normalized exposure effects</b><br><span class="small">不是 AIPW 的 ATET 表</span></td></tr>
+          <tr><td>短窗 vs 长窗</td><td>2.150 → 2.349：差额主要来自<span class="hi">暴露期截断</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stack">
+      <h3>两个数字接近，量的是同一个东西吗</h3>
+      <p><b>不完全是。</b>量的是两个不同的目标参数。
+      短窗 2.150 和 AIPW 2.334 的差距里，有一部分来自 <span class="mono">neffects</span> 截断，不全是定义差异。
+      窗口拉到 8 期后 total≈2.349，已经和 AIPW 很接近，但两个量各自的定义仍然要写清楚。</p>
+      <div class="panel">
+        <p class="small">写论文时，主表如果声称的是 <span class="mono">ATET</span> 或事件研究聚合，
+        就用 <span class="mono">xthdidregress aipw</span>。
+        <span class="mono">xtswitchdid</span> 可以放在稳健性部分，但表头要写清报的是
+        <span class="mono">normalized exposure</span> 还是 <span class="mono">ATET</span>，以及 <span class="mono">neffects</span> 取了多少。</p>
+      </div>
+      <div class="panel wrong">
+        <p class="small">命令能跑通、数字又接近，都不能说明识别是对的。
+        第 7 页和这一页的两种错法成因不同，但都属于「看起来正常、实际估错了对象」。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-kicker="路由卡">
+  <div class="kicker">路由卡 · 投稿前过一遍</div>
+  <h2>看处理怎么变，再核识别条件</h2>
+  <div class="cols">
+    <div class="stack">
+      <ol class="route">
+        <li><span>通了就不会变回去，各县开通年份不同<br>
+          <span class="hi mono">xthdidregress aipw</span></span></li>
+        <li><span>能升也能降，或者档位在三档以上<br>
+          <span class="hi mono">xtswitchdid</span></span></li>
+        <li><span>连续剂量 / HAD，不是离散档位<br>
+          <span class="mono dim">did_multiplegt / did_had（社区包）</span></span></li>
+      </ol>
+      <p class="small" style="margin-top:8px">处理形态只决定候选命令。目标参数、同初始水平的对照、平行趋势与无预期，都要能辩护。
+      <span class="mono">estat ptrends</span> 没有拒绝，不等于假设成立。</p>
+    </div>
+    <div class="stack">
+      <h3>自检</h3>
+      <ul class="checks">
+        <li>处理编码和数据里实际的变化方式一致</li>
+        <li>目标参数、对照、平行趋势与无预期都能辩护</li>
+        <li>吸收错时：主表是 AIPW + 动态聚合，不是 plain TWFE</li>
+        <li>可逆 / 多值：<span class="mono">neffects</span> 盖住撤销期，未压成 0/1；见 <span class="mono bad">r(498)</span> 就改命令族</li>
+        <li>表头写清报的是 <span class="mono">ATET</span>、<span class="mono">normalized exposure</span> 还是 <span class="mono">estat total</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rule long"></div>
+  <p class="small">复现：<span class="mono">do "data/did-routing/build_did_routing.do"</span>
+    → <span class="mono">do "demo/dofiles/09_xtswitchdid_vs_xthdidregress.do"</span></p>
+  <p class="small mono" style="margin-top:clamp(6px,1vh,12px)">证据：demo/logs/09_xtswitchdid_vs_xthdidregress.log · demo/output/09_absorbing_xthdid_dynamic.png · demo/output/09_switching_xtswitchdid_event.png</p>
+</section>
+
+<div class="hud">
+  <span>吸收型 vs 可逆多值 DID · 方法论课</span>
+  <span class="hint">← → / 空格 翻页 · P 打印</span>
+  <span><b id="pos">01</b> / <b id="tot">10</b></span>
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var i = 0, n = slides.length;
+  document.getElementById('tot').textContent = String(n).padStart(2,'0');
+  var pos = document.getElementById('pos');
+
+  function go(k){
+    if (k < 0 || k >= n || k === i) return;
+    slides[i].classList.remove('active');
+    i = k;
+    slides[i].classList.add('active');
+    pos.textContent = String(i+1).padStart(2,'0');
+    location.hash = i+1;
+  }
+  document.addEventListener('keydown', function(e){
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown') { e.preventDefault(); go(i+1); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(i-1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(n-1); }
+    else if (k === 'p' || k === 'P') { window.print(); }
+  });
+  document.addEventListener('click', function(e){
+    go(e.clientX < window.innerWidth * 0.3 ? i-1 : i+1);
+  });
+  var h = parseInt(location.hash.slice(1), 10);
+  if (h >= 1 && h <= n) go(h-1);
+})();
+</script>
+</body>
+</html>

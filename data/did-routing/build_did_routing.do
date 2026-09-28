@@ -80,6 +80,7 @@ gen double x1 = rnormal()
 gen double y = 10 - 0.8*dose + 0.2*x1 + rnormal(0, 1)
 
 * 教学用反面变量（不当作真处理，仅供错误编码演示）
+* treat_abs = 截至当期是否曾 dose>0：首次处理后永久置 1（掩盖撤销），不是偷看未来
 gen byte treat_bin = (dose > 0)
 bysort id (year): gen byte treat_abs = sum(dose > 0) > 0
 
@@ -89,15 +90,21 @@ label var dose      "Multivalued switching treatment 0/1/2"
 label var x1        "Covariate"
 label var y         "Outcome (true effect -0.8 per dose unit)"
 label var treat_bin "WRONG coding: dose>0 contemporaneous"
-label var treat_abs "WRONG coding: ever-treated (look-ahead)"
+label var treat_abs "WRONG coding: sticky ever-treated (masks switch-out)"
 
 assert _N == 5000
 quietly tab dose
 assert inrange(dose, 0, 2)
 isid id year
-* 确认存在 switch-out：曾 dose>0 后又回到 0
+* 确认存在 switch-out：曾 dose>0 后又回到 0（treat_abs 仍为 1）
 quietly count if dose==0 & treat_abs==1
-assert r(N) > 0
+assert r(N) == 352
+* 不是偷看未来：首次处理前不存在 treat_abs==1
+bysort id (year): gen int fyr = cond(sum(dose>0)==1 & dose>0, year, .)
+bysort id: egen int first_treat_year = min(fyr)
+quietly count if treat_abs==1 & year < first_treat_year
+assert r(N) == 0
+drop fyr first_treat_year
 keep id year dose x1 y treat_bin treat_abs
 order id year dose x1 y treat_bin treat_abs
 compress

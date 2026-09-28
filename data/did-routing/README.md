@@ -41,9 +41,11 @@ id year dose x1 y treat_bin treat_abs
 ```
 
 - `dose`: 真处理（0/1/2，可逆）  
-- `treat_bin` / `treat_abs`: **错误编码示例**（供反面教材；主估计勿用）
+- `treat_bin`: **错误编码**——当期 `dose>0` 二值化（可逆时触发 `xthdidregress` r(498)）  
+- `treat_abs`: **错误编码**——`sum(dose>0)>0`，即**首次处理后永久置 1**（掩盖撤销与剂量变化；**不是**偷看未来）
 
-数值不变量：`N=5000`；存在「曾处理后又回到 0」的观测（`dose==0 & treat_abs==1`）。
+数值不变量：`N=5000`；`dose==0 & treat_abs==1` 恰好 **352**；首次处理前 `treat_abs==1` 为 **0**。  
+一类县撤销落在首次处理后第 **7** 个暴露期（2018），主估计应用 `neffects(7)`（或更长）才能在 `estat paths` 中看到 `… 2 2 2 0`。
 
 ## DGP（摘要）
 
