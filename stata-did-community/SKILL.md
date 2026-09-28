@@ -21,11 +21,12 @@ compatibility: >-
 
 匹配到第一条就停。禁止把 10 个社区包都跑一遍当「稳健性」。详细签名见 `references/`；禁令见文末黑名单。
 
-**何时用**：内置 `didregress` / `hdidregress` 不够用——处理单位极少、可逆/非二元处理、非线性结果、leaveout、合成对照、堆叠诊断、冲击型处理。
+**何时用**：内置 `didregress` / `hdidregress` / `xtswitchdid` 不够用——连续剂量、HAD、`csdid` 三方法对照、leaveout、合成对照、堆叠诊断、冲击型处理、非线性结果。
 **合成分支本地 gate 与失败动作**：只有用户点名 `synth` / `sdid`，或从 standard DID 本地 gate 失败进入 4b 合成分支时，才执行这里的合成 gate。先确认面板政策公共 gate 可辩护；`synth` 通常要求少数处理单位、较长 pre-period 和可辩护 donor pool，`sdid` 要求充分 pre / post periods、untreated 或 not-yet-treated comparison units，并支持单个或多个处理单位及当前实现支持的多个处理日期。用户点名单一方法时，该方法 gate 失败可返回 `stata-identification`；从 standard DID 进入 4b 时，一个方法失败必须继续检查另一个——尤其 `sdid` 失败后仍须检查 `synth`，只有 `synth` 与 `sdid` 两个析取入口都失败才返回 router。普通 DID-community 方法选择不执行 4b 合成 gate，直接从 `did_multiplegt`、`jwdid`、`did_imputation`、`csdid`、`stacked` 或 `lpdid` 等既有路径开始；用户点名 `csdid`、`jwdid`、`did_imputation`、`did_multiplegt`、`stacked` 或 `lpdid` 时也直达对应路径，不先执行 4b。不要把 `synth` / `sdid` 当独立顶层识别支柱。完整判断只读 `stata-identification/references/identification-decision-tree.md`。
 **何时踢走**：
 - 分数线 / 年龄门槛 / 地理边界 → `stata-rdd`，**不要改走 `csdid` / `synth`**
-- 简单 2×2 或默认错时 DID → 先 `stata-did`（`didregress` / `hdidregress aipw`）
+- 简单 2×2 或默认吸收错时 DID → 先 `stata-did`（`didregress` / `hdidregress aipw`）
+- 离散可逆 / 离散多值 switching → 先 `stata-did` 的 `xtswitchdid`
 - 只要多层 FE、不是事件研究 → `stata-regression` 的 `reghdfe`
 
 默认错时（无下表特殊需求）→ **不要留在本 skill**，回 `stata-did` 跑 `hdidregress aipw`。
@@ -34,7 +35,8 @@ compatibility: >-
 |---|---|
 | named `synth`，或 standard DID 失败进入 4b 后满足：少数处理单位 + 较长前期 + donor pool 可辩护 | `synth` → placebo / permutation；不要只报点估计 |
 | named `sdid`，或 standard DID 失败进入 4b 后满足：充分 pre / post + untreated / not-yet-treated comparison units；单个或多个处理单位及当前实现支持的多个处理日期 | `sdid` → 匹配数据结构的 VCE；报告单位 / 时间权重与 pre-fit |
-| 处理可逆 / 非二元 / 无 stayers | `did_multiplegt (dyn)`（位置参数，不是 `, mode(dyn)`） |
+| 处理可逆 / 离散多值（非连续） | **踢回** `stata-did` → `xtswitchdid`（StataNow）；仅当无 `xtswitchdid` 或用户点名 DCDH 时 → `did_multiplegt (dyn)` |
+| 处理可逆 / **连续**剂量 / 无 stayers 且点名社区包 | `did_multiplegt (dyn)`（位置参数，不是 `, mode(dyn)`） |
 | 0/1 处理 + stayers + switchers（HAD 场景） | `did_multiplegt (had)` → 估计 DID_M（见 [references/dcdh.md](references/dcdh.md) § 两条平行路线） |
 | 连续剂量 + 无 QUG（universal policy，所有单位 D > 0） | `did_had` v2.0.0 → `bandwidth(mse)` + `method(ll) ci(bc)`（见 [references/dcdh.md](references/dcdh.md) § 两条平行路线） |
 | 错时 + 计数/二元结果 | `jwdid y, ivar(id) tvar(t) gvar(g) method(poisson) group` → `estat event` → `estat plot` |
@@ -84,8 +86,8 @@ compatibility: >-
 | named `synth` 或 4b 上下文；少数处理单位 + 较长 pre-period + donor pool 可辩护 | `synth` | 以 donor pool 拟合合成对照，需 placebo / permutation 推断 |
 | named `sdid` 或 4b 上下文；充分 pre / post + untreated 或 not-yet-treated comparison units；单个或多个处理单位、当前实现支持的多个处理日期 | `sdid` | 同时估计单位与时间权重；推断依赖方法特定 VCE / regularity 条件，不要求少数处理单位 |
 | 简单 2x2 DID（一组处理、一组对照、单时点） | `didregress` / `xtdidregress`（见 `stata-did` skill） | 官方内置，最简单，estat 诊断丰富 |
-| **处理可逆**（可开启也可关闭，如工会/补贴/政策撤销） | `did_multiplegt (dyn)` | **唯一**支持非吸收处理的 Stata DID 估计量；见 [references/dcdh.md](references/dcdh.md) |
-| **处理非二元**（连续/离散多值，如最低工资幅度、补贴金额） | `did_multiplegt (dyn)` 或 `(stat)` | 支持非二元处理 + 归一化效应；见 [references/dcdh.md](references/dcdh.md) |
+| **处理可逆**（可开启也可关闭，如工会/补贴/政策撤销），离散 | `xtswitchdid`（见 `stata-did`） | StataNow 官方；无 `xtswitchdid` 时改 `did_multiplegt (dyn)` |
+| **处理非二元且连续**（最低工资幅度、补贴金额） | `did_multiplegt (dyn)` 或 `(stat)` | 连续剂量；见 [references/dcdh.md](references/dcdh.md) |
 | **无 stayers**（所有单位最终都处理） | `did_multiplegt (had)` | 专为无 stayer 的异质性采用设计；见 [references/dcdh.md](references/dcdh.md) |
 | 错时 DID + 结果变量是计数/二元（如就诊次数、是否住院） | `jwdid method(poisson)` 或 `jwdid method(logit)` | **唯一**支持非线性模型；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) |
 | 错时 DID + 想要 `leaveout` 方差修正（有限样本更准确） | `did_imputation, leaveout` | **唯一**实现 BJS 附录 A.9；见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) |
@@ -158,8 +160,8 @@ compatibility: >-
 当用户描述 DID 场景时，按以下顺序检查：
 
 1. **合成分支入口（仅 named `synth` / `sdid` 或 standard DID 失败进入 4b 时执行）**：少数处理单位、较长 pre-period 且 donor pool 可辩护？ → `synth`；有充分 pre / post、untreated 或 not-yet-treated comparison units（可为单个或多个处理单位及当前实现支持的多个处理日期）且 weighting / latent-factor / regularity 条件可辩护？ → `sdid`。named 单一方法 gate 失败可返回 `stata-identification`；4b 上下文中一个入口失败必须继续检查另一个，两个入口均失败才返回 router。普通 DID-community 选择跳过本步，直接从第 2 步开始，不得让宽泛的 `sdid` 条件截断后续路径
-2. **处理是否可逆**：处理可以开启/关闭（工会、补贴、政策撤销）？ → `did_multiplegt (dyn)`（见 [references/dcdh.md](references/dcdh.md)）
-3. **处理是否非二元**：连续或多值处理（最低工资幅度、补贴金额）？ → `did_multiplegt (dyn)` 或 `(stat)`（见 [references/dcdh.md](references/dcdh.md)）
+2. **处理是否可逆（离散）**：处理可以开启/关闭且剂量为离散？ → **踢回** `stata-did` 的 `xtswitchdid`；仅当无该命令或用户点名 DCDH 时 → `did_multiplegt (dyn)`（见 [references/dcdh.md](references/dcdh.md)）
+3. **处理是否连续非二元**：连续或多值剂量（最低工资幅度、补贴金额）？ → `did_multiplegt (dyn)` 或 `(stat)`（见 [references/dcdh.md](references/dcdh.md)）
 4. **无 stayers**：所有单位最终都处理？ → `did_multiplegt (had)`（见 [references/dcdh.md](references/dcdh.md)）
 5. **处理时点**：单时点？ → `didregress` / `xtdidregress`（见 `stata-did` skill）
 6. **结果变量类型**：计数/二元？ → `jwdid method(poisson/logit)`（见 [references/csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md)）

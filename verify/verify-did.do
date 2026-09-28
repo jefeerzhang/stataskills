@@ -3,7 +3,7 @@ version 19.5
 * skill:    stata-did
 * chapter:  did
 * data:     sim:24000x5
-* checks:   didregress+atet+paralleltrend
+* checks:   didregress+atet+paralleltrend+xtswitchdid
 * ============================
 
 * ============================================================
@@ -11,9 +11,11 @@ version 19.5
 * 覆盖 SKILL.md 核心可执行路径：didregress（重复截面 DID/DDD、
 * Donald–Lang 聚合、wild bootstrap）/ xtdidregress（面板 DID）/
 * hdidregress + xthdidregress（异质性 DID、错时处理 cohort）/
+* xtswitchdid（可逆/离散多值，StataNow）/
 * estat trendplot / ptrends / granger / bdecomp / atetplot /
-* aggregation 事后诊断。数据全部本地模拟（set seed 固定），不依赖网络与
-* 额外 .dta。所有图形命令在批处理模式下静默执行，不导出文件。
+* aggregation / eventplot / paths / total 事后诊断。数据全部本地模拟
+* （set seed 固定），不依赖网络与额外 .dta。所有图形命令在批处理
+* 模式下静默执行，不导出文件。
 * ============================================================
 set more off
 set seed 20260816
@@ -105,3 +107,29 @@ collapse (mean) satis2 treat, by(hospital month)
 
 didregress (satis2) (treat), group(hospital) time(month)
 estat bdecomp                          // 处理效应分解（DID/ATT/选择项）
+
+* ---- 10. 可逆/离散多值：xtswitchdid（SKILL.md 第 6b 节 / references/xtswitchdid.md）----
+* 需 StataNow revision ≥ 2026-07-29；本地模拟 switching + 多值处理
+which xtswitchdid
+clear
+set seed 20260928
+set obs 5000                           // 250 teams × 20 years
+gen team = ceil(_n/20)
+bysort team: gen year = 2005 + _n
+gen safety = 0
+replace safety = 1 if year >= 2012 & mod(team, 4) == 1
+replace safety = 2 if year >= 2015 & mod(team, 4) == 1
+replace safety = 0 if year >= 2018 & mod(team, 4) == 1   // switch out
+replace safety = 1 if year >= 2014 & mod(team, 5) == 2
+replace safety = 2 if year >= 2016 & mod(team, 7) == 3
+gen x1 = rnormal()
+gen y  = 10 - 0.8*safety + 0.2*x1 + rnormal()
+xtset team year
+xtswitchdid (y x1) (safety), group(team) neffects(3)
+estat ptrends
+estat eventplot
+estat paths
+estat total
+assert e(N) > 0
+display as text "VERIFY_MARKERS_REQUIRED=XTSWITCHDID_OK"
+display as text "XTSWITCHDID_OK"

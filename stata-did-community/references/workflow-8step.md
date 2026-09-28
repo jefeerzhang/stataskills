@@ -71,8 +71,8 @@ https://doi.org/10.1257/aeri.20210236
 |---|---|---|
 | simple 2x2 | DiD / TWFE | `didregress` / `xtdidregress`（见 `stata-did` skill） |
 | staggered adoption | CS / SA / BJS（**不是** plain TWFE） | `hdidregress aipw` / `xthdidregress aipw`（见 `stata-did` skill） |
-| **可逆处理**（开关型） | DCDH | `ssc install did_multiplegt`（第 5 节） |
-| **非二元处理**（连续/多值） | DCDH | `ssc install did_multiplegt`（第 5 节） |
+| **可逆处理**（开关型，离散） | `xtswitchdid`（见 `stata-did`） | StataNow；无该命令时改 DCDH |
+| **连续剂量 / 非二元连续** | DCDH | `ssc install did_multiplegt`（第 5 节） |
 | **无 stayers**（所有单位最终处理） | DCDH had | `did_multiplegt (had)`（第 5 节） |
 | staggered + 想做 DR/IPW/Reg 三方法对照 | CS 估计量 | `ssc install csdid`（第 1 节） |
 | staggered + 非线性结果变量（计数/二元） | ETWFE | `ssc install jwdid`（第 1 节） |

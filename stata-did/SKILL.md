@@ -1,14 +1,14 @@
 ---
 name: stata-did
-description: Stata 内置 DID 命令族：didregress / xtdidregress / hdidregress / xthdidregress，含平行趋势检验、事件研究、DDD、wild bootstrap。全部内置，无需 ssc install。触发词：DID / 双重差分 / 政策评估 / 错时处理 / 平行趋势 / 事件研究。
+description: Stata 内置 DID 命令族：didregress / xtdidregress / hdidregress / xthdidregress / xtswitchdid（可逆与离散多值），含平行趋势检验、事件研究、DDD、wild bootstrap。全部内置，无需 ssc install。触发词：DID / 双重差分 / 政策评估 / 错时处理 / 平行趋势 / 事件研究 / 可逆处理 / xtswitchdid / switching DID。
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
-  触发即读本文，无需联网加载其他文件。全部内置（didregress / xtdidregress / hdidregress / xthdidregress，StataNow 19.5 自带）。
+  触发即读本文。内置命令含 didregress / xtdidregress / hdidregress / xthdidregress；xtswitchdid 需 StataNow revision ≥ 2026-07-29。可逆/多值详签见 references/xtswitchdid.md。
 ---
 
-# Stata 双重差分：didregress 命令族（DID / DDD / 错时处理）
+# Stata 双重差分：didregress 命令族（DID / DDD / 错时处理 / 可逆多值）
 
-本 skill 对应 Stata 官方 DID 命令族（源自 Stata 19 宣传单 [Causal inference: Difference-in-differences] 的命令体系）：`didregress`、`xtdidregress`、`hdidregress`、`xthdidregress` 及 `estat` 事后诊断，全部为**内置命令**，无需 `ssc install`。社区包（reghdfe / eventdd / csdid / jwdid / did_imputation / synth / sdid）见 `stata-did-community` skill。
+本 skill 对应 Stata 官方 DID 命令族（源自 Stata 19 宣传单 [Causal inference: Difference-in-differences] 的命令体系）：`didregress`、`xtdidregress`、`hdidregress`、`xthdidregress`、`xtswitchdid`（StataNow）及 `estat` 事后诊断，全部为**内置命令**，无需 `ssc install`。社区包（reghdfe / eventdd / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt）见 `stata-did-community` skill。
 
 ## 运行 Stata 的方式
 
@@ -24,20 +24,21 @@ compatibility: >-
 **何时踢走**：
 - 分数线 / 年龄门槛 / 地理边界（不是时间断点）→ `stata-rdd`，**不要改走 DID**
 - 截面匹配 / 可观测选择 → 不要冒充 DID
-- 需要 `csdid` / `jwdid` / `synth` / 可逆处理 / 非线性 DID → `stata-did-community`
+- 需要 `csdid` / `jwdid` / `synth` / **连续剂量** / HAD / 非线性 DID → `stata-did-community`（离散可逆/多值优先留在本 skill 的 `xtswitchdid`）
 - 只要多层 FE 回归、不是政策评估 → `stata-regression`（`reghdfe`）。`fect` 是错时 DID，回到本 skill 或 `stata-did-community`，不要在回归 skill 里当主估计
 
 | 用户场景 | 最短命令链（按序，停在匹配行） |
 |---|---|
 | 单时点 × 重复截面 | `didregress (y) (treat), group(g) time(t)` → `estat trendplot` → `estat ptrends` |
 | 单时点 × 面板 | `xtset id t` → `xtdidregress (y) (treat), group(g) time(t)` → `estat trendplot` → `estat ptrends` |
-| 错时（≥2 个首次处理期） | `hdidregress aipw (y) (treat), group(id) time(t)`（面板用 `xthdidregress aipw`，先 `xtset`，**不要**写 `time()`）→ `estat aggregation, dynamic graph` → `estat atetplot` |
+| 错时（≥2 个首次处理期），二元吸收 | `hdidregress aipw (y) (treat), group(id) time(t)`（面板用 `xthdidregress aipw`，先 `xtset`，**不要**写 `time()`）→ `estat aggregation, dynamic graph` → `estat atetplot` |
+| 处理可逆 / 离散多值 / 非吸收（switching） | `xtset id t` → `xtswitchdid (y [x]) (d), group(id)` → `estat ptrends` → `estat eventplot` → `estat total`（详签 [references/xtswitchdid.md](references/xtswitchdid.md)） |
 | 错时且要诊断 TWFE 负权重 | 另起一份 `collapse (mean) y treat, by(g t)` → `didregress (y) (treat), group(g) time(t)` → `estat bdecomp, graph` |
 | 组数 < 5 | **不要** `wildbootstrap`；改 `aggregate(dlang)` |
 | 公共 gate 无法辩护 | 立即返回 `stata-identification`；不检查 `synth` / `sdid` |
 | 公共 gate 通过，但 standard DID parallel-trends / 本地条件失败 | `estat trendplot` → 检查同一面板政策支柱的 `synth` / `sdid` → 两者均失败再回 `stata-identification` |
 
-默认错时估计量是 `hdidregress aipw`，不是 `didregress` 的 TWFE。第 8 节 `xtreg` 交互项只用于读老论文，不是新分析主路径。
+默认**吸收**错时估计量是 `hdidregress aipw`，不是 `didregress` 的 TWFE。默认**可逆/离散多值**估计量是 `xtswitchdid`。第 8 节 `xtreg` 交互项只用于读老论文，不是新分析主路径。
 
 ## 安装与版本
 
@@ -45,7 +46,9 @@ compatibility: >-
 version 19.5                       // 本仓库版本政策：首行钉住
 * didregress / xtdidregress：Stata 17+（causal 模块）
 * hdidregress / xthdidregress：Stata 18+（异质性稳健估计量）
+* xtswitchdid：StataNow，revision ≥ 2026-07-29（可逆/多值）
 help didregress                    // 官方手册 [CAUSAL] didregress
+help xtswitchdid                   // [CAUSAL] xtswitchdid（StataNow）
 ```
 
 ## 命令选择表
@@ -55,9 +58,16 @@ help didregress                    // 官方手册 [CAUSAL] didregress
 | 重复截面 | 单时点 | `didregress` | 两组×多期独立截面 |
 | 重复截面 | 单时点 + 双组维度 | `didregress` + 双 `group()` | 三重差分 DDD |
 | 面板 | 单时点 | `xtdidregress` | 需先 `xtset` |
-| 重复截面/面板 | 错时（staggered） | `hdidregress` / `xthdidregress` | TWFE 在错时下有偏，用异质性稳健估计量 |
+| 重复截面/面板 | 错时（staggered，二元吸收） | `hdidregress` / `xthdidregress` | TWFE 在错时下有偏，用异质性稳健估计量 |
+| 面板 | 可逆 / 离散多值 / switching | `xtswitchdid` | StataNow 内置；详签 [references/xtswitchdid.md](references/xtswitchdid.md) |
 
-共同语法骨架：`命令 (结局变量 [协变量]) (处理变量), group(组变量) time(时间变量)`——**处理变量必须放在第二对括号里**，估计目标是 ATET（处理组的平均处理效应）。
+共同语法骨架：`命令 (结局变量 [协变量]) (处理变量), group(组变量) [time(时间变量)]`——**处理变量必须放在第二对括号里**。`didregress`/`hdidregress` 族估计 ATET；`xtswitchdid` 估计 normalized 事件研究效应（见 references）。`xthdidregress` / `xtswitchdid` **不要**写 `time()`（时间来自 `xtset`）。
+
+## 详细方法参考
+
+| 场景 | references/ |
+|---|---|
+| 可逆 / 离散多值 / 处理路径 / `estat total` | [references/xtswitchdid.md](references/xtswitchdid.md) |
 
 ---
 
@@ -133,6 +143,21 @@ estat aggregation, cohort
 ```
 
 - **没有 `time()` 选项**：时间变量从 `xtset` 读取。
+
+## 6b. 可逆 / 离散多值：`xtswitchdid`（StataNow）
+
+处理可开可关、或取 0/1/2/… 多值时，**不要**硬套 `xthdidregress`（吸收二元）。改用官方 `xtswitchdid`：
+
+```stata
+xtset team year
+xtswitchdid (injdays lwinpct schedule) (safety), group(team) neffects(3)
+estat ptrends                          // 安慰剂 + 平行趋势/无预期联合检验
+estat eventplot                        // 事件研究图（勿写 nograph）
+estat paths                            // 处理路径表
+estat total                            // 平均总效应
+```
+
+完整选项、与 `did_multiplegt` 分界、路径特定效应见 [references/xtswitchdid.md](references/xtswitchdid.md)。连续剂量 / HAD → `stata-did-community`。
 
 ## 7. 处理效应分解：estat bdecomp（错时设计）
 
@@ -270,6 +295,21 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
     - **Fix**：迁移时在论文方法节明示；保留旧 `reghdfe` 输出作对照；不要混用两套估计量报同一个政策效应。
     - **验证**：报告方法节应明说两套估计量的代数差异；不混用同一政策效应的两个估计量。
 
+12. 可逆/多值处理误用 `xthdidregress`
+    - **触发**：处理会撤销或取多值（如规则条数 0–3），仍跑 `xthdidregress aipw`。
+    - **Fix**：`xtset` 后改 `xtswitchdid (y [x]) (d), group(id)` → `estat ptrends` → `estat eventplot` → `estat total`；详签 [references/xtswitchdid.md](references/xtswitchdid.md)。连续剂量仍踢 `did_multiplegt`。
+    - **验证**：`which xtswitchdid` 成功；header 显示 Switch in/out；`estat aggregation` 在 `xtswitchdid` 后应无效（那是 hdid 系）。
+
+13. `xtswitchdid` 后写 `estat eventplot, nograph` 或 `estat aggregation`
+    - **触发**：照抄 hdid 事后命令；`nograph` 报 not allowed；`estat aggregation` 报 not valid。
+    - **Fix**：批处理直接 `estat eventplot`；聚合总效应用 `estat total`；路径用 `estat paths`。
+    - **验证**：`estat ptrends` / `estat total` `_rc==0`。
+
+14. 旧 StataNow revision 没有 `xtswitchdid`
+    - **触发**：`which xtswitchdid` 报 not found（revision < 2026-07-29）。
+    - **Fix**：`update all` 或离线装 `statanow19update_win.zip`（见 Stata updates 页）；临时对照可用社区 `did_multiplegt (dyn)`。
+    - **验证**：`about` 的 Revision 晚于 2026-07-29；`which xtswitchdid` 指向 `ado/base`。
+
 ## ❌ Agent 不该做的事（黑名单）
 
 > 与 ADR-0001 联动：本节是「**主动反模式**」清单——「关键陷阱速查」是被动警告，本节是主动规范。Agent 在写 DID do-file 前必查一遍。
@@ -285,6 +325,8 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 - ❌ **不要直接说 `reghdfe` 和 `hdidregress` 估计"一样的"**：代数上不等价（异质性估计 vs 平均 TWFE）。**替代**：报告方法节明示；保留 `reghdfe` 输出作对照；不混用同一政策效应的两个估计量。
 - ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 DID**：那不是时间断点，平行趋势框架套不上。**替代**：转到 `stata-rdd`，不要用 `didregress` / `hdidregress` 冒充。
 - ❌ **不要在错时设计默认跑 `didregress` 再「顺便」跑 `hdidregress`**：强制路径命中错时就只走 `hdidregress aipw`（+ 事件研究图）。**替代**：需要 TWFE 负权重诊断时另起 `collapse` + `estat bdecomp`，不要把工具箱全跑一遍。
+- ❌ **不要把可逆/离散多值处理硬套 `xthdidregress`**：吸收二元假设不成立。**替代**：`xtswitchdid`（本 skill）；连续剂量 / HAD → `stata-did-community` 的 `did_multiplegt` / `did_had`。
+- ❌ **不要在 `xtswitchdid` 后写 `estat aggregation` 或 `estat eventplot, nograph`**：前者 not valid，后者 option not allowed。**替代**：`estat total` / `estat paths` / 直接 `estat eventplot`。
 
 ## 🔍 错误码速查（错误码 → 触发 → 修复）
 
@@ -296,16 +338,17 @@ Princeton 教程 wdipol.dta 案例里，`xtdidregress (trade) (treated_post), gr
 
 ## 验证
 
-- 本 skill 全部内置命令语法经 `verify/verify-did.do` 在 Stata 19.5（StataNow MP）批处理模式实测通过；数据全部本地模拟（`set seed` 固定），不依赖网络与额外 `.dta`。
-- 运行：`bash verify/run-verify.sh did`（默认）；全量六个 skill：`bash verify/run-verify.sh`。
+- 本 skill 内置命令语法经 `verify/verify-did.do` 在 StataNow 19.5 MP 批处理模式实测通过；数据全部本地模拟（`set seed` 固定），不依赖网络与额外 `.dta`。含 `xtswitchdid`（可逆/多值）段。
+- 运行：`bash verify/run-verify.sh did`（默认）；全量：`bash verify/run-verify.sh`。
 - 真实研究中需注意：2-cluster 演示场景（如医院 0/1）跑 wildbootstrap 会报 CI 不可识别，应改用 `aggregate(dlang)`——见第 8 条陷阱。
+- `xtswitchdid` 要求 StataNow revision ≥ 2026-07-29；旧 revision 上该段会 `which` 失败。
 
 ## ✅ 交付前自检清单（跑完命令后逐条核对）
 
-- [ ] 强制路径命中：单时点走 `didregress`/`xtdidregress`；错时（时点 ≥ 2）默认 `hdidregress aipw`/`xthdidregress aipw`，未把 TWFE 当主结果
+- [ ] 强制路径命中：单时点走 `didregress`/`xtdidregress`；吸收错时默认 `hdidregress aipw`/`xthdidregress aipw`；可逆/离散多值走 `xtswitchdid`，未把 TWFE 当主结果
 - [ ] gate 审计：公共 gate（政策时点/pre-post/comparison units/no anticipation/no interference/稳定构成）与 parallel-trends 可辩护；记录失败的是哪层
-- [ ] 处理变量语法 (结局 [协变量]) (处理变量)；`xthdidregress` 未写 `time()`（已先 `xtset`）
-- [ ] 错时估计后看了 `estat aggregation, dynamic graph` 事件研究图；需要时跑了 `estat bdecomp, graph` 诊断 TWFE 负权重
+- [ ] 处理变量语法 (结局 [协变量]) (处理变量)；`xthdidregress`/`xtswitchdid` 未写 `time()`（已先 `xtset`）
+- [ ] 错时估计后看了 `estat aggregation, dynamic graph`（hdid 系）或 `estat eventplot` + `estat total`（`xtswitchdid`）
 - [ ] wildbootstrap：种子写 `rseed()`；组数 < 5 改用 `aggregate(dlang)`；bootstrap 后未跑 `estat vce`
 - [ ] 字符串组变量已 `encode`；`xtset` 成功；`isid group time` 通过
 - [ ] log 恰好一次 `end of do-file`，无 `r(错误码)`（r(451)/r(459)/r(1499) 已排查）

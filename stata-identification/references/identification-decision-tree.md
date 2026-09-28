@@ -55,7 +55,7 @@ description: Identification router 的唯一完整顺序化 stop rules；用于�
 
 | 用户明确点名 | 直达入口 | 本地 gate 失败动作 |
 |---|---|---|
-| DID、事件研究 | `stata-did` | standard DID 未通过时先检查同一面板支柱的 `synth` / `sdid`；均不成立再返回 router |
+| DID、事件研究、`xtswitchdid`、switching DID | `stata-did` | standard DID 未通过时先检查同一面板支柱的 `synth` / `sdid`；均不成立再返回 router |
 | `csdid`、`jwdid`、`synth`、`sdid` | `stata-did-community` | 返回 router |
 | RDD、断点、`rdrobust` | `stata-rdd` | 返回 router |
 | IV、2SLS、`ivregress`、`ivreg2`、LATE | `stata-regression` 的 IV references | 返回 router |

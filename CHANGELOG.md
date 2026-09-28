@@ -8,6 +8,7 @@ versioned by Stata compatibility).
 ## [Unreleased]
 
 ### Added
+- docs(did): StataNow 内置 `xtswitchdid`（可逆/离散多值 switching DID）——新增 `stata-did/references/xtswitchdid.md`；`stata-did/SKILL.md` 强制路径 + 第 6b 节 + 陷阱 #12–14；`verify/verify-did.do` 第 10 段本地模拟 + `XTSWITCHDID_OK` marker；社区包决策树改为离散可逆优先踢回官方，`dcdh.md` / `workflow-8step.md` / `learn-did-frontier.md` / identification named-method 同步。
 - feat(验证): 架构深化 C4–C7（#29 续）——④ **C4 prompt corpus 单一 canonical adapter**：`verify/lib/prompt_corpus.sh` 删除 jq 实现与 `PROMPT_CORPUS_FORCE_ADAPTER`，只保留 Python（仓库本就硬依赖 python3/python，jq 从来不是必需项；双实现的等价语义只靠对拍维持，属同一 adapter 的两份实现而非真 seam）；`test-prompt-corpus.sh` 重写为 canonical adapter + malformed fixtures + normalize 稳定性 + python 缺失路径 + 无 jq 分支反模式锁。⑤ **C5 日志回显知识归 judge**：新增 `judge_log_has_command`（`. ` 回显前缀 / capture 前缀 / 注释 / which 探针的单一实现），`test-prompts.sh` 删除自写 awk 改调该 API，`test-harness.sh` 补形状探针；`route_branch_semantics_ok` 失败时经 `ROUTE_SEMANTICS_REASON` 报出具体分支与缺失锚点（锚点字面量保持独立期望，不从被测 corpus 派生——同 #24 的反同义反复原则）。⑥ **C6 sentinel 形状锁**：`community_check_dofile` 新增 `sentinel_shape`（单行 `if .. display` 判错）——该变体已由 ADR-0007 的修复收敛，此处把规矩固化为可观察契约以防回流。⑦ **C7 微深化**：`targets_each_skill` 单点化「什么算一个 skill」（run-verify / check-claims / test-prompts 三个 caller 不再各写 glob）；六个 `test-*.sh` 删除本地 `pass()` 副本，统一复用 `report.sh` 的 `ok`/`bad` 协议。同步 `AGENTS.md`、`.github/workflows/verify.yml`（步骤与注释）、`test-acceptance.sh`（C4/C7 反模式锁）。
 - feat(验证): 架构深化 C1–C3（#29 续）——① **C3 contract seam 收拢**：`verify/lib/contract.sh` 新增 `contract_block` / `contract_missing_fields` / `contract_manifest_report` / `contract_manifest_entry_count` / `contract_manifest_file_count`，两份清单（`manifest.txt` / `manifest-extra.txt`）与数据面 `.dta` 的双向一致性、契约块边界与字段缺失全部单点实现；`run-verify.sh --static` 的平行 manifest 检查与 `check-claims.sh` 的内联 sed 契约块提取 / 手抄字段名单 / `find -maxdepth 2` 数据树遍历删除，改经 seam（`test-contract.sh` 新增 missing/unlisted/duplicate/带 subdir 的 extra unlisted fixture 与 caller 反模式锁）。② **C1 事故锁下沉**：`check-claims.sh` 的 8 条 did-community / CHANGELOG 历史事故锁（原 15–22，约 150 行）外移为 `verify/claims/did-community.sh`（7 条）与 `verify/claims/changelog.sh`（1 条）——可独立运行、与所守护文档同地演进；`check-claims.sh` 改为发现式聚合（新增锁 = 加一个文件），并新增 `test-claims.sh`（独立运行绿 + `CLAIMS_REPO_ROOT` 红 fixture + 事故锁短语不得回流聚合器）。③ **C2 委托名单去重**：`check-claims.sh` 同一段内手抄的两份委托名单（原 `:664` 与 `:671`）改为按 `targets_plan_each_delegate` 派生并与 ADR-0004 文本互查，5 份副本 → 3 份（两份测试 fixture 的独立字面量保留）。同步 `AGENTS.md`（locality seams 六→七 + claims/contract 惯例）、`.github/workflows/verify.yml`（shellcheck 覆盖 `verify/claims/*.sh` + test-claims 步骤）、`test-acceptance.sh`（C1–C3 结构锁；DID ownership 断言改指 claims 文件）。
 - 新增 `stata-spatial`（第 15 个 skill）：空间计量完整章节 — `SKILL.md`（六步强制路径：`spset` → `spmatrix create` → `estat moran` → `spregress` → `estat impact` → W 敏感性；模型形式选择表；9 条陷阱四件套；黑名单；错误码速查）+ `references/spatial-weights.md`（W 三种构造路径、归一化、ESDA、`spmap`）+ `references/spatial-panel.md`（`spxtregress` / `xsmle` / `spregdpd` / `spxtivdfreg` 四者对照与共同因子诊断）；`verify/verify-spatial.do`（7 个内置标记 `SPATIAL_SETUP/WEIGHTS/GS2SLS/ML/IMPACT/MORAN/SPGENERATE_OK` + 5 个可选社区包真实估计）；`community.sh` 登记 `spmat` / `spmap` / `spatwmat` / `spxtivdfreg` / `xsmle`（owner=verify-spatial，全部 optional）；`test-prompts.json` +1 条 prompt（corpus 39 条）。本机 StataNow 19.5 MP 实测回写文档：`estat moran` 是 **`regress` 的后估计命令**（挂 `spregress` 后报 r(321)），选项是 `errorlag()` 而非 `weights()`；`spgenerate` 的 `*` 两侧不能有空格（带空格报 r(198)）；`spxtivdfreg` 的 `spmatrix()` 默认按 SP 矩阵解释，喂 Stata 矩阵须加 `stata` 子选项（否则 r(111)）；`ssc install xtivdfreg` 失败（SSC 归档缺 `xtivdfreg_p.ado`，rc=679），须 `net install` 自作者站点；Pisati 全套（`spatwmat` 等）不在 SSC（rc=601），须 `net install sg162, from("http://www.stata.com/stb/stb60")`。附带记录一条 harness 事实：judge 的静默错误扫描不过滤回显行，do-file 注释不能出现 `invalid syntax` 等短语（已写入 AGENTS.md）。
@@ -55,6 +56,7 @@ versioned by Stata compatibility).
 方向 A 传播收尾 + LLM 行为回归实测后的首个 GitHub Release：10 skills 全部 skills.sh 上架（10/10 可访问）、English Summary 量化钩子、--llm 全量行为回归（25/27 直接 PASS，2 条判定问题经 fixture/matcher 修复重放转绿）、10 个 SKILL.md 交付前自检清单。
 
 ### Added
+- docs(did): StataNow 内置 `xtswitchdid`（可逆/离散多值 switching DID）——新增 `stata-did/references/xtswitchdid.md`；`stata-did/SKILL.md` 强制路径 + 第 6b 节 + 陷阱 #12–14；`verify/verify-did.do` 第 10 段本地模拟 + `XTSWITCHDID_OK` marker；社区包决策树改为离散可逆优先踢回官方，`dcdh.md` / `workflow-8step.md` / `learn-did-frontier.md` / identification named-method 同步。
 - feat(回归+IV): 增加识别与论文解释路径 — 新增 `references/iv-identification.md`（联合识别 / relevance+independence+exclusion+monotonicity+SUTVA / LATE/complier / 第一阶段-简约式-2SLS 结果三角 + Wald ratio / OLS-IV 差异 / 论文主表与限制模板）；SKILL.md description 增 LATE/complier/简约式/识别假设触发词 + 强制路径表 +1 行 + references 表新增 10.10 行 + 陷阱 10「验证」段改写为联合秩条件 + 引用识别文档；`references/iv.md` / `iv-testing.md` 边界约定加 pointer；`test-prompts.json` schema 2.2.0→2.3.0 新增 2 条 IV prompt（regression-04/05）需 `verify-regression.do` 真实 `assert` 执行证据；verify-regression.do ch10.10 新增官方结果三角（ivregress/
 egress 三类回归共享样本 + vce + Wald-ratio 数值断言），VERIFY CONTRACT checks: 增 `iv-identification`；README prompt 计数 14→16。
 - feat(回归+IV): 工具变量五命令 + 全套检验体系（教材未覆盖扩展）— 新增 `references/iv.md`（268 行）五命令全景 + `references/iv-testing.md`（412 行）检验体系；`stata-regression/SKILL.md` 新增 6 处改动（description 触发词 / compatibility 包列表 / 强制路径 +1 行 / 路由表 +3 行 10.8/10.9/10.6a / 陷阱四件套 +4 条 9-12 号 / 黑名单 +2 条）；`test-prompts.json` schema 2.1.0→2.2.0 新增 2 条 IV prompt（regression-02/03）；README prompt 计数 12→14 — `da91f8f`。
@@ -80,6 +82,7 @@ egress 三类回归共享样本 + vce + Wald-ratio 数值断言），VERIFY CONT
 luban 打磨方案 A 落地：README hero 钩子重写 + skills.sh badge 诚实化 + 8 skill 错误码速查 + compatibility frontmatter + Quick Reference 导航表。
 
 ### Added
+- docs(did): StataNow 内置 `xtswitchdid`（可逆/离散多值 switching DID）——新增 `stata-did/references/xtswitchdid.md`；`stata-did/SKILL.md` 强制路径 + 第 6b 节 + 陷阱 #12–14；`verify/verify-did.do` 第 10 段本地模拟 + `XTSWITCHDID_OK` marker；社区包决策树改为离散可逆优先踢回官方，`dcdh.md` / `workflow-8step.md` / `learn-did-frontier.md` / identification named-method 同步。
 - feat(skills): 8 个 SKILL.md 各加「🔍 错误码速查」节（24 条 r(N) 错误码 → 触发 → 修复三件套），挂在「❌ Agent 不该做的事（黑名单）」下方互补——黑名单给原则，错误码给精准命中 — `76493bc`。
 - feat(skills): 8 个 SKILL.md frontmatter 加 `compatibility:` YAML 字段（runtime / Stata 版本平台 / skill-specific 依赖三段式），让 Skill 在 SkillsMP / OpenClaw / Claude Code / Codex 多 runtime marketplace 里都被识别为兼容 — `9cdf16a`（含 `694cb30` revert + redo 修复了 `read({limit:8})` 截断事故）。
 - docs(README): 加「Quick Reference：用户原话 → 读哪几个文件」表（12 条导航），与 step 3 错误码速查形成「用户原话 → 读哪节 → 报 r(N) 怎么办」三层闭环 — `9a0a214`。
@@ -112,6 +115,7 @@ demo 全景 8 do-file + 27 PNG 全部 end of do-file，5 篇 ADR + 完整 verify
 - docs(adr-0005): 记录「保留完整 verify log、不替换为稳定摘要」的决策（架构评审候选 4 的取舍），详见 docs/adr/0005-keep-raw-verify-logs.md。
 
 ### Added
+- docs(did): StataNow 内置 `xtswitchdid`（可逆/离散多值 switching DID）——新增 `stata-did/references/xtswitchdid.md`；`stata-did/SKILL.md` 强制路径 + 第 6b 节 + 陷阱 #12–14；`verify/verify-did.do` 第 10 段本地模拟 + `XTSWITCHDID_OK` marker；社区包决策树改为离散可逆优先踢回官方，`dcdh.md` / `workflow-8step.md` / `learn-did-frontier.md` / identification named-method 同步。
 - feat(验证): 新增 `verify/check-claims.sh` 文档断言检查器（架构评审
   candidate 1）：从文件系统数出 facts（skill 数 / .dta 数 / manifest 条数 /
   demo dofiles、logs、PNG）与结构断言比对，接入 CI；顺手修复两处已实证
@@ -209,6 +213,7 @@ demo 全景 8 do-file + 27 PNG 全部 end of do-file，5 篇 ADR + 完整 verify
 ## 2026-08-15 — demo
 
 ### Added
+- docs(did): StataNow 内置 `xtswitchdid`（可逆/离散多值 switching DID）——新增 `stata-did/references/xtswitchdid.md`；`stata-did/SKILL.md` 强制路径 + 第 6b 节 + 陷阱 #12–14；`verify/verify-did.do` 第 10 段本地模拟 + `XTSWITCHDID_OK` marker；社区包决策树改为离散可逆优先踢回官方，`dcdh.md` / `workflow-8step.md` / `learn-did-frontier.md` / identification named-method 同步。
 - feat(demo): end-to-end demonstration using Stata's built-in `auto.dta` —
   5 do-files, 5 logs (all `end of do-file`), 11 PNG graphs, and a full
   REPORT.md walking through each skill — `2394ef9`.
@@ -223,6 +228,7 @@ demo 全景 8 do-file + 27 PNG 全部 end of do-file，5 篇 ADR + 完整 verify
 ## 2026-08-14 — initial release
 
 ### Added
+- docs(did): StataNow 内置 `xtswitchdid`（可逆/离散多值 switching DID）——新增 `stata-did/references/xtswitchdid.md`；`stata-did/SKILL.md` 强制路径 + 第 6b 节 + 陷阱 #12–14；`verify/verify-did.do` 第 10 段本地模拟 + `XTSWITCHDID_OK` marker；社区包决策树改为离散可逆优先踢回官方，`dcdh.md` / `workflow-8step.md` / `learn-did-frontier.md` / identification named-method 同步。
 - feat(skills): 4 Stata skills (`stata-basics`, `stata-descriptives`,
   `stata-regression`, `stata-advanced`) covering chapters 1–16 + Appendix A
   of *A Gentle Introduction to Stata* (6th ed.) — `a5db238`.

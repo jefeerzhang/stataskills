@@ -13,7 +13,9 @@ description: DCDH 可逆处理 DID 参考：did_multiplegt 三个模式——(dy
 
 ## 5. DCDH：可逆处理 DID（de Chaisemartin & D'Haultfœuille）
 
-适用场景：**处理可以开启也可以关闭**（如工会会员、政策实施后又撤销、补贴发放后又停止），或**处理是连续/离散多值**而非 0/1 二元。传统 DID 估计量（`csdid`/`jwdid`/`did_imputation`）都假设处理是吸收的（absorbing：一旦处理，永不撤销）；`did_multiplegt` 是 Stata 中**唯一**同时支持可逆处理和非二元处理的 DID 估计量。
+适用场景：**处理可以开启也可以关闭**（如工会会员、政策实施后又撤销、补贴发放后又停止），或**处理是连续/离散多值**而非 0/1 二元。传统错时 DID（`csdid`/`jwdid`/`did_imputation`/`xthdidregress`）默认吸收处理。
+
+> **官方优先**：离散可逆 / 离散多值 → 先走 `stata-did` 的 **`xtswitchdid`**（StataNow 内置，revision ≥ 2026-07-29；见 `stata-did/references/xtswitchdid.md`）。本文件的 `did_multiplegt` 用于：**连续剂量**、**HAD / did_had**、点名 DCDH、或尚未更新到含 `xtswitchdid` 的 StataNow。
 
 `did_multiplegt` 是一个统一入口，通过 `mode` 参数调用四个子估计量：
 

@@ -105,7 +105,8 @@ bash verify/run-verify.sh
 | 因子 / SEM / 多重插补 / 多层 / IRT | `stata-advanced` |
 | 系数图 / 森林图 / 多模型系数对比 / 发表级 coefplot | `stata-coefplot` |
 | 时间断点政策 / 平行趋势 / 错时 DID（内置命令） | `stata-did` |
-| 合成控制 / 可逆处理 / csdid / jwdid / 非线性 DID | `stata-did-community` |
+| 合成控制 / 连续剂量·HAD / csdid / jwdid / 非线性 DID | `stata-did-community` |
+| 离散可逆 / switching DID（`xtswitchdid`） | `stata-did` |
 | 分数线 / 年龄门槛 / 地理边界断点 | `stata-rdd` |
 | PSM / IPW / IPWRA / `teffects` / entropy balancing | `stata-selection` |
 | 该选什么设计 / 能否识别 / 能否作因果解释 | `stata-identification` |
@@ -300,7 +301,7 @@ bash verify/run-verify.sh
 | `stata-regression` | 9–11 | ANOVA/ANCOVA, multiple regression, logistic regression, power analysis |
 | `stata-advanced` | 12–16 + App. A | reliability/validity, factor, SEM/GSEM, multiple imputation (mi), multilevel (mixed), IRT |
 | `stata-coefplot` | extension | coefficient plots/forest plots: multi-model comparison, subgraphs, bycoefs, sorting, matrix input, margins/at, recast, cismooth, labelling, markers |
-| `stata-did` | extension | difference-in-differences: didregress (repeated cross-section / DDD), xtdidregress (panel), hdidregress / xthdidregress (heterogeneity-robust, staggered), parallel-trends diagnostics (trendplot / ptrends / granger / aggregation / bdecomp) |
+| `stata-did` | extension | difference-in-differences: didregress (repeated cross-section / DDD), xtdidregress (panel), hdidregress / xthdidregress (heterogeneity-robust, staggered), xtswitchdid (switching / multivalued, StataNow), parallel-trends diagnostics (trendplot / ptrends / granger / aggregation / bdecomp / eventplot / total) |
 | `stata-did-community` | extension | staggered DiD community packages: csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid |
 | `stata-rdd` | extension | regression discontinuity: rdrobust / rdplot / rddensity (sharp & fuzzy, manipulation test, bandwidth sensitivity, placebo cutoff) |
 | `stata-selection` | extension | cross-sectional binary treatment under selection on observables: IPWRA ATET, balance/overlap, official matching/IPW comparisons, optional community sensitivity checks |
