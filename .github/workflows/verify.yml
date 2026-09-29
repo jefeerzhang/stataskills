@@ -18,8 +18,15 @@ jobs:
 
       # harness 自身质量门：判定脚本必须过 shellcheck（warning+；info/style 如
       # 测试里刻意的 A && B || C、trap cleanup 可达性分析不挡合并）
+      #
+      # 清单不手写：手写清单是 SC2154/SC2010 能潜伏的机制原因——新增 verify/*.sh
+      # 若忘了补进那一行就永远不被检查。这里用 find 直接枚举，覆盖由构造保证。
+      # 不用 `ls` 生成列表：带 --classify 的 shell 会给可执行文件追加 `*`，
+      # 任何拿 ls 输出做字符串比较的断言都会永远不等（本地实测踩过）。
       - name: Shellcheck harness
-        run: shellcheck -S warning verify/lib/report.sh verify/lib/targets.sh verify/lib/judge.sh verify/lib/contract.sh verify/lib/community.sh verify/lib/prompt_corpus.sh verify/lib/prompt_plan.sh verify/run-verify.sh verify/test-harness.sh verify/test-targets.sh verify/test-contract.sh verify/test-claims.sh verify/test-community.sh verify/test-prompt-corpus.sh verify/test-prompt-plan.sh verify/test-acceptance.sh verify/check-claims.sh verify/test-prompts.sh verify/claims/*.sh
+        run: |
+          find verify -name '*.sh' -print0 | xargs -0 -r shellcheck -S warning
+          echo "shellcheck 覆盖 $(find verify -name '*.sh' | wc -l) 个脚本"
 
       # 判定逻辑回归测试（Stata-free）：直接喂构造日志给 verify/lib/judge.sh 断言，
       # 覆盖 r(9) 漏判 / sentinel 语义 / sentinel 掩盖真实错误；不依赖真实 Stata 或平台，
