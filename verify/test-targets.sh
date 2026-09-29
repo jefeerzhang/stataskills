@@ -8,6 +8,9 @@
 #
 # 用法：bash verify/test-targets.sh
 # ============================================================
+# `fail` / `pass` 由 lib/report.sh 初始化；source 路径含变量，shellcheck 无法
+# 跟随（SC1091 已屏蔽），故全文豁免对这些计数器的 SC2154。
+# shellcheck disable=SC2154
 set -u
 
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -228,7 +231,10 @@ fi
 # ---- targets_each_skill（#29 C7）：skill 发现的单一实现 ----
 if declare -F targets_each_skill >/dev/null 2>&1; then
   n_skills="$(targets_each_skill | grep -c . || true)"
-  n_dirs="$(ls -d "$VERIFY_DIR"/../stata-*/SKILL.md 2>/dev/null | grep -c . || true)"
+  n_dirs=0
+  for _skill_md in "$VERIFY_DIR"/../stata-*/SKILL.md; do
+    [ -f "$_skill_md" ] && n_dirs=$((n_dirs + 1))
+  done
   if [ "$n_skills" -gt 0 ] && [ "$n_skills" = "$n_dirs" ]; then
     ok "targets_each_skill 与磁盘 skill 目录数一致（${n_skills}）"
   else

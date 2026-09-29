@@ -7,6 +7,9 @@
 #
 # 用法：bash verify/test-prompt-plan.sh
 # ============================================================
+# `fail` / `pass` 由 lib/report.sh 初始化；source 路径含变量，shellcheck 无法
+# 跟随（SC1091 已屏蔽），故全文豁免对这些计数器的 SC2154。
+# shellcheck disable=SC2154
 set -u
 
 VERIFY_DIR="$(cd "$(dirname "$0")" && pwd)"
