@@ -25,3 +25,13 @@ Thumbs.db
 /.tmp/
 /stata_batch__*.log
 /*_test.log
+
+# 评审与文档渲染的本地产物
+# _shots/ 曾积累 14 个 headless Chrome 的 user-data-dir（Cookies / Crashpad /
+# Cache），与 _tmp/ 合计 4441 条未跟踪项、约 196 MB，git status 长期被淹没。
+/_shots/
+/_tmp/
+# 约定：对论文/外部文档的实证评审交付物写在源文件所在目录（仓库外），
+# 不提交也不推送。以下两条兜住误落到仓库根的情况。
+/*评审意见*.html
+/*实证评审*.html
