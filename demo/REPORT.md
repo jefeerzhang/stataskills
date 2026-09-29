@@ -542,7 +542,7 @@ Treated later vs earlier      1.916   weight 0.093
 
 **讲稿：** [`REPORT-10-xtswitchdid-features.md`](REPORT-10-xtswitchdid-features.md)
 
-**产物**：`logs/10_xtswitchdid_features.log` + `output/10_baseline_event.png`
+**产物**：`logs/10_xtswitchdid_features.log` + `output/10_f1_*.png` … `10_f10_*.png`（F8 含 norm/raw）
 
 ---
 

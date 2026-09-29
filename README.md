@@ -7,7 +7,7 @@
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
-> 🎯 **15 个 Skill · 15 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 30 张 demo PNG · 39 条 Agent 行为回归 prompt**
+> 🎯 **15 个 Skill · 15 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 41 张 demo PNG · 39 条 Agent 行为回归 prompt**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
@@ -41,7 +41,7 @@
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，按强制路径和 references 渐进加载
 - **38 个 AGIS6 配套数据集 + 项目级扩展数据**：分别由 `data/manifest.txt` 与 `data/manifest-extra.txt` 管理
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 动态发现 15 个 skill 验证入口
-- **真实 demo** 报告：10 个 do-file + 30 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + 吸收/可逆路由与 xtswitchdid 十个开关 + Bacon 分解图）
+- **真实 demo** 报告：10 个 do-file + 41 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + 吸收/可逆路由与 xtswitchdid 十个开关 + Bacon 分解图）
 - **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
 
@@ -165,7 +165,7 @@ bash verify/run-verify.sh
 | 配套数据 | ✅ 38 个 AGIS6 `.dta` + 受治理的项目级扩展数据 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令动态运行 15 个验证入口 | ❌ | ⚠️ log 验证 |
 | Agent 行为回归 | ✅ `test-prompts.json` 39 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
-| Demo 报告 | ✅ 10 个 do-file + 30 PNG + REPORT.md | ❌ | ❌ |
+| Demo 报告 | ✅ 10 个 do-file + 41 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 至 ADR-0006 | ❌ | ❌ |
 | 单一来源 | ✅ 双 manifest + target registry + `verify/stata.conf` | ❌ | ❌ |
 
@@ -226,7 +226,7 @@ stataskills/
     ├── REPORT.md                   ← 完整报告
     ├── dofiles/                    ← 10 个 do-file（含 did 路由与 xtswitchdid 选型）
     ├── logs/                       ← 10 个 Stata log（exit=0）
-    └── output/                     ← 30 张真实 PNG
+    └── output/                     ← 41 张真实 PNG
 ```
 
 ## 验证与测试
@@ -312,7 +312,7 @@ bash verify/run-verify.sh
 | `stata-limited-dependent` | extension | Tobit, hurdle/two-part means, Heckman and binary sample selection |
 | `stata-spatial` | extension | spatial econometrics: spmatrix weights, spregress / spivregress (SAR/SEM/SDM/SLX), spxtregress / xsmle / spregdpd / spxtivdfreg panels, Moran test, direct-indirect-total impact decomposition |
 
-Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 10-do-file, 30-PNG layer. The verify harness dynamically discovers 15 verification entry points, and `test-prompts.json` contains 39 prompts covering all 15 skills and the locked routing branches. The historical `--llm` run (2026-08-27, MiniMax M3) covered the original 27 prompts; later prompts have not been rerun at the LLM layer. See `verify/llm-results.md`.
+Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 10-do-file, 41-PNG layer. The verify harness dynamically discovers 15 verification entry points, and `test-prompts.json` contains 39 prompts covering all 15 skills and the locked routing branches. The historical `--llm` run (2026-08-27, MiniMax M3) covered the original 27 prompts; later prompts have not been rerun at the LLM layer. See `verify/llm-results.md`.
 
 Latest release: `v1.2.0` (2026-08-27) - https://github.com/jefeerzhang/stataskills/releases/latest
 

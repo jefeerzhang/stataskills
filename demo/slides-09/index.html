@@ -109,6 +109,8 @@ pre .err{color:#ff8a9a}
 .fig{border:1px solid var(--rule);background:#fff;padding:12px}
 .fig img{display:block;width:100%;height:clamp(220px,37vh,470px);object-fit:contain}
 .fig figcaption{font-size:clamp(12px,1.1vw,18px);color:var(--mute);margin-top:10px;line-height:1.45}
+.figrow{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.2vw,20px)}
+.figrow .fig img{height:clamp(120px,22vh,290px)}
 
 /* ---- route list ---- */
 ol.route{list-style:none;counter-reset:r;display:flex;flex-direction:column;gap:clamp(14px,2.2vh,30px)}
@@ -595,7 +597,7 @@ estat eventplot</pre>
     </div>
     <div class="stack">
       <figure class="fig">
-        <img src="../output/10_baseline_event.png" alt="基线事件研究图">
+        <img src="../output/10_f1_baseline_event.png" alt="基线事件研究图">
         <figcaption>本课基线的事件研究图。</figcaption>
       </figure>
       <div class="panel wrong">
@@ -658,7 +660,17 @@ estat total    <span class="cm">// −0.12（se 大）</span></pre>
       </div>
       <div class="stat bad">
         <div class="v">−0.12</div>
-        <div class="k">F4 降档：命令能跑，但本例 switch-out 县更少，se 大、点估计偏弱</div>
+        <div class="k">F4 降档：命令能跑，但本例 switch-out 县更少，图上 CI 明显更宽</div>
+      </div>
+      <div class="figrow">
+        <figure class="fig">
+          <img src="../output/10_f3_switch_in_event.png" alt="F3 只看升档的事件研究图">
+          <figcaption>F3 只取升档 switcher：曲线更紧。</figcaption>
+        </figure>
+        <figure class="fig">
+          <img src="../output/10_f4_switch_out_event.png" alt="F4 只看降档的事件研究图">
+          <figcaption>F4 只取降档 switcher：置信带明显更宽。</figcaption>
+        </figure>
       </div>
       <div class="panel wrong">
         <p class="small"><b>正好教学生：</b>选项打开了不等于效力够。
@@ -743,6 +755,16 @@ xtswitchdid (y x1) (dose), group(id) neffects(4) raw    <span class="cm">// 未�
       <div class="panel">
         <p class="small">两种设定下 <span class="mono">estat total</span> 都是 <b>−0.59</b>，
         每单位汇总不变；变的是暴露期那一列的表头与数值含义。</p>
+      </div>
+      <div class="figrow">
+        <figure class="fig">
+          <img src="../output/10_f8_normalized_event.png" alt="F8 默认归一化事件研究图">
+          <figcaption>默认 normalized。</figcaption>
+        </figure>
+        <figure class="fig">
+          <img src="../output/10_f8_raw_event.png" alt="F8 raw 未归一化事件研究图">
+          <figcaption>加 <span class="mono">raw</span> 后暴露期不再被分母摊薄。</figcaption>
+        </figure>
       </div>
     </div>
   </div>
