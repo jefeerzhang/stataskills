@@ -1,9 +1,9 @@
 ---
 name: stata-did-community
-description: Stata DID 社区包（10 个方法）：csdid / jwdid / did_imputation / synth / sdid / did_multiplegt(DCDH) / stacked / lpdid / reghdfe 事件研究 / trop。含决策树路由、特征对照矩阵、HAD v2.0.0 两条平行路线、csdid method(twostage) Gardner 2022 + Sun-Abraham IW 等价说明、面板 MDE / 功效分析模板。触发词：DID 社区包 / csdid / jwdid / 合成控制 / 可逆处理 / 局部投影 / 堆叠 DID / Sun-Abraham / Gardner twostage / did_had / TROP / 功效分析 / power analysis / MDE。
+description: Stata DID 社区包（10 个方法）：csdid / jwdid / did_imputation / synth / sdid / did_multiplegt(DCDH) / stacked / lpdid / reghdfe 事件研究 / trop。含决策树路由、特征对照矩阵、HAD v2.0.0 两条平行路线、csdid method(twostage) Gardner 2022 + Sun-Abraham IW 等价说明、面板 MDE / 功效分析模板。4 个无 Stata 实现的估计量（连续剂量 / DML / 半参数有效 / 持续期）走 Python 补位层 `python/did_py.py`。触发词：DID 社区包 / csdid / jwdid / 合成控制 / 可逆处理 / 局部投影 / 堆叠 DID / Sun-Abraham / Gardner twostage / did_had / TROP / 功效分析 / power analysis / MDE / 连续剂量 DID / 剂量反应 / 双重机器学习 DID / DML / 半参数有效 DID / 持续期 DID。
 compatibility: >-
   适配 Claude Code / Codex / OpenClaw / SkillsMP；StataNow 19.5 MP（macOS / Windows / Linux）实测 PASS；
-  触发即读本文，无需联网加载其他文件。需装 csdid / drdid / jwdid / hdfe / reghdfe / did_imputation / synth / sdid / stacked / lpdid / trop / nprobust / did_had（按方法选装；did_had 经 GitHub net install）。
+  触发即读本文，无需联网加载其他文件。需装 csdid / drdid / jwdid / hdfe / reghdfe / did_imputation / synth / sdid / stacked / lpdid / trop / nprobust / did_had（按方法选装；did_had 经 GitHub net install）。Python 补位层另需 `pip install diff-diff`（实测 3.13.0），未装时 `verify/verify-did-python.sh` 静默 PASS。
 ---
 
 # Stata 双重差分：社区包（reghdfe / csdid / jwdid / did_imputation / synth / sdid / did_multiplegt / stacked / lpdid）
@@ -28,6 +28,15 @@ compatibility: >-
 - 简单 2×2 或默认吸收错时 DID → 先 `stata-did`（`didregress` / `hdidregress aipw`）
 - 离散可逆 / 离散多值 switching → 先 `stata-did` 的 `xtswitchdid`
 - 只要多层 FE、不是事件研究 → `stata-regression` 的 `reghdfe`
+
+**何时走 Python 补位**：以下四类需求 Stata 无可用实现，本 skill 用 `python/did_py.py`（`diff-diff` 3.13.0）承接，不得在 Stata 里凑近似。完整签名与往返工作流见 [references/python-fallback.md](references/python-fallback.md)。
+
+| 场景 | 子命令 |
+|---|---|
+| 连续处理剂量 + 剂量反应曲线 / ACRT（Callaway-Goodman-Bacon-Sant'Anna 2024） | `continuous` |
+| 高维协变量 + Neyman-orthogonal 调整（Chang 2020） | `dml`（必须带协变量） |
+| 半参数有效（EIF）估计与更紧 CI（Chen-Sant'Anna-Xie 2025） | `efficient` |
+| 二元吸收态结果的持续期 DID（Deaner & Ku 2026） | `duration` |
 
 默认错时（无下表特殊需求）→ **不要留在本 skill**，回 `stata-did` 跑 `hdidregress aipw`。
 
@@ -74,6 +83,7 @@ compatibility: >-
 | 完整 DID 研究项目工作流（目标→稳健性） | [workflow-8step.md](references/workflow-8step.md) | Baker et al. (2025) 8 步 practitioner 工作流 |
 | 错时 DID + 高维共同因子 + 处理与潜在因子相关 | [trop.md](references/trop.md) | `trop` Triply Robust Panel Estimator（TROP）|
 | 面板 MDE / 功效分析 / sample size justification | [power-analysis-template.do](references/power-analysis-template.do) | Bloom 1995 analytical MDE + Burlig et al. 2020 面板仿真 |
+| 连续剂量 / DML / 半参数有效 / 持续期 DID（Stata 无实现） | [python-fallback.md](references/python-fallback.md) | `python/did_py.py` 四个子命令 + 22 个留 Stata 方法的对照表 + 往返工作流 |
 
 ## 方法选择决策树
 
@@ -376,6 +386,10 @@ compatibility: >-
 - ❌ **不要只跑 `synth` 不跑 placebo 推断**：没有 SE / p 值，投稿会被打回。**替代**：`synth_runner ..., gen_vars` 跑 placebo 置换推断（ADH 2015 标准做法）。
 - ❌ **不要把 10 个社区包都跑一遍当稳健性**：强制路径命中第一条就停。**替代**：按下表只跑命中的那条命令链；默认错时回 `stata-did` 的 `hdidregress aipw`。
 - ❌ **不要把分数线 / 年龄门槛 / 地理边界改走 `csdid` / `synth`**：不是时间断点，合成对照也救不了。**替代**：转到 `stata-rdd`。
+- ❌ **不要用 `didregress` 的连续处理冒充剂量反应 DID**：那是 TWFE 线性规格，Callaway-Goodman-Bacon-Sant'Anna (2024) 明确其系数不能读成剂量反应。**替代**：`python/did_py.py continuous`；见 [references/python-fallback.md](references/python-fallback.md)。
+- ❌ **不要用 `ddml` 的 `partial` 模型冒充 `dml`**：`ddml` 无 DiD 正交得分，`partial` 只是交叉拟合的部分线性模型。**替代**：`python/did_py.py dml`（必须带协变量）。
+- ❌ **不要用 `csdid` 的池化估计冒充 `efficient`**：两者目标参数不同。**替代**：`python/did_py.py efficient`。
+- ❌ **不要用 `cloglog` / `streg` 冒充持续期 DID**：普通生存模型识别的是 Cox PH 系数，不是未处理风险的平行趋势。**替代**：`python/did_py.py duration`（结果必须是二元吸收态）。
 
 ## 验证
 
@@ -387,6 +401,7 @@ compatibility: >-
     - `synth_runner` / `drdid` / `hdfe` 标记为可选——缺包仅打 sentinel，不影响 PASS。
   - 网络受限时本节方法与 `synthdid` R 包 / diff-diff 的 `SyntheticDiD` 同源，可跨语言替代。
 - 运行：`bash verify/run-verify.sh did-community`（默认）/ `bash verify/run-verify.sh did-community --community`（强制）；全量 10 个 skill：`bash verify/run-verify.sh`。
+- **Python 补位层**：`bash verify/verify-did-python.sh`（11 条断言：4 个子命令跑通 + json/csv/dta 三种格式 + Stata 读回 + 3 条设计护栏）。数据 `data/did-python/panel_staggered.dta`（1440 obs）与 `spell_duration.dta`（2400 obs），由 `data/did-python/build_did_python.py` 生成（seed 20261021）。缺 python 或缺 `diff-diff` 时静默 PASS，不绑定 CI 网络。
 - **验证状态透明性（"没验证过的都不写"）**：决策树/命令选择表引用的 `did_multiplegt`（DCDH）/ `stacked` / `lpdid` / `did_had` 为**文档路由方法**——对应 references（dcdh.md / stacked.md / lpdid）给出命令签名与陷阱，但**未纳入 estimate 回归 verify-*.do**（`did_had` 仅 `cap which` 探测，不跑估计命令）。需实测请在装 Stata 的机器按 references 工作流自证后归档日志。
 
 ## ✅ 交付前自检清单（跑完命令后逐条核对）
@@ -398,3 +413,4 @@ compatibility: >-
 - [ ] `did_multiplegt`：模式是位置参数 (dyn)；`placebo(#)` ≤ `effects(#)`；时间变量已 `tsfill` 等间距
 - [ ] `stacked`：跑前 `save original.dta`；`fe(interacted)` 已装 `reghdfe`；`lpdid` 用 `pre()` ≥ 2 且结果读 `e(results)`
 - [ ] log 恰好一次 `end of do-file`；`--community` 模式下无必需包（csdid/jwdid/did_imputation/synth/sdid）sentinel
+- [ ] 四个 Python 补位方法（continuous / dml / efficient / duration）未被 Stata 近似顶替；连续剂量报 ATT 与 ACRT 两项

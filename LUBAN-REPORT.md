@@ -23,7 +23,7 @@
 | 同类Skill | 链接 | 类型 | 一句话定位 | 它为什么容易被理解/安装/传播 | 可学的手艺 | 不能照搬的点 |
 |---|---|---|---|---|---|---|
 | econometrics-skill | [xiaomihu1992/econometrics-skill](https://github.com/xiaomihu1992/econometrics-skill) (33⭐) | 直接 | 17 个因果推断估计器，Python 实现 | Python 生态覆盖面广（OLS→RDD），有 `lib/` 可执行代码 | 方法选择决策树写法、`method_details.md` 分离详细签名 | 它用 Python 不用 Stata，覆盖面广但深度不如 stataskills 的 DID |
-| diff-diff | [igerber/diff-diff](https://github.com/igerber/diff-diff) | 直接 | Python DID 全方法库，sklearn API | 23 个估计量、readthedocs 文档、`get_llm_guide()` 专为 Agent 设计 | `get_llm_guide()` API（Agent 专用入口）、decision flowchart | Python 库不是 Skill，没有 SKILL.md 格式 |
+| diff-diff | [igerber/diff-diff](https://github.com/igerber/diff-diff) | 直接 | Python DID 全方法库，sklearn API | 26 个估计量（v3.13.0，2026-10-17）、readthedocs 文档、`get_llm_guide()` 专为 Agent 设计 | `get_llm_guide()` API（Agent 专用入口）、decision flowchart | Python 库不是 Skill，没有 SKILL.md 格式 |
 | book-to-skill | [virgiliojr94/book-to-skill](https://github.com/virgiliojr94/book-to-skill) (22704⭐) | 手艺 | 把技术书变成 Claude Code Skill | 概念极简（一本书→一个 Skill），首屏 GIF 展示完整流程 | GIF demo、一句话钩子、npx 安装 | 它是通用工具，stataskills 是垂直内容 |
 | caveman | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) (98869⭐) | 手艺 | 省 65% token 的说话方式 Skill | 名字有记忆点、效果可量化（65%）、一条命令安装 | 命名钩子、量化效果、极简安装 | 完全不同领域，学的是传播手艺 |
 | mostly-harmless-replication | [vikjam/mostly-harmless-replication](https://github.com/vikjam/mostly-harmless-replication) (660⭐) | 间接 | 《Mostly Harmless Econometrics》Stata/R/Python 复现 | 教材复现+多语言，学术圈自然传播 | 教材锚定（借书的知名度）、多语言对照 | 不是 Skill 格式，没有 Agent 集成 |
@@ -34,7 +34,7 @@
 
 纵向结论：stataskills 从"教材章节 Skill"起步，扩展到"DID 方法全覆盖"。下一阶段方向是成为 **Stata DID 的 Agent 权威入口**——不只是教程，而是 Agent 能直接调用的、经过验证的 DID 工具箱。
 
-横向结论：同类 Skill 的立足点主要来自：(1) Python 生态的广度（econometrics-skill 覆盖 17 个估计器），(2) 传播手艺（book-to-skill 的 GIF + 极简安装），(3) 方法论深度（diff-diff 的 23 个 DID 估计量）。
+横向结论：同类 Skill 的立足点主要来自：(1) Python 生态的广度（econometrics-skill 覆盖 17 个估计器），(2) 传播手艺（book-to-skill 的 GIF + 极简安装），(3) 方法论深度（diff-diff 的 26 个 DID 估计量，v3.13.0）。
 
 交叉洞察：stataskills 该抢的生态位不是"又一个 econometrics Skill"，而是 **"Stata DID 的 Agent 权威入口"**——在这个交叉点上，没有同行同时具备：Stata 原生 + 9 个 DID 方法 + 可执行验证 + 决策树路由。econometrics-skill 用 Python 且 DID 只是 17 个方法之一；diff-diff 是 Python 库不是 Skill；stata-did GitHub 仓库只有 1 星。
 
@@ -248,7 +248,7 @@ git clone https://github.com/jefeerzhang/stataskills.git
 ## 11. 回炉清单
 
 ### 对标观察清单
-- [diff-diff](https://github.com/igerber/diff-diff)：关注其新增估计量（ChaisemartinDHaultfoeuille 已覆盖，下一个是 TROP?）
+- [diff-diff](https://github.com/igerber/diff-diff)：v3.9.1（2026-08-17）后新增 LWDiD（3.10）、DMLDiD（3.11）、DurationDiD（3.12）三个估计量，TWFE 权重诊断落于 3.13；main 已进入 4.0 切换窗口（2026-10-18 起），删除 `MultiPeriodDiD`、`StaggeredTripleDifference`、`QDiD`、`robust=` 与 8 个模块级包装函数。本仓库未引用上述被删 API
 - [econometrics-skill](https://github.com/xiaomihu1992/econometrics-skill)：关注其 DID 部分是否扩展为独立 Skill
 - [book-to-skill](https://github.com/virgiliojr94/book-to-skill)：学其 GIF 录制和安装体验
 

@@ -944,6 +944,24 @@
         "空间依赖不等于因果识别的边界说明"
       ],
       "verify_keywords": ["spregress", "estat", "spmatrix"]
+    },
+    {
+      "id": "did-11-python-fallback",
+      "skill": "stata-did-community",
+      "difficulty": "hard",
+      "requires_package": null,
+      "gotchas": ["no_stata_implementation", "dose_time_invariant", "dml_needs_covariates", "duration_binary_outcome"],
+      "scenario": "用户问题：错时 DID 数据，处理是连续剂量（补贴金额），想看剂量反应曲线与 ACRT。Stata 侧没有对应命令，怎么办？",
+      "expected_actions": [
+        "load stata-did-community SKILL.md",
+        "命中「何时走 Python 补位」：连续剂量 + 剂量反应曲线 → references/python-fallback.md",
+        "pip install diff-diff",
+        "python stata-did-community/python/did_py.py continuous --data panel.dta --outcome y --unit id --time t --first-treat g --dose dose -o results.json",
+        "报告必须同时给 ATT 与 overall_acrt，不能只报 ATT",
+        "不得用 didregress 的连续处理冒充剂量反应"
+      ],
+      "expected_outputs": ["剂量反应曲线（dose / effect / SE）", "overall_acrt 与 ATT 同时报告", "json 或 dta 结果产物"],
+      "verify_keywords": ["did_py.py", "continuous", "overall_acrt", "diff-diff"]
     }
   ]
 }

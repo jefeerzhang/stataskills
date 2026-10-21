@@ -71,6 +71,12 @@ jobs:
       - name: Run static verify
         run: bash verify/run-verify.sh --static
 
+      # Python 补位层（4 个无 Stata 实现的 DID 估计量）：runner 无 diff-diff 时
+      # 依赖探测段静默 PASS（不绑 CI 网络）；有 diff-diff 则跑满 4 子命令 + 3 护栏。
+      # Stata 读回段在无 Stata 的 runner 上同样跳过。
+      - name: Verify Python fallback layer
+        run: bash verify/verify-did-python.sh
+
       # 文档断言层：文件系统 facts 比对文档/结构计数，抓声明漂移
       - name: Check doc claims
         run: bash verify/check-claims.sh

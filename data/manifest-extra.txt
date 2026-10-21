@@ -25,6 +25,8 @@
 #
 absorbing_staggered
 laborsub
+panel_staggered
+spell_duration
 switching_features
 switching_multivalued
 synth_smoking

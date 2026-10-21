@@ -106,6 +106,7 @@ fi
 
 # 3d. 绿 fixture：did-community 计数一致且索引登记齐全时锁为绿
 mkdir -p "$WORKDIR/dc-ok/stata-did-community/references"
+mkdir -p "$WORKDIR/dc-ok/stata-did-community/python"
 cat > "$WORKDIR/dc-ok/stata-did-community/SKILL.md" <<'EOF'
 ---
 description: 社区包（10 个方法）
@@ -114,8 +115,11 @@ description: 社区包（10 个方法）
 | `did_imputation` | [csdid-jwdid-imputation.md](references/csdid-jwdid-imputation.md) |
 | trop | [trop.md](references/trop.md) |
 | 功效 | [power-analysis-template.do](references/power-analysis-template.do) |
+| 补位 | [python-fallback.md](references/python-fallback.md) |
 ## 正文
 共 10 个社区包可用。
+## 何时走 Python 补位
+| 连续剂量 | `continuous` |
 ## 关键陷阱速查
 - TROP 的推断依赖 placebo
 EOF
@@ -125,10 +129,44 @@ printf 'Roth 2022\n' >"$WORKDIR/dc-ok/stata-did-community/references/workflow-8s
 printf '# trop\n' >"$WORKDIR/dc-ok/stata-did-community/references/trop.md"
 printf '# sdid\n' >"$WORKDIR/dc-ok/stata-did-community/references/sdid.md"
 printf '// 无浮点插值变量名\n' >"$WORKDIR/dc-ok/stata-did-community/references/power-analysis-template.do"
+# 第 8 条锁（Python 补位层）：绿 fixture 必须同时提供 4 个子命令、4 条禁令与 CLI
+cat > "$WORKDIR/dc-ok/stata-did-community/references/python-fallback.md" <<'EOF'
+| `continuous` |
+| `dml` |
+| `efficient` |
+| `duration` |
+不得用 `didregress` 的连续处理
+不得用 `ddml` 的 `partial`
+不得用 `csdid` 的池化估计
+不得用 `cloglog` / `streg`
+EOF
+for sub in continuous dml efficient duration; do
+  printf '"%s"\n' "$sub"
+done >"$WORKDIR/dc-ok/stata-did-community/python/did_py.py"
 if CLAIMS_REPO_ROOT="$WORKDIR/dc-ok" bash "$CLAIMS_DIR/did-community.sh" >/dev/null 2>&1; then
   ok "green fixture：did-community 全部锁为绿"
 else
   bad "green fixture：did-community 锁误红（bash verify/claims/did-community.sh + CLAIMS_REPO_ROOT 可复现）"
+fi
+
+# 3e. red-capable：删掉 Python 补位层的一个子命令，第 8 条锁必须变红
+# 事故背景：该层是 Stata 无实现方法的唯一出口，静默消失会让 Agent 退回
+# 「在 Stata 里凑近似」。绿 fixture 上删一行是这条锁最小可信的造红方式。
+cp -r "$WORKDIR/dc-ok" "$WORKDIR/dc-nopy"
+cat > "$WORKDIR/dc-nopy/stata-did-community/references/python-fallback.md" <<'EOF'
+| `continuous` |
+| `dml` |
+| `efficient` |
+不得用 `didregress` 的连续处理
+不得用 `ddml` 的 `partial`
+不得用 `csdid` 的池化估计
+不得用 `cloglog` / `streg`
+EOF
+nopy_out="$(CLAIMS_REPO_ROOT="$WORKDIR/dc-nopy" bash "$CLAIMS_DIR/did-community.sh" 2>&1)" && nopy_rc=0 || nopy_rc=$?
+if [ "$nopy_rc" -ne 0 ] && printf '%s\n' "$nopy_out" | grep -q 'Python 补位层漂移'; then
+  ok "red-capable：Python 补位层子命令缺失被捕获"
+else
+  bad "Python 补位层缺失未被捕获（rc=${nopy_rc}）：$(printf '%s' "$nopy_out" | tr '\n' ' ')"
 fi
 
 # ---- 4. 聚合器契约：发现式聚合 + 事故锁不回流 ----

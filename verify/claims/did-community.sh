@@ -17,6 +17,7 @@
 #   5. TROP 陷阱只在主 SKILL.md（ADR-0001 陷阱四件套单一来源）
 #   6. workflow-8step.md 不得引用 orphan SHA 3cae231
 #   7. DID method ownership：did_imputation 详解只在索引目标 reference
+#   8. Python 补位层不得静默消失（4 个无 Stata 实现的估计量 + 4 条禁令）
 # ============================================================
 set -u
 
@@ -155,6 +156,43 @@ if [ -n "$own_drift" ]; then
   bad "DID method ownership 漂移：${own_drift}"
 else
   ok "DID method ownership：did_imputation 详解仅在索引目标 csdid-jwdid-imputation.md"
+fi
+
+# ---- 8. Python 补位层耐久：4 个子命令 + 4 条禁令不得静默消失 ----
+# 背景：2026-10-21 对照 diff-diff v3.13.0，26 个估计量中 4 个无 Stata 实现，
+# 由 python/did_py.py 承接。若主 SKILL.md 的路由段或禁令被删，Agent 会退回
+# 「在 Stata 里凑近似」——这正是本层要防的事故。
+PY_FALLBACK_MD="$REPO_ROOT/stata-did-community/references/python-fallback.md"
+PY_CLI="$REPO_ROOT/stata-did-community/python/did_py.py"
+py_miss=""
+if [ -f "$DC_SKILL" ]; then
+  grep -q 'references/python-fallback\.md' "$DC_SKILL" || py_miss="${py_miss} SKILL.md 缺 python-fallback.md 索引;"
+  grep -q '何时走 Python 补位' "$DC_SKILL" || py_miss="${py_miss} SKILL.md 缺「何时走 Python 补位」段;"
+else
+  py_miss="${py_miss} SKILL.md 缺失;"
+fi
+if [ -f "$PY_FALLBACK_MD" ]; then
+  for sub in continuous dml efficient duration; do
+    grep -q "\`${sub}\`" "$PY_FALLBACK_MD" || py_miss="${py_miss} python-fallback.md 缺子命令 ${sub};"
+  done
+  grep -q '不得用 `didregress` 的连续处理' "$PY_FALLBACK_MD" || py_miss="${py_miss} python-fallback.md 缺 didregress 冒充禁令;"
+  grep -q '不得用 `ddml` 的 `partial`' "$PY_FALLBACK_MD" || py_miss="${py_miss} python-fallback.md 缺 ddml 冒充禁令;"
+  grep -q '不得用 `csdid` 的池化估计' "$PY_FALLBACK_MD" || py_miss="${py_miss} python-fallback.md 缺 csdid 冒充禁令;"
+  grep -q '不得用 `cloglog` / `streg`' "$PY_FALLBACK_MD" || py_miss="${py_miss} python-fallback.md 缺生存模型冒充禁令;"
+else
+  py_miss="${py_miss} python-fallback.md 缺失;"
+fi
+if [ -f "$PY_CLI" ]; then
+  for sub in continuous dml efficient duration; do
+    grep -q "\"${sub}\"" "$PY_CLI" || py_miss="${py_miss} did_py.py 缺 ${sub} 子命令;"
+  done
+else
+  py_miss="${py_miss} python/did_py.py 缺失;"
+fi
+if [ -n "$py_miss" ]; then
+  bad "Python 补位层漂移：${py_miss}"
+else
+  ok "Python 补位层完整（4 子命令 + 4 条冒充禁令 + CLI 在库）"
 fi
 
 summary

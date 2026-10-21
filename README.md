@@ -2,12 +2,12 @@
 
 > **Stata 实证方法：9 个 DiD 估计量 · 计数/PPML · 分数响应 · 删失与样本选择 · 一条命令安装。**
 >
-> 15 个 Skill · 15 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 39 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
+> 15 个 Skill · 15 个验证入口 · 7 ADR · 38 个 AGIS6 数据集 · 40 条 Agent 行为回归 prompt。把 Acock 教材 800 页压成 4 个章节 Skill，
 > 再扩展 coefplot、DID、RDD、selection-on-observables 与跨设计 identification router——中文实证研究者装上即可用。
 
 [English summary](#english-summary) | [中文说明](#中文说明)
 
-> 🎯 **15 个 Skill · 15 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 42 张 demo PNG · 39 条 Agent 行为回归 prompt**
+> 🎯 **15 个 Skill · 15 个验证入口 · Stata 19.5 验证 · 38 个数据集（AGIS6）· 43 张 demo PNG · 40 条 Agent 行为回归 prompt**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![StataNow 19.5](https://img.shields.io/badge/Stata-19.5%20MP-orange.svg)](docs/run-stata.md)
@@ -41,7 +41,7 @@
 - **完整命令 + 解读逻辑 + 报告惯例 + 关键陷阱速查**，按强制路径和 references 渐进加载
 - **38 个 AGIS6 配套数据集 + 项目级扩展数据**：分别由 `data/manifest.txt` 与 `data/manifest-extra.txt` 管理
 - **可一行复现的 verify harness**：`bash verify/run-verify.sh` 动态发现 15 个 skill 验证入口
-- **真实 demo** 报告：10 个 do-file + 42 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + 吸收/可逆路由与 xtswitchdid 十个开关 + Bacon 分解图）
+- **真实 demo** 报告：11 个 do-file + 43 张 PNG + 完整 REPORT.md（含 reghdfe 与 regress i.fe 残差对比图 + panelview 缺失模式与处理状态 + fect Estimated ATT 时序图 + coefplot 森林图 + DID didregress/xtdidregress/hdidregress/xthdidregress 全部命令族 + 吸收/可逆路由与 xtswitchdid 十个开关 + Bacon 分解图）
 - **高维固定效应 `reghdfe`**：2+ 层 FE / 多向聚类 / IV-GMM 吸收 FE / 自动剔除单点组（见 stata-regression 10.5 节）
 - **工程化外壳领先**：ADR-0001 + verify + manifest + stata.conf 四条单一来源
 
@@ -106,6 +106,7 @@ bash verify/run-verify.sh
 | 系数图 / 森林图 / 多模型系数对比 / 发表级 coefplot | `stata-coefplot` |
 | 时间断点政策 / 平行趋势 / 错时 DID（内置命令） | `stata-did` |
 | 合成控制 / 连续剂量·HAD / csdid / jwdid / 非线性 DID | `stata-did-community` |
+| 连续剂量 DID（剂量反应曲线）/ DML DID / 半参数有效 DID / 持续期 DID | `stata-did-community` 的 Python 补位层 `python/did_py.py` |
 | 离散可逆 / switching DID（`xtswitchdid`） | `stata-did` |
 | 分数线 / 年龄门槛 / 地理边界断点 | `stata-rdd` |
 | PSM / IPW / IPWRA / `teffects` / entropy balancing | `stata-selection` |
@@ -164,8 +165,8 @@ bash verify/run-verify.sh
 | 教材驱动 | ✅ AGIS6 全 16 章 + 附录 A | ❌ | ⚠️ 章节切片 |
 | 配套数据 | ✅ 38 个 AGIS6 `.dta` + 受治理的项目级扩展数据 | ❌ | ❌ |
 | 验证 harness | ✅ 一行命令动态运行 15 个验证入口 | ❌ | ⚠️ log 验证 |
-| Agent 行为回归 | ✅ `test-prompts.json` 39 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
-| Demo 报告 | ✅ 10 个 do-file + 42 PNG + REPORT.md | ❌ | ❌ |
+| Agent 行为回归 | ✅ `test-prompts.json` 40 条 prompt + 动态 skill / route_branch 断言；旧 corpus 有 `--llm` 实测台账 | ❌ | ❌ |
+| Demo 报告 | ✅ 11 个 do-file + 43 PNG + REPORT.md | ❌ | ❌ |
 | ADR / 架构决策 | ✅ ADR-0001 至 ADR-0006 | ❌ | ❌ |
 | 单一来源 | ✅ 双 manifest + target registry + `verify/stata.conf` | ❌ | ❌ |
 
@@ -188,7 +189,7 @@ stataskills/
 ├── CHANGELOG.md                    ← 变更历史
 ├── CITATION.cff                    ← 学术引用
 ├── download_data.do                ← 一键下载全部数据
-├── test-prompts.json               ← 39 条 Agent 行为回归测试（动态覆盖 15 skills）
+├── test-prompts.json               ← 40 条 Agent 行为回归测试（动态覆盖 15 skills）
 ├── stata-basics/SKILL.md           ← skill 1（数据管理 / 清洗）
 ├── stata-descriptives/SKILL.md     ← skill 2（描述 / 检验）
 ├── stata-regression/SKILL.md       ← skill 3（回归 / IV）
@@ -224,9 +225,9 @@ stataskills/
 │   └── verify-<skill>.do           ← 15 个验证入口（多 do-file 入口使用 registry 委托；raw log 本地生成、不入库）
 └── demo/                           ← 端到端示例
     ├── REPORT.md                   ← 完整报告
-    ├── dofiles/                    ← 10 个 do-file（含 did 路由与 xtswitchdid 选型）
-    ├── logs/                       ← 10 个 Stata log（exit=0）
-    └── output/                     ← 42 张真实 PNG
+    ├── dofiles/                    ← 11 个 do-file（含 did 路由与 xtswitchdid 选型、sensemakr）
+    ├── logs/                       ← 11 个 Stata log（exit=0）
+    └── output/                     ← 43 张真实 PNG
 ```
 
 ## 验证与测试
@@ -312,7 +313,7 @@ bash verify/run-verify.sh
 | `stata-limited-dependent` | extension | Tobit, hurdle/two-part means, Heckman and binary sample selection |
 | `stata-spatial` | extension | spatial econometrics: spmatrix weights, spregress / spivregress (SAR/SEM/SDM/SLX), spxtregress / xsmle / spregdpd / spxtivdfreg panels, Moran test, direct-indirect-total impact decomposition |
 
-Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 10-do-file, 42-PNG layer. The verify harness dynamically discovers 15 verification entry points, and `test-prompts.json` contains 39 prompts covering all 15 skills and the locked routing branches. The historical `--llm` run (2026-08-27, MiniMax M3) covered the original 27 prompts; later prompts have not been rerun at the LLM layer. See `verify/llm-results.md`.
+Each SKILL.md contains command guidance, interpretation logic, reporting conventions, and a pitfalls checklist. The 38 AGIS6 `.dta` datasets ship in `data/agis6/`; governed project-level datasets use `data/manifest-extra.txt`. The end-to-end demo remains an independent 11-do-file, 43-PNG layer. The verify harness dynamically discovers 15 verification entry points, and `test-prompts.json` contains 40 prompts covering all 15 skills and the locked routing branches. The historical `--llm` run (2026-08-27, MiniMax M3) covered the original 27 prompts; later prompts have not been rerun at the LLM layer. See `verify/llm-results.md`.
 
 Latest release: `v1.2.0` (2026-08-27) - https://github.com/jefeerzhang/stataskills/releases/latest
 
